@@ -8,7 +8,6 @@ A web dashboard for inspecting Spring Batch metadata (job runs, step executions,
 |---|---|---|
 | [`backend/`](backend/) | Spring Boot 4, Java 21, Spring Data JPA, OAuth2 (GitHub) | REST API that reads `BATCH_*` metadata and serves it to the frontend. Multi-environment via per-request datasource routing. |
 | [`frontend/`](frontend/) | React 19, Vite, MUI, TanStack Query, Vitest | The dashboard SPA. Browses jobs, runs, and per-execution step details. |
-| [`k8s/`](k8s/) | YAML | Kubernetes deployment scaffolding. |
 
 The components don't share code — they're independent apps that meet at the database.
 
