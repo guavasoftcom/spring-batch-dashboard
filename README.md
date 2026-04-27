@@ -12,6 +12,20 @@ A web dashboard for inspecting Spring Batch metadata (job runs, step executions,
 
 The components don't share code — they're independent apps that meet at the database.
 
+## Screenshots
+
+### Login
+![Login](docs/login.png)
+
+### Overview
+![Overview](docs/overview.png)
+
+### Job Details
+![Job Details](docs/job-details.png)
+
+### Job Execution
+![Job Execution](docs/job-execution.png)
+
 ## Quick start
 
 You'll need: JDK 21, Node 20+, Yarn 4 (Berry), Docker.
