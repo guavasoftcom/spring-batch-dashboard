@@ -1,0 +1,16 @@
+node_modules
+.vite
+coverage
+.git
+.gitignore
+.yarn
+src
+public
+*.config.*
+tsconfig*.json
+package.json
+yarn.lock
+.yarnrc.yml
+.nvmrc
+eslint.config.js
+index.html

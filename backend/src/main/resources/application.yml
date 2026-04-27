@@ -1,0 +1,13 @@
+spring:
+  profiles:
+    active: local
+  application:
+    name: springbatch-dashboard
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
