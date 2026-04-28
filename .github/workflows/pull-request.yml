@@ -40,10 +40,10 @@ jobs:
         # `verify` runs the validate phase (Checkstyle), test phase, and package phase.
         # Testcontainers picks up the Docker daemon that's already running on ubuntu-latest.
         # The active profile decides which JDBC driver and Testcontainers DB module are bundled.
-        # jacoco.check.skip=true defers the 80% threshold check to the downstream
-        # coverage job, which runs it once against the merged exec data from both
-        # matrix entries.
-        run: ./mvnw --batch-mode --no-transfer-progress -P${{ matrix.profile }} -Djacoco.check.skip=true verify
+        # Coverage is generated here (jacoco.exec) but the threshold check happens once
+        # in the downstream coverage job against the merged exec data from both matrix
+        # entries.
+        run: ./mvnw --batch-mode --no-transfer-progress -P${{ matrix.profile }} verify
 
       - name: Annotate Checkstyle results
         if: always()
@@ -134,18 +134,23 @@ jobs:
           path: backend/target/jacoco-exec
           merge-multiple: true
 
-      - name: Merge + report + check coverage
-        run: ./mvnw --batch-mode --no-transfer-progress jacoco:merge@jacoco-merge jacoco:report@jacoco-report-merged jacoco:check@jacoco-check-merged
+      - name: Merge per-matrix coverage into a single report
+        run: ./mvnw --batch-mode --no-transfer-progress jacoco:merge@jacoco-merge jacoco:report@jacoco-report-merged
 
-      - name: Comment JaCoCo coverage on PR
+      - name: Publish + gate coverage on PR
         if: always()
-        uses: madrapps/jacoco-report@v1.7.1
+        uses: PavanMudigonda/jacoco-reporter@v5
         with:
-          paths: backend/target/site/jacoco-merged/jacoco.xml
-          token: ${{ secrets.GITHUB_TOKEN }}
-          title: Backend coverage
-          min-coverage-overall: 80
-          min-coverage-changed-files: 80
+          coverage_results_path: backend/target/site/jacoco-merged/jacoco.xml
+          coverage_report_name: Backend coverage
+          coverage_report_title: Backend coverage (merged across matrix)
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          minimum_coverage: 80
+          minimum_coverage_changed_files: 80
+          fail_below_threshold: true
+          publish_only_summary: false
+          pass_emoji: '✅'
+          fail_emoji: '❌'
 
       - name: Upload merged JaCoCo report
         if: always()
