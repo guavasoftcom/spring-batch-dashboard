@@ -57,6 +57,15 @@ jobs:
           check_name: Backend tests (${{ matrix.profile }})
           require_tests: true
 
+      - name: Comment test results on PR
+        if: matrix.profile == 'postgresql' && always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: backend/target/surefire-reports/TEST-*.xml
+          check_name: Backend test summary
+          comment_title: Backend test summary
+          comment_mode: always
+
       - name: Upload Surefire reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -133,6 +142,15 @@ jobs:
           report_paths: frontend/test-results/junit.xml
           check_name: Frontend tests
           require_tests: true
+
+      - name: Comment test results on PR
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: frontend/test-results/junit.xml
+          check_name: Frontend test summary
+          comment_title: Frontend test summary
+          comment_mode: always
 
       - name: Upload test results
         if: always()
