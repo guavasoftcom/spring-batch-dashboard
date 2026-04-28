@@ -32,6 +32,7 @@
 		<mapstruct.version>1.6.3</mapstruct.version>
 		<lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
 		<testcontainers.version>1.20.6</testcontainers.version>
+		<jacoco.version>0.8.13</jacoco.version>
 		<!--
 			Make m2e (VSCode Java extension) run MapStruct's annotation processor through JDT
 			instead of skipping it. Without this, JDT compiles JobRunMapper.java to a stub
@@ -234,6 +235,34 @@
 						<configuration>
 							<configLocation>google_checks.xml</configLocation>
 						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.version}</version>
+				<configuration>
+					<excludes>
+						<exclude>**/dashboard/DashboardApplication.class</exclude>
+						<exclude>**/dashboard/entity/**</exclude>
+						<exclude>**/dashboard/model/**</exclude>
+						<exclude>**/dashboard/mapper/*MapperImpl.class</exclude>
+					</excludes>
+				</configuration>
+				<executions>
+					<execution>
+						<id>jacoco-prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>jacoco-report</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
 					</execution>
 				</executions>
 			</plugin>

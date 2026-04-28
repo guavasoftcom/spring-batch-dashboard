@@ -14,5 +14,25 @@ export default defineConfig({
     setupFiles: './src/test-setup.ts',
     reporters: process.env.CI ? ['default', 'junit'] : ['default'],
     outputFile: { junit: './test-results/junit.xml' },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'json-summary', 'json', 'cobertura'],
+      reportsDirectory: './coverage',
+      reportOnFailure: true,
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/**/*.d.ts',
+        'src/**/__tests__/**',
+        'src/**/*.test.{ts,tsx}',
+        'src/test-setup.ts',
+        'src/main.tsx',
+      ],
+      thresholds: {
+        lines: 80,
+        statements: 80,
+        branches: 80,
+        functions: 80,
+      },
+    },
   },
 });

@@ -65,6 +65,24 @@ jobs:
           path: backend/target/surefire-reports
           if-no-files-found: ignore
 
+      - name: Comment JaCoCo coverage on PR
+        if: matrix.profile == 'postgresql'
+        uses: madrapps/jacoco-report@v1.7.1
+        with:
+          paths: backend/target/site/jacoco/jacoco.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: Backend coverage
+          min-coverage-overall: 80
+          min-coverage-changed-files: 80
+
+      - name: Upload JaCoCo report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jacoco-report-${{ matrix.profile }}
+          path: backend/target/site/jacoco
+          if-no-files-found: ignore
+
   frontend:
     name: Frontend (Node 20 + Yarn 4)
     runs-on: ubuntu-latest
@@ -105,8 +123,8 @@ jobs:
       - name: Typecheck + build
         run: yarn build
 
-      - name: Run tests
-        run: yarn test:run
+      - name: Run tests with coverage
+        run: yarn test:coverage
 
       - name: Publish test report
         if: always()
@@ -122,4 +140,21 @@ jobs:
         with:
           name: frontend-test-results
           path: frontend/test-results
+          if-no-files-found: ignore
+
+      - name: Comment coverage report
+        if: always()
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          working-directory: frontend
+          name: Frontend coverage
+          json-summary-path: frontend/coverage/coverage-summary.json
+          json-final-path: frontend/coverage/coverage-final.json
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage
           if-no-files-found: ignore
