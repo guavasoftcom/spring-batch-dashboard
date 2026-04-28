@@ -18,7 +18,7 @@ app:
   oauth2:
     success-url: http://localhost:5173/overview
   datasources:
-    - name: Localhost Test
+    - name: Localhost Postgres
       url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB}?readOnly=true
       username: ${POSTGRES_USER}
       password: ${POSTGRES_PASSWORD}

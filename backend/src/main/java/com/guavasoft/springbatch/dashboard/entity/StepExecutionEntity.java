@@ -29,44 +29,55 @@ public class StepExecutionEntity {
     @Column(nullable = false)
     private Long version;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "step_name", nullable = false, length = 100)
     private String stepName;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "job_execution_id", foreignKey = @ForeignKey(name = "JOB_EXEC_STEP_FK"))
     private JobExecutionEntity jobExecution;
 
-    @Column(nullable = false)
+    @Column(name = "create_time", nullable = false)
     private LocalDateTime createTime;
 
+    @Column(name = "start_time")
     private LocalDateTime startTime;
 
+    @Column(name = "end_time")
     private LocalDateTime endTime;
 
     @Column(length = 10)
     private String status;
 
+    @Column(name = "commit_count")
     private Long commitCount;
 
+    @Column(name = "read_count")
     private Long readCount;
 
+    @Column(name = "filter_count")
     private Long filterCount;
 
+    @Column(name = "write_count")
     private Long writeCount;
 
+    @Column(name = "read_skip_count")
     private Long readSkipCount;
 
+    @Column(name = "write_skip_count")
     private Long writeSkipCount;
 
+    @Column(name = "process_skip_count")
     private Long processSkipCount;
 
+    @Column(name = "rollback_count")
     private Long rollbackCount;
 
-    @Column(length = 2500)
+    @Column(name = "exit_code", length = 2500)
     private String exitCode;
 
-    @Column(length = 2500)
+    @Column(name = "exit_message", length = 2500)
     private String exitMessage;
 
+    @Column(name = "last_updated")
     private LocalDateTime lastUpdated;
 }

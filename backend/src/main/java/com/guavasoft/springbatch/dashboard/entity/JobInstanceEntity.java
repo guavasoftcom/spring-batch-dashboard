@@ -27,9 +27,9 @@ public class JobInstanceEntity {
     @Version
     private Long version;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "job_name", nullable = false, length = 100)
     private String jobName;
 
-    @Column(nullable = false, length = 32)
+    @Column(name = "job_key", nullable = false, length = 32)
     private String jobKey;
 }

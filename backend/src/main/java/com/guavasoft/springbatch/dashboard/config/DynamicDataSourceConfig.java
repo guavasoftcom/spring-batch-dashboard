@@ -27,6 +27,8 @@ public class DynamicDataSourceConfig {
             throw new IllegalStateException("No datasources configured under app.datasources");
         }
 
+        // All entries must point at databases of the same type — the active SqlDialect bean
+        // (selected by app.dialect) is shared across them.
         Map<Object, Object> targets = new LinkedHashMap<>();
         DataSource defaultTarget = null;
         for (var entry : properties.getDatasources()) {

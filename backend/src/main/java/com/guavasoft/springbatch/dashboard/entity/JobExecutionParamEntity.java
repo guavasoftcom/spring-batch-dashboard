@@ -29,13 +29,13 @@ public class JobExecutionParamEntity {
     private JobExecutionEntity jobExecution;
 
     @Id
-    @Column(nullable = false, length = 100)
+    @Column(name = "parameter_name", nullable = false, length = 100)
     private String parameterName;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "parameter_type", nullable = false, length = 100)
     private String parameterType;
 
-    @Column(length = 2500)
+    @Column(name = "parameter_value", length = 2500)
     private String parameterValue;
 
     @JdbcTypeCode(SqlTypes.CHAR)

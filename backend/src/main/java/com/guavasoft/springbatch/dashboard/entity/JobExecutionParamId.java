@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.lang3.builder.EqualsBuilder;
 
 @Getter
 @Setter
@@ -20,8 +21,10 @@ public class JobExecutionParamId implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof JobExecutionParamId other)) return false;
-        return Objects.equals(jobExecution, other.jobExecution)
-            && Objects.equals(parameterName, other.parameterName);
+        return new EqualsBuilder()
+            .append(jobExecution, other.jobExecution)
+            .append(parameterName, other.parameterName)
+            .isEquals();
     }
 
     @Override

@@ -11,8 +11,12 @@ concurrency:
 
 jobs:
   backend:
-    name: Backend (Java 21)
+    name: Backend (${{ matrix.profile }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [postgresql, mysql]
     defaults:
       run:
         working-directory: backend
@@ -31,13 +35,14 @@ jobs:
       - name: Verify (checkstyle + tests + package)
         # `verify` runs the validate phase (Checkstyle), test phase, and package phase.
         # Testcontainers picks up the Docker daemon that's already running on ubuntu-latest.
-        run: ./mvnw --batch-mode --no-transfer-progress verify
+        # The active profile decides which JDBC driver and Testcontainers DB module are bundled.
+        run: ./mvnw --batch-mode --no-transfer-progress -P${{ matrix.profile }} verify
 
       - name: Upload Surefire reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: backend-surefire-reports
+          name: backend-surefire-reports-${{ matrix.profile }}
           path: backend/target/surefire-reports
           if-no-files-found: ignore
 
