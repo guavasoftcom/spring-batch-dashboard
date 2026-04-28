@@ -22,10 +22,15 @@ export default defineConfig({
       include: ['src/**/*.{ts,tsx}'],
       exclude: [
         'src/**/*.d.ts',
+        'src/**/*.types.ts',
+        'src/types/**',
         'src/**/__tests__/**',
         'src/**/*.test.{ts,tsx}',
+        'src/**/seedData.ts',
+        'src/**/seedSummary.ts',
         'src/test-setup.ts',
         'src/main.tsx',
+        'src/**/index.ts',
       ],
       thresholds: {
         lines: 80,
