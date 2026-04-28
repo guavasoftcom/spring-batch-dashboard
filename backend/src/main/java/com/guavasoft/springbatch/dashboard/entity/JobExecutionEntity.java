@@ -32,21 +32,24 @@ public class JobExecutionEntity {
     @JoinColumn(name = "job_instance_id", foreignKey = @ForeignKey(name = "JOB_INST_EXEC_FK"))
     private JobInstanceEntity jobInstance;
 
-    @Column(nullable = false)
+    @Column(name = "create_time", nullable = false)
     private LocalDateTime createTime;
 
+    @Column(name = "start_time")
     private LocalDateTime startTime;
 
+    @Column(name = "end_time")
     private LocalDateTime endTime;
 
     @Column(length = 10)
     private String status;
 
-    @Column(length = 2500)
+    @Column(name = "exit_code", length = 2500)
     private String exitCode;
 
-    @Column(length = 2500)
+    @Column(name = "exit_message", length = 2500)
     private String exitMessage;
 
+    @Column(name = "last_updated")
     private LocalDateTime lastUpdated;
 }

@@ -34,8 +34,9 @@ public interface StepExecutionRepository extends JpaRepository<StepExecutionEnti
         + "FROM StepExecutionEntity s")
     long sumSkipCount();
 
+    // CASE WHEN ... THEN 1 ELSE 0 END emulates NULLS LAST and is portable across Postgres and MySQL.
     @Query("SELECT s FROM StepExecutionEntity s "
         + "WHERE s.status = 'FAILED' "
-        + "ORDER BY s.endTime DESC NULLS LAST, s.lastUpdated DESC")
+        + "ORDER BY CASE WHEN s.endTime IS NULL THEN 1 ELSE 0 END, s.endTime DESC, s.lastUpdated DESC")
     List<StepExecutionEntity> findMostRecentFailed(Pageable pageable);
 }

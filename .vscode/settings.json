@@ -1,11 +1,15 @@
 {
   "java.compile.nullAnalysis.mode": "automatic",
-  "java.configuration.updateBuildConfiguration": "interactive",
+  "java.configuration.updateBuildConfiguration": "automatic",
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
-  "eslint.workingDirectories": [{ "pattern": "frontend" }],
+  "eslint.workingDirectories": [
+    {
+      "pattern": "frontend"
+    }
+  ],
   "eslint.validate": [
     "javascript",
     "javascriptreact",

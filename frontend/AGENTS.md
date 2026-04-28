@@ -10,8 +10,8 @@ React + TypeScript + Vite app for the Spring Batch Dashboard. Backend is a Sprin
 - HTTP: `axios` via `src/config/client.ts` (`withCredentials: true` for the OAuth2 session cookie; injects `X-Environment` header from localStorage)
 - Data fetching: `@tanstack/react-query`
 - Forms: `formik`
-- Tests: `vitest` + `@testing-library/react` (jsdom)
-- Package manager: `yarn@4` (Berry). Run `yarn install`, `yarn dev`, `yarn build`, `yarn test`, `yarn lint`.
+- Tests: `vitest` + `@testing-library/react` + `@testing-library/user-event` (jsdom)
+- Package manager: `yarn@4` (Berry). Run `yarn install`, `yarn dev`, `yarn build`, `yarn test`, `yarn lint`, `yarn test:coverage`. `package-lock.json` is gitignored — do not run `npm install`.
 
 ## Layout
 
@@ -146,6 +146,26 @@ export const getX = async (...): Promise<T> => {
 - Set `VITE_USE_MOCK_DATA=true` in `.env` to run the app without a live backend; every endpoint returns canned data and `apiClient` is bypassed.
 - Avoid name collisions in the barrel — `getStepCounts` (overview totals) is distinct from `getJobExecutionStepCounts` (per-execution).
 - One Vitest file per API module under [src/api/__tests__/](src/api/__tests__/) covers both real-mode (asserts URL/params via mocked `apiClient`) and mock-mode (asserts canned data, no HTTP).
+
+## Testing
+
+```bash
+yarn test                           # watch mode
+yarn test:run                       # one-shot
+yarn test:coverage                  # one-shot + 80% gate (lines/stmts/branches/functions)
+```
+
+Three flavours of test in this repo:
+
+- **Unit tests for hooks** (`src/hooks/__tests__/`) — `renderHook` from `@testing-library/react`, no DOM; for query-based hooks wrap with `QueryClientProvider` and (when needed) `MemoryRouter` + the `EnvironmentContext.Provider`.
+- **Component tests** (`src/components/**/__tests__/`) — render the presentational component with props and assert via `screen.getByRole` / `getByText`. Use `userEvent.setup()` for clicks and keyboard interactions.
+- **Page integration tests** (`src/pages/{overview,jobDetail,jobExecution}/__tests__/`) — mock the page's API wrappers with `vi.hoisted` + `vi.mock('~/api', ...)`, render the page container through [`renderWithProviders`](src/test-utils/renderWithProviders.tsx), and assert that tile titles + values appear once queries resolve. One test file per page covers the page + its containers + tile presentationals together.
+
+Use `findByText` only when the target is a single text node. When the text spans multiple child elements (e.g. the breadcrumb), use `findByRole('heading', { name: /.../ })` — see [`App.test.tsx`](src/__tests__/App.test.tsx) for the pattern.
+
+The shared [`renderWithProviders`](src/test-utils/renderWithProviders.tsx) wrapper takes `environment`, `setEnvironment`, `initialEntries`, and `routePath` so a single page test can drive the route params (e.g. `/jobs/:jobId/executions/:executionId`) without bespoke `MemoryRouter` setup.
+
+Coverage gate is **80%** on lines / statements / branches / functions, enforced by vitest's `coverage.thresholds` in [`vite.config.ts`](vite.config.ts). Excluded from coverage: `src/main.tsx`, `*.types.ts`, `src/types/**`, `src/**/seedData.ts`, `src/**/seedSummary.ts`, every `index.ts`, and the `__tests__/` dirs themselves. CI publishes the merged coverage to a sticky PR comment via `davelosert/vitest-coverage-report-action`.
 
 ## Theme
 

@@ -29,9 +29,9 @@ public class StepExecutionContextEntity {
     @JoinColumn(name = "step_execution_id", foreignKey = @ForeignKey(name = "STEP_EXEC_CTX_FK"))
     private StepExecutionEntity stepExecution;
 
-    @Column(nullable = false, length = 2500)
+    @Column(name = "short_context", nullable = false, length = 2500)
     private String shortContext;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "serialized_context", columnDefinition = "TEXT")
     private String serializedContext;
 }

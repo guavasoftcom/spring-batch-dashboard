@@ -6,9 +6,8 @@ Top-level components. Each has its own `AGENTS.md` with stack/layout/conventions
 spring-batch-dashboard/
 ├── backend/        Spring Boot 4 / Java 21 REST API (reads BATCH_* metadata)
 │   AGENTS.md       — backend conventions
-├── frontend/       React 19 + Vite + MUI dashboard (consumes the backend)
-│   AGENTS.md       — frontend conventions
-└── k8s/            Kubernetes manifests (deployment scaffolding)
+└── frontend/       React 19 + Vite + MUI dashboard (consumes the backend)
+    AGENTS.md       — frontend conventions
 ```
 
 ## How the pieces fit
@@ -49,6 +48,7 @@ To work without the backend at all: set `VITE_USE_MOCK_DATA=true` in `frontend/.
 - **Pagination shape is `{ content, page, size, totalElements }`.** Used by `JobRunPage` and `StepDetailPage`. Reuse the shape for any new paginated endpoint.
 - **Errors are generic by design.** [`GlobalExceptionHandler`](backend/src/main/java/com/guavasoft/springbatch/dashboard/config/GlobalExceptionHandler.java) never leaks SQL, class names, or stack traces. Don't unwrap exception messages into client responses.
 - **Don't write to `BATCH_*` tables from `backend/`.** The dashboard is read-only — those tables are owned by whatever ETL produced the data.
+- **80% test coverage is enforced on both sides.** Backend uses JaCoCo (merged across the Postgres + MySQL matrix and gated by [`PavanMudigonda/jacoco-reporter`](.github/workflows/pull-request.yml) in CI); frontend uses vitest's `coverage.thresholds` ([`frontend/vite.config.ts`](frontend/vite.config.ts)). Both post sticky PR comments. New code that drops below the threshold fails the workflow — write tests as you go.
 
 ## Where to look for…
 

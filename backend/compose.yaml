@@ -8,8 +8,22 @@ services:
     ports:
       - '5432:5432'
     volumes:
-      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - ./db/init-postgresql:/docker-entrypoint-initdb.d:ro
       - postgres-data:/var/lib/postgresql/data
+
+  mysql:
+    image: 'mysql:8'
+    environment:
+      - 'MYSQL_DATABASE=${MYSQL_DB}'
+      - 'MYSQL_USER=${MYSQL_USER}'
+      - 'MYSQL_PASSWORD=${MYSQL_PASSWORD}'
+      - 'MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}'
+    ports:
+      - '3306:3306'
+    volumes:
+      - ./db/init-mysql:/docker-entrypoint-initdb.d:ro
+      - mysql-data:/var/lib/mysql
 
 volumes:
   postgres-data:
+  mysql-data:

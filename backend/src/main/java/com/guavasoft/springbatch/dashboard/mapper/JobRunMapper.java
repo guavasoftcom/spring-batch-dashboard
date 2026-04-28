@@ -15,7 +15,7 @@ public interface JobRunMapper {
 
     @Mapping(target = "startTime", source = "startTime", qualifiedByName = "formatTimestamp")
     @Mapping(target = "endTime", source = "endTime", qualifiedByName = "formatTimestamp")
-    JobRun toDto(JobRunRow row);
+    JobRun toDto(JobRunRow jobRunRow);
 
     @Named("formatTimestamp")
     default String formatTimestamp(LocalDateTime value) {

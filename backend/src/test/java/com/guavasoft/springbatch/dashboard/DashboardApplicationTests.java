@@ -26,7 +26,7 @@ class DashboardApplicationTests {
     @Test
     void seedDataIsLoaded() {
         Integer instances = new JdbcTemplate(dataSource)
-            .queryForObject("SELECT COUNT(*) FROM batch_job_instance", Integer.class);
+            .queryForObject("SELECT COUNT(*) FROM BATCH_JOB_INSTANCE", Integer.class);
         assertThat(instances).isEqualTo(EXPECTED_SEED_INSTANCES);
     }
 }
