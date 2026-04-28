@@ -171,3 +171,4 @@ CI runs both engines as a matrix in [`.github/workflows/pull-request.yml`](../.g
 - Don't return JPA entities from controllers; map to a record first.
 - Keep controllers free of business logic — anything past parameter parsing and a service call belongs in the service.
 - New endpoints get an `@Operation(summary = "...", description = "...")` so SpringDoc shows them.
+- Variable naming: prefer expressive names over abbreviations (`throughputBars` over `bars`, `stepDetails` over `details`). Single-letter / short names are fine for lambda parameters and generic type parameters where the surrounding context makes the meaning obvious.

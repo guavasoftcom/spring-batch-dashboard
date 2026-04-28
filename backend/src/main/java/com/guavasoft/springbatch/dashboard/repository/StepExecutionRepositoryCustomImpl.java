@@ -222,8 +222,8 @@ public class StepExecutionRepositoryCustomImpl implements StepExecutionRepositor
         return new MapSqlParameterSource(PARAM_ID, jobExecutionId);
     }
 
-    private static String formatTimestamp(LocalDateTime ts) {
-        return ts == null ? null : ts.format(TS_FORMAT);
+    private static String formatTimestamp(LocalDateTime timestamp) {
+        return timestamp == null ? null : timestamp.format(TS_FORMAT);
     }
 
     private Map<String, Object> parseContext(String shortContext) {

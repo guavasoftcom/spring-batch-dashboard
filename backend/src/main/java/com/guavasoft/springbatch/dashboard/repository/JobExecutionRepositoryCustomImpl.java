@@ -109,8 +109,8 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
         };
     };
 
-    private static LocalDateTime toLocalDateTime(Timestamp ts) {
-        return ts == null ? null : ts.toLocalDateTime();
+    private static LocalDateTime toLocalDateTime(Timestamp timestamp) {
+        return timestamp == null ? null : timestamp.toLocalDateTime();
     }
 
     private final NamedParameterJdbcTemplate jdbc;
@@ -167,16 +167,16 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
     public double findAverageDurationSeconds() {
         String sql = "SELECT " + dialect.avgDurationSeconds("start_time", "end_time")
                 + " FROM BATCH_JOB_EXECUTION WHERE end_time IS NOT NULL AND start_time IS NOT NULL";
-        Double v = jdbc.getJdbcTemplate().queryForObject(sql, Double.class);
-        return v == null ? 0.0 : v;
+        Double averageSeconds = jdbc.getJdbcTemplate().queryForObject(sql, Double.class);
+        return averageSeconds == null ? 0.0 : averageSeconds;
     }
 
     @Override
     public double findMaxDurationSeconds() {
         String sql = "SELECT " + dialect.maxDurationSeconds("start_time", "end_time")
                 + " FROM BATCH_JOB_EXECUTION WHERE end_time IS NOT NULL AND start_time IS NOT NULL";
-        Double v = jdbc.getJdbcTemplate().queryForObject(sql, Double.class);
-        return v == null ? 0.0 : v;
+        Double maxSeconds = jdbc.getJdbcTemplate().queryForObject(sql, Double.class);
+        return maxSeconds == null ? 0.0 : maxSeconds;
     }
 
     @Override
@@ -189,8 +189,8 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
               AND je.end_time IS NOT NULL
               AND je.start_time IS NOT NULL
             """.formatted(dialect.avgDurationSeconds("je.start_time", "je.end_time"));
-        Double v = jdbc.queryForObject(sql, new MapSqlParameterSource(PARAM_JOB_NAME, jobName), Double.class);
-        return v == null ? 0.0 : v;
+        Double averageSeconds = jdbc.queryForObject(sql, new MapSqlParameterSource(PARAM_JOB_NAME, jobName), Double.class);
+        return averageSeconds == null ? 0.0 : averageSeconds;
     }
 
     @Override
@@ -288,8 +288,8 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
                 dialect.orderByNullsLast("je.start_time", DIR_DESC));
 
         try {
-            JobRunRow row = jdbc.queryForObject(sql, new MapSqlParameterSource(PARAM_JOB_NAME, jobName), ROW_MAPPER);
-            return Optional.ofNullable(row);
+            JobRunRow jobRunRow = jdbc.queryForObject(sql, new MapSqlParameterSource(PARAM_JOB_NAME, jobName), ROW_MAPPER);
+            return Optional.ofNullable(jobRunRow);
         } catch (EmptyResultDataAccessException ex) {
             return Optional.empty();
         }

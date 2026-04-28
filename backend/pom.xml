@@ -250,6 +250,7 @@
 				<configuration>
 					<excludes>
 						<exclude>**/dashboard/DashboardApplication.class</exclude>
+						<exclude>**/dashboard/config/**</exclude>
 						<exclude>**/dashboard/entity/**</exclude>
 						<exclude>**/dashboard/model/**</exclude>
 						<exclude>**/dashboard/mapper/*MapperImpl.class</exclude>

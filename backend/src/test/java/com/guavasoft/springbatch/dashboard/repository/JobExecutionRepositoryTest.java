@@ -38,13 +38,13 @@ class JobExecutionRepositoryTest {
 
     @Test
     void findRunsByJobNameReturnsRowsInRequestedOrder() {
-        List<JobRunRow> desc = jobExecutionRepository.findRunsByJobName(IMPORT_USERS, "executionId", "desc", 0, 10);
-        assertThat(desc)
+        List<JobRunRow> descending = jobExecutionRepository.findRunsByJobName(IMPORT_USERS, "executionId", "desc", 0, 10);
+        assertThat(descending)
             .extracting(JobRunRow::getExecutionId)
             .containsExactly(2L, 1L);
 
-        List<JobRunRow> asc = jobExecutionRepository.findRunsByJobName(IMPORT_USERS, "executionId", "asc", 0, 10);
-        assertThat(asc)
+        List<JobRunRow> ascending = jobExecutionRepository.findRunsByJobName(IMPORT_USERS, "executionId", "asc", 0, 10);
+        assertThat(ascending)
             .extracting(JobRunRow::getExecutionId)
             .containsExactly(1L, 2L);
     }
@@ -72,11 +72,11 @@ class JobExecutionRepositoryTest {
 
     @Test
     void durationAggregatesAreNonNegative() {
-        double avg = jobExecutionRepository.findAverageDurationSeconds();
-        double max = jobExecutionRepository.findMaxDurationSeconds();
+        double averageSeconds = jobExecutionRepository.findAverageDurationSeconds();
+        double maxSeconds = jobExecutionRepository.findMaxDurationSeconds();
 
-        assertThat(avg).isPositive();
-        assertThat(max).isGreaterThanOrEqualTo(avg);
+        assertThat(averageSeconds).isPositive();
+        assertThat(maxSeconds).isGreaterThanOrEqualTo(averageSeconds);
     }
 
     @Test
@@ -112,9 +112,9 @@ class JobExecutionRepositoryTest {
     void findRunsByJobNameSinceFiltersByStartTime() {
         LocalDateTime cutoff = LocalDateTime.of(2026, 4, 23, 0, 0);
 
-        List<JobRunRow> rows = jobExecutionRepository.findRunsByJobNameSince(IMPORT_USERS, cutoff);
+        List<JobRunRow> recentRuns = jobExecutionRepository.findRunsByJobNameSince(IMPORT_USERS, cutoff);
 
-        assertThat(rows)
+        assertThat(recentRuns)
             .extracting(JobRunRow::getExecutionId)
             .containsExactly(2L);
     }

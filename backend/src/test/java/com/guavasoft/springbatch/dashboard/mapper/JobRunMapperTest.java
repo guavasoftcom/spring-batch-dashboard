@@ -15,37 +15,37 @@ class JobRunMapperTest {
 
     @Test
     void mapsAllFieldsAndFormatsTimestamps() {
-        JobRunRow row = new JobRunRowImpl(
+        JobRunRow jobRunRow = new JobRunRowImpl(
                 42L, "COMPLETED",
                 LocalDateTime.of(2026, 4, 27, 9, 15, 30),
                 LocalDateTime.of(2026, 4, 27, 9, 16, 30),
                 60L, 100L, 95L, "COMPLETED");
 
-        JobRun dto = mapper.toDto(row);
+        JobRun jobRun = mapper.toDto(jobRunRow);
 
-        assertThat(dto.executionId()).isEqualTo(42L);
-        assertThat(dto.status()).isEqualTo("COMPLETED");
-        assertThat(dto.startTime()).isEqualTo("2026-04-27 09:15:30");
-        assertThat(dto.endTime()).isEqualTo("2026-04-27 09:16:30");
-        assertThat(dto.durationSeconds()).isEqualTo(60L);
-        assertThat(dto.readCount()).isEqualTo(100L);
-        assertThat(dto.writeCount()).isEqualTo(95L);
-        assertThat(dto.exitCode()).isEqualTo("COMPLETED");
+        assertThat(jobRun.executionId()).isEqualTo(42L);
+        assertThat(jobRun.status()).isEqualTo("COMPLETED");
+        assertThat(jobRun.startTime()).isEqualTo("2026-04-27 09:15:30");
+        assertThat(jobRun.endTime()).isEqualTo("2026-04-27 09:16:30");
+        assertThat(jobRun.durationSeconds()).isEqualTo(60L);
+        assertThat(jobRun.readCount()).isEqualTo(100L);
+        assertThat(jobRun.writeCount()).isEqualTo(95L);
+        assertThat(jobRun.exitCode()).isEqualTo("COMPLETED");
     }
 
     @Test
     void leavesEndTimeNullWhenRunStillInFlight() {
-        JobRunRow row = new JobRunRowImpl(
+        JobRunRow jobRunRow = new JobRunRowImpl(
                 7L, "STARTED",
                 LocalDateTime.of(2026, 4, 27, 9, 0, 0),
                 null,
                 0L, 0L, 0L, null);
 
-        JobRun dto = mapper.toDto(row);
+        JobRun jobRun = mapper.toDto(jobRunRow);
 
-        assertThat(dto.startTime()).isEqualTo("2026-04-27 09:00:00");
-        assertThat(dto.endTime()).isNull();
-        assertThat(dto.exitCode()).isNull();
+        assertThat(jobRun.startTime()).isEqualTo("2026-04-27 09:00:00");
+        assertThat(jobRun.endTime()).isNull();
+        assertThat(jobRun.exitCode()).isNull();
     }
 
     @Test

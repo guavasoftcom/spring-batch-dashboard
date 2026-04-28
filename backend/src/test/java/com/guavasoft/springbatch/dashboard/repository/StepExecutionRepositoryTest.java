@@ -139,14 +139,14 @@ class StepExecutionRepositoryTest {
 
     @Test
     void stepDetailsByJobExecutionIdRespectsSortDirection() {
-        List<StepDetail> asc = stepExecutionRepository.stepDetailsByJobExecutionId(
+        List<StepDetail> ascending = stepExecutionRepository.stepDetailsByJobExecutionId(
             EXEC_WITH_TWO_COMPLETED_STEPS, "startTime", "asc", 0, 10);
-        List<StepDetail> desc = stepExecutionRepository.stepDetailsByJobExecutionId(
+        List<StepDetail> descending = stepExecutionRepository.stepDetailsByJobExecutionId(
             EXEC_WITH_TWO_COMPLETED_STEPS, "startTime", "desc", 0, 10);
 
-        assertThat(asc).extracting(StepDetail::stepName)
+        assertThat(ascending).extracting(StepDetail::stepName)
             .containsExactly("readUsersStep", "writeUsersStep");
-        assertThat(desc).extracting(StepDetail::stepName)
+        assertThat(descending).extracting(StepDetail::stepName)
             .containsExactly("writeUsersStep", "readUsersStep");
     }
 
