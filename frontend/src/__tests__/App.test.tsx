@@ -17,6 +17,8 @@ describe('App', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText('Spring Batch Dashboard')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /spring batch\s+dashboard/i }),
+    ).toBeInTheDocument();
   });
 });

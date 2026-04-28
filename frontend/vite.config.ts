@@ -12,5 +12,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test-setup.ts',
+    reporters: process.env.CI ? ['default', 'junit'] : ['default'],
+    outputFile: { junit: './test-results/junit.xml' },
   },
 });

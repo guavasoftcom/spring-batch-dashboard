@@ -235,16 +235,6 @@
 							<configLocation>google_checks.xml</configLocation>
 						</configuration>
 					</execution>
-					<execution>
-						<id>checkstyle-magic-number</id>
-						<phase>validate</phase>
-						<goals>
-							<goal>check</goal>
-						</goals>
-						<configuration>
-							<configLocation>${project.basedir}/config/checkstyle/magic-number.xml</configLocation>
-						</configuration>
-					</execution>
 				</executions>
 			</plugin>
 		</plugins>

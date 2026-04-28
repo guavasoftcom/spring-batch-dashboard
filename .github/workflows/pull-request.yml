@@ -13,6 +13,10 @@ jobs:
   backend:
     name: Backend (${{ matrix.profile }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
     strategy:
       fail-fast: false
       matrix:
@@ -38,6 +42,21 @@ jobs:
         # The active profile decides which JDBC driver and Testcontainers DB module are bundled.
         run: ./mvnw --batch-mode --no-transfer-progress -P${{ matrix.profile }} verify
 
+      - name: Annotate Checkstyle results
+        if: always()
+        uses: jwgmeligmeyling/checkstyle-github-action@master
+        with:
+          path: 'backend/target/checkstyle-result.xml'
+          name: Checkstyle (${{ matrix.profile }})
+
+      - name: Publish test report
+        if: always()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: backend/target/surefire-reports/TEST-*.xml
+          check_name: Backend tests (${{ matrix.profile }})
+          require_tests: true
+
       - name: Upload Surefire reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -49,6 +68,10 @@ jobs:
   frontend:
     name: Frontend (Node 20 + Yarn 4)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
     defaults:
       run:
         working-directory: frontend
@@ -69,10 +92,34 @@ jobs:
         run: yarn install --immutable
 
       - name: Lint
-        run: yarn lint
+        run: yarn lint --format=json --output-file=eslint-report.json
+        continue-on-error: true
+
+      - name: Annotate ESLint results
+        uses: ataylorme/eslint-annotate-action@v3
+        with:
+          report-json: frontend/eslint-report.json
+          fail-on-warning: false
+          fail-on-error: true
 
       - name: Typecheck + build
         run: yarn build
 
       - name: Run tests
         run: yarn test:run
+
+      - name: Publish test report
+        if: always()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: frontend/test-results/junit.xml
+          check_name: Frontend tests
+          require_tests: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-results
+          path: frontend/test-results
+          if-no-files-found: ignore
