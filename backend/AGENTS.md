@@ -114,6 +114,8 @@ Do **not** use `JpaSort.unsafe(...)` or `Sort.by(...)` with a native query that 
 
 For paginated endpoints the response shape is `{ content, page, size, totalElements }` — see [JobRunPage](src/main/java/com/guavasoft/springbatch/dashboard/model/JobRunPage.java).
 
+The [`BatchStatus`](src/main/java/com/guavasoft/springbatch/dashboard/entity/BatchStatus.java) enum carries its own `label` and `color` per constant — adding a new status (e.g. `STOPPED`) means adding a single enum constant and the chart endpoints pick it up automatically. Don't hardcode chart labels/colors at the call site; iterate `BatchStatus.values()`.
+
 ## Mappers
 
 MapStruct (`@Mapper(componentModel = "spring")`) generates `*Impl` classes at compile time into `target/generated-sources/annotations/`. The annotation processor path in `pom.xml` lists Lombok first, then `lombok-mapstruct-binding`, then `mapstruct-processor` — order matters because Lombok must run first so MapStruct sees the generated getters.
@@ -156,9 +158,24 @@ Postgres and MySQL are both brought up by `spring-boot-docker-compose` from [com
 ```bash
 ./mvnw test                          # Postgres
 ./mvnw -Pmysql test                  # MySQL
+./mvnw verify                        # full build incl. coverage report
 ```
 
 [TestcontainersConfiguration](src/test/java/com/guavasoft/springbatch/dashboard/TestcontainersConfiguration.java) declares both a `PostgreSQLContainer` and a `MySQLContainer`, each gated on `@ConditionalOnProperty(app.dialect)`. The active Maven profile sets `app.dialect` for surefire so only the matching container spins up. Each container mounts its own `db/init-*/` scripts into `/docker-entrypoint-initdb.d`, and a `DynamicPropertyRegistrar` binds the testcontainer's host/port/credentials onto the env-var placeholders that `application-local-*.yml` consumes.
+
+Test layers in this repo:
+
+- **Unit tests** (services, mappers, dialects, the `ThroughputMetric` enum) — plain JUnit 5; services use `@ExtendWith(MockitoExtension.class)` + `@Mock` + `@InjectMocks` to fake their repository / mapper deps.
+- **WebMvc slice tests** (controllers) — `@WebMvcTest(controllers = X.class)` + `@AutoConfigureMockMvc(addFilters = false)` to bypass security; service deps mocked with `@MockitoBean` (Spring Framework 6.2+ replacement for `@MockBean`). Imports come from `org.springframework.boot.webmvc.test.autoconfigure` in Boot 4.
+- **JPA slice tests** (repositories) — share the [`@BatchRepositoryTest`](src/test/java/com/guavasoft/springbatch/dashboard/repository/BatchRepositoryTest.java) meta-annotation: `@DataJpaTest` + `@AutoConfigureTestDatabase(replace = NONE)` + imports for the dynamic datasource, the active dialect, and the custom JDBC repo impls. Tests run against the Testcontainers DB seeded by `db/init-*/02-seed.sql`.
+
+### Coverage
+
+JaCoCo is bound to `verify`. Coverage data is emitted as `target/jacoco.exec` and rendered to `target/site/jacoco/`.
+
+CI runs the matrix (Postgres + MySQL), uploads each profile's `jacoco.exec` as an artifact, then a downstream `coverage` job merges them via `jacoco:merge@jacoco-merge` + `jacoco:report@jacoco-report-merged` into `target/site/jacoco-merged/jacoco.xml`. The merged XML is consumed by [`PavanMudigonda/jacoco-reporter`](../.github/workflows/pull-request.yml), which enforces an **80% overall + 80% changed-files** threshold and posts a per-package per-counter table on the PR. Threshold checking lives entirely in the action — there's no pom-side `jacoco:check` execution to bypass when one matrix entry exercises paths the other doesn't.
+
+Excluded from coverage in [pom.xml](pom.xml): `DashboardApplication`, the `config/`, `entity/`, `model/` packages, and MapStruct-generated `*MapperImpl` classes.
 
 CI runs both engines as a matrix in [`.github/workflows/pull-request.yml`](../.github/workflows/pull-request.yml) (`fail-fast: false`).
 

@@ -102,7 +102,17 @@ Each component has its own conventions doc:
 ## Tooling notes
 
 - Backend uses Maven via the wrapper (`./mvnw`); never `mvn` directly.
-- Frontend uses Yarn 4 (`.yarn/` is committed via PnP-less node-modules install).
-- Tests: `./mvnw test` (Postgres) or `./mvnw -Pmysql test` (MySQL); `yarn test` (frontend). CI runs both engines as a matrix.
+- Frontend uses Yarn 4 (Berry) with the `node-modules` linker. `package-lock.json` is gitignored — don't run `npm install`.
+- Tests: `./mvnw test` (Postgres) / `./mvnw -Pmysql test` (MySQL); `yarn test` / `yarn test:coverage` on the frontend. CI runs both backend engines as a matrix.
+- Coverage gate is **80%** on both sides. Backend uses JaCoCo (per-matrix exec files merged in CI, gated by [`PavanMudigonda/jacoco-reporter`](.github/workflows/pull-request.yml)); frontend uses vitest's `coverage.thresholds` ([`frontend/vite.config.ts`](frontend/vite.config.ts)). Both post sticky PR comments.
 - Imports in the frontend use the `~/` alias to `src/`; siblings stay relative.
 - Backend errors never leak SQL or class names to clients (see [GlobalExceptionHandler](backend/src/main/java/com/guavasoft/springbatch/dashboard/config/GlobalExceptionHandler.java)).
+- Backend Java naming: prefer expressive variable names (`throughputBars` over `bars`); short names are fine only for lambda parameters and generic type parameters. Captured in [backend/AGENTS.md](backend/AGENTS.md#conventions).
+
+## CI
+
+The PR workflow ([`.github/workflows/pull-request.yml`](.github/workflows/pull-request.yml)) runs three jobs:
+
+1. **Backend matrix** — Postgres + MySQL builds in parallel: Checkstyle, Surefire, JaCoCo agent, Maven package. Per-matrix it annotates checkstyle violations, posts a JUnit check + comment, and uploads the `jacoco.exec` and per-profile HTML report.
+2. **Backend coverage (merged)** — downloads both matrix exec files, merges them into a single report, and runs the 80% gate against the union plus a per-package per-counter PR comment.
+3. **Frontend** — lint (with ESLint annotations), `tsc -b` + Vite build, vitest with coverage, JUnit + coverage PR comments.
