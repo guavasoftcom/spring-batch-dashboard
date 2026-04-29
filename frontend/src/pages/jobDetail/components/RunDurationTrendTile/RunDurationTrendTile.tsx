@@ -55,7 +55,13 @@ const RunDurationTrendTile = ({ data, loading, error, windowDays, windowOptions,
           '& .MuiChartsAxis-tickLabel': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
           '& .MuiChartsAxis-label': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
           '& .MuiChartsLegend-label': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
-          '& .MuiChartsTooltip-paper': { backgroundColor: appColors.white, border: '1px solid #D5DBE3' },
+          '& .MuiChartsTooltip-paper': {
+            backgroundColor: (theme: Theme) => theme.palette.background.paper,
+            border: (theme: Theme) => `1px solid ${theme.palette.divider}`,
+          },
+          '& .MuiChartsTooltip-root *': {
+            color: (theme: Theme) => `${theme.palette.text.primary} !important`,
+          },
         }}
       />
     )}
