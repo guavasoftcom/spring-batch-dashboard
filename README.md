@@ -1,12 +1,12 @@
 # Spring Batch Dashboard
 
-A web dashboard for inspecting Spring Batch metadata (job runs, step executions, throughput, status distributions) across multiple PostgreSQL **or** MySQL environments.
+A web dashboard for inspecting Spring Batch metadata (job runs, step executions, throughput, status distributions) across multiple PostgreSQL, MySQL, **or** Oracle environments.
 
 ## What's in here
 
 | Component | Stack | Purpose |
 |---|---|---|
-| [`backend/`](backend/) | Spring Boot 4, Java 21, Spring Data JPA, OAuth2 | REST API that reads `BATCH_*` metadata and serves it to the frontend. Multi-environment via per-request datasource routing; supports Postgres or MySQL (one engine per boot, picked via Maven profile). |
+| [`backend/`](backend/) | Spring Boot 4, Java 21, Spring Data JPA, OAuth2 | REST API that reads `BATCH_*` metadata and serves it to the frontend. Multi-environment via per-request datasource routing; supports Postgres, MySQL, or Oracle (one engine per boot, picked via Maven profile). |
 | [`frontend/`](frontend/) | React 19, Vite, MUI, TanStack Query, Vitest | The dashboard SPA. Browses jobs, runs, and per-execution step details. |
 
 The components don't share code — they're independent apps that meet at the database.
@@ -37,6 +37,7 @@ cp .env.example .env                      # add GITHUB_CLIENT_ID / GITHUB_CLIENT
 ./mvnw spring-boot:run                    # Postgres (default)
 # or:
 ./mvnw -Pmysql spring-boot:run            # MySQL
+./mvnw -Poracle spring-boot:run           # Oracle
 
 # 2. Frontend — serves on :5173
 cd ../frontend
@@ -52,11 +53,11 @@ To run the dashboard without configuring OAuth or a database, set `VITE_USE_MOCK
 
 The Maven profile is the single switch. It bundles the right JDBC driver, sets `app.dialect`, and activates the matching local config:
 
-| | Postgres (default) | MySQL |
-|---|---|---|
-| Build / run | `./mvnw …` | `./mvnw -Pmysql …` |
-| Active config | [`application-local-postgresql.yml`](backend/src/main/resources/application-local-postgresql.yml) | [`application-local-mysql.yml`](backend/src/main/resources/application-local-mysql.yml) |
-| Driver | `org.postgresql:postgresql` | `com.mysql:mysql-connector-j` |
+| | Postgres (default) | MySQL | Oracle |
+|---|---|---|---|
+| Build / run | `./mvnw …` | `./mvnw -Pmysql …` | `./mvnw -Poracle …` |
+| Active config | [`application-local-postgresql.yml`](backend/src/main/resources/application-local-postgresql.yml) | [`application-local-mysql.yml`](backend/src/main/resources/application-local-mysql.yml) | [`application-local-oracle.yml`](backend/src/main/resources/application-local-oracle.yml) |
+| Driver | `org.postgresql:postgresql` | `com.mysql:mysql-connector-j` | `com.oracle.database.jdbc:ojdbc11` |
 
 Mixing engines in one boot is not supported — every entry under `app.datasources` must match the active engine. Engine-specific SQL (epoch math, `NULLS LAST`) is routed through the [`SqlDialect`](backend/src/main/java/com/guavasoft/springbatch/dashboard/dialect/SqlDialect.java) strategy so repository code stays portable.
 
@@ -78,7 +79,7 @@ flowchart LR
     Frontend["Frontend<br/>React + Vite"]
     Backend["Backend<br/>Spring Boot"]
     OAuth2["OAuth2 Provider<br/>(GitHub default)"]
-    DB[("Postgres(es) or MySQL(s)<br/>one engine per boot")]
+    DB[("Postgres(es), MySQL(s), or Oracle(s)<br/>one engine per boot")]
 
     User -->|browser| Frontend
     Frontend -->|"REST + X-Environment header<br/>(JSESSIONID cookie)"| Backend
@@ -103,7 +104,7 @@ Each component has its own conventions doc:
 
 - Backend uses Maven via the wrapper (`./mvnw`); never `mvn` directly.
 - Frontend uses Yarn 4 (Berry) with the `node-modules` linker. `package-lock.json` is gitignored — don't run `npm install`.
-- Tests: `./mvnw test` (Postgres) / `./mvnw -Pmysql test` (MySQL); `yarn test` / `yarn test:coverage` on the frontend. CI runs both backend engines as a matrix.
+- Tests: `./mvnw test` (Postgres) / `./mvnw -Pmysql test` (MySQL) / `./mvnw -Poracle test` (Oracle); `yarn test` / `yarn test:coverage` on the frontend. CI runs all three backend engines as a matrix.
 - Coverage gate is **80%** on both sides. Backend uses JaCoCo (per-matrix exec files merged in CI, gated by [`PavanMudigonda/jacoco-reporter`](.github/workflows/pull-request.yml)); frontend uses vitest's `coverage.thresholds` ([`frontend/vite.config.ts`](frontend/vite.config.ts)). Both post sticky PR comments.
 - Imports in the frontend use the `~/` alias to `src/`; siblings stay relative.
 - Backend errors never leak SQL or class names to clients (see [GlobalExceptionHandler](backend/src/main/java/com/guavasoft/springbatch/dashboard/config/GlobalExceptionHandler.java)).
@@ -113,6 +114,6 @@ Each component has its own conventions doc:
 
 The PR workflow ([`.github/workflows/pull-request.yml`](.github/workflows/pull-request.yml)) runs three jobs:
 
-1. **Backend matrix** — Postgres + MySQL builds in parallel: Checkstyle, Surefire, JaCoCo agent, Maven package. Per-matrix it annotates checkstyle violations, posts a JUnit check + comment, and uploads the `jacoco.exec` and per-profile HTML report.
-2. **Backend coverage (merged)** — downloads both matrix exec files, merges them into a single report, and runs the 80% gate against the union plus a per-package per-counter PR comment.
+1. **Backend matrix** — Postgres + MySQL + Oracle builds in parallel: Checkstyle, Surefire, JaCoCo agent, Maven package. Per-matrix it annotates checkstyle violations, posts a JUnit check + comment, and uploads the `jacoco.exec` and per-profile HTML report.
+2. **Backend coverage (merged)** — downloads all matrix exec files, merges them into a single report, and runs the 80% gate against the union plus a per-package per-counter PR comment.
 3. **Frontend** — lint (with ESLint annotations), `tsc -b` + Vite build, vitest with coverage, JUnit + coverage PR comments.

@@ -4,8 +4,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.DynamicPropertyRegistrar;
+import java.time.Duration;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.oracle.OracleContainer;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
@@ -57,6 +60,41 @@ public class TestcontainersConfiguration {
             registry.add("MYSQL_DB", mysql::getDatabaseName);
             registry.add("MYSQL_USER", mysql::getUsername);
             registry.add("MYSQL_PASSWORD", mysql::getPassword);
+        };
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "app.dialect", havingValue = "ORACLE")
+    OracleContainer oracleContainer() {
+        // gvenzl/oracle-free runs scripts in /container-entrypoint-initdb.d/ as SYSTEM
+        // into FREEPDB1, which is where the seeded BATCH_* tables land. OracleContainer
+        // forbids withUsername("system"), so we leave the container's APP_USER alone
+        // and connect the app as SYSTEM via the registrar below — gvenzl uses the same
+        // ORACLE_PASSWORD for SYSTEM and the APP user.
+        // OracleContainer's default wait strategy reports ready as soon as the listener
+        // accepts connections, which can happen before gvenzl finishes running the
+        // /container-entrypoint-initdb.d/ scripts. Wait for the gvenzl readiness banner
+        // that's printed *after* user scripts so Hibernate sees the seeded BATCH_* tables.
+        return new OracleContainer(DockerImageName.parse("gvenzl/oracle-free:23-slim-faststart"))
+            .withCopyFileToContainer(
+                MountableFile.forHostPath("db/init-oracle/01-schema.sql"),
+                "/container-entrypoint-initdb.d/01-schema.sql")
+            .withCopyFileToContainer(
+                MountableFile.forHostPath("db/init-oracle/02-seed.sql"),
+                "/container-entrypoint-initdb.d/02-seed.sql")
+            .waitingFor(Wait.forLogMessage(".*DATABASE IS READY TO USE!.*\\s", 1)
+                .withStartupTimeout(Duration.ofMinutes(5)));
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "app.dialect", havingValue = "ORACLE")
+    DynamicPropertyRegistrar oracleDatasourceProperties(OracleContainer oracle) {
+        return registry -> {
+            registry.add("ORACLE_HOST", oracle::getHost);
+            registry.add("ORACLE_PORT", oracle::getOraclePort);
+            registry.add("ORACLE_DB", oracle::getDatabaseName);
+            registry.add("ORACLE_USER", () -> "system");
+            registry.add("ORACLE_PASSWORD", oracle::getPassword);
         };
     }
 }

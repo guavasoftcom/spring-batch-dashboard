@@ -1,6 +1,6 @@
 # Backend agent guide
 
-Spring Boot 4 service that exposes the Spring Batch metadata as a REST API for the dashboard frontend. Reads from one or more PostgreSQL **or** MySQL databases that already host `BATCH_*` metadata tables (the schema Spring Batch creates for itself). Doesn't write to those tables. Exactly one engine is active per build (Maven profile selects the bundled JDBC driver); mixing engines in one boot is not supported.
+Spring Boot 4 service that exposes the Spring Batch metadata as a REST API for the dashboard frontend. Reads from one or more PostgreSQL, MySQL, **or** Oracle databases that already host `BATCH_*` metadata tables (the schema Spring Batch creates for itself). Doesn't write to those tables. Exactly one engine is active per build (Maven profile selects the bundled JDBC driver); mixing engines in one boot is not supported.
 
 ## Stack
 
@@ -33,6 +33,7 @@ src/main/java/com/guavasoft/springbatch/
       SqlDialect.java                      strategy interface (duration math, NULLS LAST, etc.)
       PostgresqlDialect.java               @ConditionalOnProperty(app.dialect = POSTGRESQL)
       MysqlDialect.java                    @ConditionalOnProperty(app.dialect = MYSQL)
+      OracleDialect.java                   @ConditionalOnProperty(app.dialect = ORACLE)
     controller/                            REST endpoints — AuthController (/api/auth/me) + dashboard endpoints
     service/                               business logic
     repository/                            Spring Data JPA + custom JdbcTemplate fragments
@@ -42,30 +43,31 @@ src/main/java/com/guavasoft/springbatch/
     model/                                 immutable response records (formerly `dto/`)
 db/init-postgresql/                        Postgres docker compose initdb scripts
 db/init-mysql/                             MySQL docker compose initdb scripts (upstream Spring Batch DDL, uppercase)
+db/init-oracle/                            Oracle (gvenzl/oracle-free) initdb scripts (upstream Spring Batch DDL)
 ```
 
 ## Database engine selection
 
 Choose the engine once, at build time, via a Maven profile. Each profile pulls in its driver, sets `app.dialect`, and activates the matching local Spring profile.
 
-| | Postgres (default) | MySQL |
-|---|---|---|
-| Build | `./mvnw …` | `./mvnw -Pmysql …` |
-| Run | `./mvnw spring-boot:run` | `./mvnw -Pmysql spring-boot:run` |
-| Test | `./mvnw test` | `./mvnw -Pmysql test` |
+| | Postgres (default) | MySQL | Oracle |
+|---|---|---|---|
+| Build | `./mvnw …` | `./mvnw -Pmysql …` | `./mvnw -Poracle …` |
+| Run | `./mvnw spring-boot:run` | `./mvnw -Pmysql spring-boot:run` | `./mvnw -Poracle spring-boot:run` |
+| Test | `./mvnw test` | `./mvnw -Pmysql test` | `./mvnw -Poracle test` |
 
 The profile sets `APP_DIALECT` and `LOCAL_PROFILE` env vars on the forked JVM (for `spring-boot:run`) and `app.dialect` / `spring.profiles.active` system properties (for surefire), so a plain CLI invocation Just Works.
 
 Three pieces fit together:
 
-1. **`app.dialect`** (`POSTGRESQL` | `MYSQL`) selects the active [`SqlDialect`](src/main/java/com/guavasoft/springbatch/dashboard/dialect/SqlDialect.java) bean. The two impls are gated on `@ConditionalOnProperty`, so exactly one is registered per boot. Misconfiguration fails fast with `No qualifying bean of type 'SqlDialect'`.
-2. **`spring.profiles.active`** (`local-postgresql` | `local-mysql`) loads the matching `application-local-*.yml`, which holds the `app.datasources` entries with the right JDBC URLs.
+1. **`app.dialect`** (`POSTGRESQL` | `MYSQL` | `ORACLE`) selects the active [`SqlDialect`](src/main/java/com/guavasoft/springbatch/dashboard/dialect/SqlDialect.java) bean. The three impls are gated on `@ConditionalOnProperty`, so exactly one is registered per boot. Misconfiguration fails fast with `No qualifying bean of type 'SqlDialect'`.
+2. **`spring.profiles.active`** (`local-postgresql` | `local-mysql` | `local-oracle`) loads the matching `application-local-*.yml`, which holds the `app.datasources` entries with the right JDBC URLs.
 3. **Hibernate naming** — entities use uppercase `@Table(name = "BATCH_*")` and explicit `@Column(name = "snake_case")`. Hibernate uses `PhysicalNamingStrategyStandardImpl` (preserves names verbatim) so MySQL on case-sensitive filesystems finds the upstream-uppercase Spring Batch tables. Postgres folds unquoted identifiers itself, so it doesn't notice.
 
 When writing native SQL, always go through `SqlDialect` for parts that diverge between engines:
 
-- `dialect.durationSeconds(start, end)` — epoch-diff math (`EXTRACT(EPOCH …)::bigint` vs `TIMESTAMPDIFF(SECOND, …)`)
-- `dialect.orderByNullsLast(expr, dir)` — Postgres has `NULLS LAST`, MySQL emulates with `(expr IS NULL), expr`
+- `dialect.durationSeconds(start, end)` — epoch-diff math (`EXTRACT(EPOCH …)::bigint` on Postgres, `TIMESTAMPDIFF(SECOND, …)` on MySQL, `(CAST(end AS DATE) - CAST(start AS DATE)) * 86400` on Oracle)
+- `dialect.orderByNullsLast(expr, dir)` — Postgres and Oracle have `NULLS LAST`, MySQL emulates with `(expr IS NULL), expr`
 - `dialect.avgDurationSeconds`, `maxDurationSeconds`, `sumDurationSeconds` — same idea for aggregates
 
 Anything else stays portable. `COUNT(*) FILTER (WHERE …)` is Postgres-only — rewrite as `SUM(CASE WHEN … THEN 1 ELSE 0 END)` (see existing custom impls).
@@ -76,7 +78,7 @@ Each frontend request includes an `X-Environment: <name>` header (set by the axi
 
 1. [DataSourceContextFilter](src/main/java/com/guavasoft/springbatch/dashboard/config/DataSourceContextFilter.java) — `OncePerRequestFilter` that copies the header into a ThreadLocal `DataSourceContext`.
 2. [DynamicDataSourceConfig](src/main/java/com/guavasoft/springbatch/dashboard/config/DynamicDataSourceConfig.java) — `AbstractRoutingDataSource` whose `determineCurrentLookupKey()` reads `DataSourceContext.get()`.
-3. Available environments come from `app.datasources` in [application-local-postgresql.yml](src/main/resources/application-local-postgresql.yml) / [application-local-mysql.yml](src/main/resources/application-local-mysql.yml) (name, url, username, password). The first entry is the default when no header / unknown header is supplied.
+3. Available environments come from `app.datasources` in [application-local-postgresql.yml](src/main/resources/application-local-postgresql.yml) / [application-local-mysql.yml](src/main/resources/application-local-mysql.yml) / [application-local-oracle.yml](src/main/resources/application-local-oracle.yml) (name, url, username, password). The first entry is the default when no header / unknown header is supplied.
 
 Adding a new environment: add another item under `app.datasources` (matching the active engine — multiple entries of the *same* type are fine) and restart. The frontend's `EnvironmentSelector` picks it up automatically from `GET /api/environments`.
 
@@ -149,19 +151,23 @@ OAuth client credentials live in `.env` (`GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECR
 ```bash
 ./mvnw spring-boot:run               # Postgres (default)
 ./mvnw -Pmysql spring-boot:run       # MySQL
+./mvnw -Poracle spring-boot:run      # Oracle
 ```
 
-Postgres and MySQL are both brought up by `spring-boot-docker-compose` from [compose.yaml](compose.yaml) on first run. `db/init-postgresql/` and `db/init-mysql/` SQL is applied to each container's initdb step the first time the volume is created. After schema changes, `docker compose down -v` to drop the volumes and re-init (or `docker volume rm backend_<name>-data` to drop just one).
+Postgres, MySQL, and Oracle are all brought up by `spring-boot-docker-compose` from [compose.yaml](compose.yaml) on first run. `db/init-postgresql/`, `db/init-mysql/`, and `db/init-oracle/` SQL is applied to each container's initdb step the first time the volume is created. After schema changes, `docker compose down -v` to drop the volumes and re-init (or `docker volume rm backend_<name>-data` to drop just one).
+
+The Oracle dev container uses [gvenzl/oracle-free](https://github.com/gvenzl/oci-oracle-free) and the app connects as `SYSTEM` into the default pluggable database `FREEPDB1`. Init scripts under `db/init-oracle/` are dropped into `/container-entrypoint-initdb.d/` and run as `SYSTEM`, so the seeded `BATCH_*` tables live in the SYSTEM schema (fine for local dev — production deployments should point `app.datasources` at whatever schema actually owns the Spring Batch tables).
 
 ## Testing
 
 ```bash
 ./mvnw test                          # Postgres
 ./mvnw -Pmysql test                  # MySQL
+./mvnw -Poracle test                 # Oracle
 ./mvnw verify                        # full build incl. coverage report
 ```
 
-[TestcontainersConfiguration](src/test/java/com/guavasoft/springbatch/dashboard/TestcontainersConfiguration.java) declares both a `PostgreSQLContainer` and a `MySQLContainer`, each gated on `@ConditionalOnProperty(app.dialect)`. The active Maven profile sets `app.dialect` for surefire so only the matching container spins up. Each container mounts its own `db/init-*/` scripts into `/docker-entrypoint-initdb.d`, and a `DynamicPropertyRegistrar` binds the testcontainer's host/port/credentials onto the env-var placeholders that `application-local-*.yml` consumes.
+[TestcontainersConfiguration](src/test/java/com/guavasoft/springbatch/dashboard/TestcontainersConfiguration.java) declares a `PostgreSQLContainer`, a `MySQLContainer`, and an `OracleContainer`, each gated on `@ConditionalOnProperty(app.dialect)`. The active Maven profile sets `app.dialect` for surefire so only the matching container spins up. Each container mounts its own `db/init-*/` scripts into the container's initdb directory (`/docker-entrypoint-initdb.d` for Postgres/MySQL, `/container-entrypoint-initdb.d` for the gvenzl/oracle-free image), and a `DynamicPropertyRegistrar` binds the testcontainer's host/port/credentials onto the env-var placeholders that `application-local-*.yml` consumes.
 
 Test layers in this repo:
 
@@ -173,11 +179,11 @@ Test layers in this repo:
 
 JaCoCo is bound to `verify`. Coverage data is emitted as `target/jacoco.exec` and rendered to `target/site/jacoco/`.
 
-CI runs the matrix (Postgres + MySQL), uploads each profile's `jacoco.exec` as an artifact, then a downstream `coverage` job merges them via `jacoco:merge@jacoco-merge` + `jacoco:report@jacoco-report-merged` into `target/site/jacoco-merged/jacoco.xml`. The merged XML is consumed by [`PavanMudigonda/jacoco-reporter`](../.github/workflows/pull-request.yml), which enforces an **80% overall + 80% changed-files** threshold and posts a per-package per-counter table on the PR. Threshold checking lives entirely in the action — there's no pom-side `jacoco:check` execution to bypass when one matrix entry exercises paths the other doesn't.
+CI runs the matrix (Postgres + MySQL + Oracle), uploads each profile's `jacoco.exec` as an artifact, then a downstream `coverage` job merges them via `jacoco:merge@jacoco-merge` + `jacoco:report@jacoco-report-merged` into `target/site/jacoco-merged/jacoco.xml`. The merged XML is consumed by [`PavanMudigonda/jacoco-reporter`](../.github/workflows/pull-request.yml), which enforces an **80% overall + 80% changed-files** threshold and posts a per-package per-counter table on the PR. Threshold checking lives entirely in the action — there's no pom-side `jacoco:check` execution to bypass when one matrix entry exercises paths the other doesn't.
 
 Excluded from coverage in [pom.xml](pom.xml): `DashboardApplication`, the `config/`, `entity/`, `model/` packages, and MapStruct-generated `*MapperImpl` classes.
 
-CI runs both engines as a matrix in [`.github/workflows/pull-request.yml`](../.github/workflows/pull-request.yml) (`fail-fast: false`).
+CI runs all three engines as a matrix in [`.github/workflows/pull-request.yml`](../.github/workflows/pull-request.yml) (`fail-fast: false`).
 
 ## Conventions
 

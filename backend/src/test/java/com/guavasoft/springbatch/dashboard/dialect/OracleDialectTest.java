@@ -4,32 +4,32 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
-class PostgresqlDialectTest {
+class OracleDialectTest {
 
-    private final PostgresqlDialect dialect = new PostgresqlDialect();
+    private final OracleDialect dialect = new OracleDialect();
 
     @Test
-    void durationSecondsExtractsEpochAsBigint() {
+    void durationSecondsCastsToDateAndScales() {
         assertThat(dialect.durationSeconds("start_time", "end_time"))
-            .isEqualTo("COALESCE(EXTRACT(EPOCH FROM (end_time - start_time))::bigint, 0)");
+            .isEqualTo("COALESCE((CAST(end_time AS DATE) - CAST(start_time AS DATE)) * 86400, 0)");
     }
 
     @Test
-    void avgDurationSecondsExtractsEpochWithAvg() {
+    void avgDurationSecondsWrapsCastDateDiffWithAvg() {
         assertThat(dialect.avgDurationSeconds("s", "e"))
-            .isEqualTo("COALESCE(AVG(EXTRACT(EPOCH FROM (e - s))), 0)");
+            .isEqualTo("COALESCE(AVG((CAST(e AS DATE) - CAST(s AS DATE)) * 86400), 0)");
     }
 
     @Test
-    void maxDurationSecondsExtractsEpochWithMax() {
+    void maxDurationSecondsWrapsCastDateDiffWithMax() {
         assertThat(dialect.maxDurationSeconds("s", "e"))
-            .isEqualTo("COALESCE(MAX(EXTRACT(EPOCH FROM (e - s))), 0)");
+            .isEqualTo("COALESCE(MAX((CAST(e AS DATE) - CAST(s AS DATE)) * 86400), 0)");
     }
 
     @Test
-    void sumDurationSecondsExtractsEpochWithSumAsBigint() {
+    void sumDurationSecondsWrapsCastDateDiffWithSum() {
         assertThat(dialect.sumDurationSeconds("s", "e"))
-            .isEqualTo("COALESCE(SUM(EXTRACT(EPOCH FROM (e - s)))::bigint, 0)");
+            .isEqualTo("COALESCE(SUM((CAST(e AS DATE) - CAST(s AS DATE)) * 86400), 0)");
     }
 
     @Test
@@ -41,10 +41,10 @@ class PostgresqlDialectTest {
     }
 
     @Test
-    void paginationClauseUsesLimitOffset() {
+    void paginationClauseUsesAnsiOffsetFetch() {
         assertThat(dialect.paginationClause(":size", ":offset"))
-            .isEqualTo("LIMIT :size OFFSET :offset");
+            .isEqualTo("OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY");
         assertThat(dialect.paginationClause("1", "0"))
-            .isEqualTo("LIMIT 1 OFFSET 0");
+            .isEqualTo("OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY");
     }
 }

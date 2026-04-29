@@ -125,11 +125,11 @@
 			<scope>test</scope>
 		</dependency>
 		<!--
-			Both Testcontainers DB modules are always on the test classpath so
-			TestcontainersConfiguration can reference either container class. The active
-			Maven profile (postgresql | mysql) only decides which JDBC driver ships in the
-			runtime artifact; tests pick the matching container at runtime via
-			@ConditionalOnProperty(app.dialect).
+			All Testcontainers DB modules are always on the test classpath so
+			TestcontainersConfiguration can reference any container class. The active
+			Maven profile (postgresql | mysql | oracle) only decides which JDBC driver
+			ships in the runtime artifact; tests pick the matching container at runtime
+			via @ConditionalOnProperty(app.dialect).
 		-->
 		<dependency>
 			<groupId>org.testcontainers</groupId>
@@ -139,6 +139,11 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>mysql</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>oracle-free</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -317,6 +322,7 @@
 
 		Default (postgresql):  ./mvnw ...
 		MySQL:                 ./mvnw -Pmysql ... (run the artifact with APP_DIALECT=MYSQL)
+		Oracle:                ./mvnw -Poracle ... (run the artifact with APP_DIALECT=ORACLE)
 	-->
 	<profiles>
 		<profile>
@@ -384,6 +390,40 @@
 							<environmentVariables>
 								<APP_DIALECT>MYSQL</APP_DIALECT>
 								<LOCAL_PROFILE>local-mysql</LOCAL_PROFILE>
+							</environmentVariables>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>oracle</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.oracle.database.jdbc</groupId>
+					<artifactId>ojdbc11</artifactId>
+					<scope>runtime</scope>
+				</dependency>
+			</dependencies>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<configuration>
+							<systemPropertyVariables>
+								<spring.profiles.active>local-oracle</spring.profiles.active>
+								<app.dialect>ORACLE</app.dialect>
+							</systemPropertyVariables>
+						</configuration>
+					</plugin>
+					<plugin>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-maven-plugin</artifactId>
+						<configuration>
+							<environmentVariables>
+								<APP_DIALECT>ORACLE</APP_DIALECT>
+								<LOCAL_PROFILE>local-oracle</LOCAL_PROFILE>
 							</environmentVariables>
 						</configuration>
 					</plugin>
