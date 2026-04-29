@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [postgresql, mysql]
+        profile: [postgresql, mysql, oracle]
     defaults:
       run:
         working-directory: backend

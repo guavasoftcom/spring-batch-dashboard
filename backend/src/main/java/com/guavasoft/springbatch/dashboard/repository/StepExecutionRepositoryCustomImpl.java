@@ -182,10 +182,11 @@ public class StepExecutionRepositoryCustomImpl implements StepExecutionRepositor
             LEFT JOIN BATCH_STEP_EXECUTION_CONTEXT ctx ON ctx.step_execution_id = se.step_execution_id
             WHERE se.job_execution_id = :id
             ORDER BY %s, se.step_execution_id ASC
-            LIMIT :size OFFSET :offset
+            %s
             """.formatted(
                 dialect.durationSeconds(START_COL, END_COL),
-                dialect.orderByNullsLast(expression, direction));
+                dialect.orderByNullsLast(expression, direction),
+                dialect.paginationClause(":size", ":offset"));
 
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue(PARAM_ID, jobExecutionId)

@@ -140,10 +140,11 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
             WHERE ji.job_name = :jobName
             GROUP BY je.job_execution_id, je.status, je.start_time, je.end_time, je.exit_code
             ORDER BY %s
-            LIMIT :size OFFSET :offset
+            %s
             """.formatted(
                 dialect.durationSeconds(START_COL, END_COL),
-                dialect.orderByNullsLast(expression, direction));
+                dialect.orderByNullsLast(expression, direction),
+                dialect.paginationClause(":size", ":offset"));
 
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue(PARAM_JOB_NAME, jobName)
@@ -282,10 +283,11 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
             WHERE ji.job_name = :jobName
             GROUP BY je.job_execution_id, je.status, je.start_time, je.end_time, je.exit_code
             ORDER BY %s
-            LIMIT 1
+            %s
             """.formatted(
                 dialect.durationSeconds(START_COL, END_COL),
-                dialect.orderByNullsLast("je.start_time", DIR_DESC));
+                dialect.orderByNullsLast("je.start_time", DIR_DESC),
+                dialect.paginationClause("1", "0"));
 
         try {
             JobRunRow jobRunRow = jdbc.queryForObject(sql, new MapSqlParameterSource(PARAM_JOB_NAME, jobName), ROW_MAPPER);

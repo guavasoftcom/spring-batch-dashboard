@@ -4,6 +4,7 @@ import com.guavasoft.springbatch.dashboard.TestcontainersConfiguration;
 import com.guavasoft.springbatch.dashboard.config.DatasourcesProperties;
 import com.guavasoft.springbatch.dashboard.config.DynamicDataSourceConfig;
 import com.guavasoft.springbatch.dashboard.dialect.MysqlDialect;
+import com.guavasoft.springbatch.dashboard.dialect.OracleDialect;
 import com.guavasoft.springbatch.dashboard.dialect.PostgresqlDialect;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -31,7 +32,8 @@ import org.springframework.context.annotation.Import;
     JobExecutionRepositoryCustomImpl.class,
     StepExecutionRepositoryCustomImpl.class,
     PostgresqlDialect.class,
-    MysqlDialect.class
+    MysqlDialect.class,
+    OracleDialect.class
 })
 public @interface BatchRepositoryTest {
 }

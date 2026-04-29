@@ -32,4 +32,9 @@ public class MysqlDialect implements SqlDialect {
         // MySQL has no NULLS LAST; emulate with a leading IS NULL ordering term.
         return "(" + expression + " IS NULL), " + expression + " " + direction;
     }
+
+    @Override
+    public String paginationClause(String sizeSql, String offsetSql) {
+        return "LIMIT " + sizeSql + " OFFSET " + offsetSql;
+    }
 }

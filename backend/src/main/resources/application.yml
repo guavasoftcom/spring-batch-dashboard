@@ -1,13 +1,13 @@
 app:
-  # POSTGRESQL or MYSQL. Must match the JDBC driver bundled by the active Maven
-  # profile (postgresql is default; -Pmysql swaps the driver in). When building
-  # with -Pmysql, set APP_DIALECT=MYSQL at runtime.
+  # POSTGRESQL, MYSQL, or ORACLE. Must match the JDBC driver bundled by the active
+  # Maven profile (postgresql is default; -Pmysql / -Poracle swap the driver in).
+  # When building with -Pmysql or -Poracle, set APP_DIALECT=MYSQL / ORACLE at runtime.
   dialect: ${APP_DIALECT:POSTGRESQL}
 
 spring:
   profiles:
     # Pick the local profile that matches the bundled JDBC driver:
-    # local-postgresql (default) or local-mysql.
+    # local-postgresql (default), local-mysql, or local-oracle.
     active: ${LOCAL_PROFILE:local-postgresql}
   application:
     name: springbatch-dashboard

@@ -39,4 +39,12 @@ class MysqlDialectTest {
         assertThat(dialect.orderByNullsLast("end_time", "DESC"))
             .isEqualTo("(end_time IS NULL), end_time DESC");
     }
+
+    @Test
+    void paginationClauseUsesLimitOffset() {
+        assertThat(dialect.paginationClause(":size", ":offset"))
+            .isEqualTo("LIMIT :size OFFSET :offset");
+        assertThat(dialect.paginationClause("1", "0"))
+            .isEqualTo("LIMIT 1 OFFSET 0");
+    }
 }

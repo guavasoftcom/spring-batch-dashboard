@@ -24,6 +24,17 @@ services:
       - ./db/init-mysql:/docker-entrypoint-initdb.d:ro
       - mysql-data:/var/lib/mysql
 
+  oracle:
+    image: 'gvenzl/oracle-free:23-slim-faststart'
+    environment:
+      - 'ORACLE_PASSWORD=${ORACLE_PASSWORD}'
+    ports:
+      - '1521:1521'
+    volumes:
+      - ./db/init-oracle:/container-entrypoint-initdb.d:ro
+      - oracle-data:/opt/oracle/oradata
+
 volumes:
   postgres-data:
   mysql-data:
+  oracle-data:

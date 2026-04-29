@@ -4,27 +4,27 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(name = "app.dialect", havingValue = "POSTGRESQL")
-public class PostgresqlDialect implements SqlDialect {
+@ConditionalOnProperty(name = "app.dialect", havingValue = "ORACLE")
+public class OracleDialect implements SqlDialect {
 
     @Override
     public String durationSeconds(String startCol, String endCol) {
-        return "COALESCE(EXTRACT(EPOCH FROM (" + endCol + " - " + startCol + "))::bigint, 0)";
+        return "COALESCE((CAST(" + endCol + " AS DATE) - CAST(" + startCol + " AS DATE)) * 86400, 0)";
     }
 
     @Override
     public String avgDurationSeconds(String startCol, String endCol) {
-        return "COALESCE(AVG(EXTRACT(EPOCH FROM (" + endCol + " - " + startCol + "))), 0)";
+        return "COALESCE(AVG((CAST(" + endCol + " AS DATE) - CAST(" + startCol + " AS DATE)) * 86400), 0)";
     }
 
     @Override
     public String maxDurationSeconds(String startCol, String endCol) {
-        return "COALESCE(MAX(EXTRACT(EPOCH FROM (" + endCol + " - " + startCol + "))), 0)";
+        return "COALESCE(MAX((CAST(" + endCol + " AS DATE) - CAST(" + startCol + " AS DATE)) * 86400), 0)";
     }
 
     @Override
     public String sumDurationSeconds(String startCol, String endCol) {
-        return "COALESCE(SUM(EXTRACT(EPOCH FROM (" + endCol + " - " + startCol + ")))::bigint, 0)";
+        return "COALESCE(SUM((CAST(" + endCol + " AS DATE) - CAST(" + startCol + " AS DATE)) * 86400), 0)";
     }
 
     @Override
@@ -34,6 +34,6 @@ public class PostgresqlDialect implements SqlDialect {
 
     @Override
     public String paginationClause(String sizeSql, String offsetSql) {
-        return "LIMIT " + sizeSql + " OFFSET " + offsetSql;
+        return "OFFSET " + offsetSql + " ROWS FETCH NEXT " + sizeSql + " ROWS ONLY";
     }
 }
