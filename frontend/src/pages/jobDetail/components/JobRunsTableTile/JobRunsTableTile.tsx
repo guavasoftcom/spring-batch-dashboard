@@ -12,7 +12,6 @@ import {
 } from '@mui/material';
 import type { RunSortField, SortDir } from '~/api/jobRunsApi';
 import { LargeTile } from '~/components';
-import { appColors } from '~/theme';
 import type { JobRun, RunStatus } from '~/types';
 
 const statusColor: Record<RunStatus, 'success' | 'error' | 'info'> = {
@@ -95,7 +94,7 @@ const JobRunsTableTile = ({
                   <MuiLink
                     component="button"
                     onClick={() => onRunClick(run.executionId)}
-                    sx={{ color: appColors.brandBlueDark, fontWeight: 700, textDecoration: 'none' }}
+                    sx={{ color: 'primary.dark', fontWeight: 700, textDecoration: 'none' }}
                   >
                     #{run.executionId}
                   </MuiLink>

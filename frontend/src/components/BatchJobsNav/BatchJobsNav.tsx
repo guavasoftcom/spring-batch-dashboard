@@ -5,7 +5,6 @@ import {
   Skeleton,
   Typography,
 } from '@mui/material';
-import { appColors } from '~/theme';
 import { humanize } from '~/utils';
 
 type Props = {
@@ -51,7 +50,7 @@ const BatchJobsNav = ({ jobs, activeJobId, loading, onSelect }: Props) => (
                 borderRadius: 1,
                 '&.Mui-selected': {
                   bgcolor: 'rgba(21, 101, 192, 0.12)',
-                  color: appColors.brandBlueDark,
+                  color: 'primary.dark',
                 },
                 '&.Mui-selected:hover': { bgcolor: 'rgba(21, 101, 192, 0.18)' },
               }}

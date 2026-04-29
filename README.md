@@ -13,17 +13,33 @@ The components don't share code — they're independent apps that meet at the da
 
 ## Screenshots
 
-### Login
-![Login](docs/login.png)
+### Light mode
 
-### Overview
-![Overview](docs/overview.png)
+#### Login
+![Login (light)](docs/login-light.png)
 
-### Job Details
-![Job Details](docs/job-details.png)
+#### Overview
+![Overview (light)](docs/overview-light.png)
 
-### Job Execution
-![Job Execution](docs/job-execution.png)
+#### Job Details
+![Job Details (light)](docs/job-details-light.png)
+
+#### Job Execution
+![Job Execution (light)](docs/job-execution-light.png)
+
+### Dark mode
+
+#### Login
+![Login (dark)](docs/login-dark.png)
+
+#### Overview
+![Overview (dark)](docs/overview-dark.png)
+
+#### Job Details
+![Job Details (dark)](docs/job-details-dark.png)
+
+#### Job Execution
+![Job Execution (dark)](docs/job-execution-dark.png)
 
 ## Quick start
 

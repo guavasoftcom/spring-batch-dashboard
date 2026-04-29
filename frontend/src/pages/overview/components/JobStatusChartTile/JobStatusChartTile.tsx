@@ -1,4 +1,5 @@
 import { BarChart } from '@mui/x-charts';
+import type { Theme } from '@mui/material/styles';
 import { LargeTile } from '~/components';
 import { appColors } from '~/theme';
 import type { JobStatusSlice } from '~/types';
@@ -30,9 +31,9 @@ const JobStatusChartTile = ({ data, loading, error }: Props) => (
         margin={{ top: 20, bottom: 40, left: 20, right: 20 }}
         slotProps={{ tooltip: { trigger: 'item' } }}
         sx={{
-          '& .MuiChartsLegend-label': { fill: '#37474F' },
-          '& .MuiChartsAxis-tickLabel': { fill: '#37474F' },
-          '& .MuiChartsAxis-label': { fill: '#37474F' },
+          '& .MuiChartsLegend-label': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
+          '& .MuiChartsAxis-tickLabel': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
+          '& .MuiChartsAxis-label': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
           '& .MuiChartsTooltip-root *': { color: '#1A2733 !important' },
           '& .MuiChartsTooltip-paper': { backgroundColor: appColors.white, border: '1px solid #D5DBE3' },
         }}

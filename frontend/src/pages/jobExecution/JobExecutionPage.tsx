@@ -1,6 +1,5 @@
 import { Box, Container, Grid, Link as MuiLink } from '@mui/material';
 import { PageBreadcrumb } from '~/components';
-import { appColors } from '~/theme';
 import { humanize } from '~/utils';
 import {
   DurationTile,
@@ -67,7 +66,7 @@ const JobExecutionPage = ({
             component="button"
             onClick={onJobClick}
             sx={{
-              color: appColors.brandBlueDark,
+              color: 'primary.dark',
               fontWeight: 700,
               textDecoration: 'none',
               '&:hover': { textDecoration: 'underline' },

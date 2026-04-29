@@ -37,7 +37,7 @@ const StatTile = ({
     {error && <Typography color="error" variant="body2" sx={{ mt: 1 }}>{error}</Typography>}
     {!loading && !error && value !== undefined && value !== null && (
       <>
-        <Typography variant="h4" sx={{ mt: 1, color: appColors.brandBlueDark, fontWeight: 800 }}>
+        <Typography variant="h4" sx={{ mt: 1, color: 'primary.dark', fontWeight: 800 }}>
           {value}
         </Typography>
         {subtitle && (

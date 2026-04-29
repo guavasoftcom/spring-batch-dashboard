@@ -30,7 +30,7 @@ const LastRunTile = ({ data, loading, error, onClick }: Props) => (
             onClick={() => onClick(data.executionId)}
             sx={{
               mt: 1,
-              color: appColors.brandBlueDark,
+              color: 'primary.dark',
               fontWeight: 800,
               fontSize: '2.125rem',
               lineHeight: 1.235,
@@ -46,7 +46,7 @@ const LastRunTile = ({ data, loading, error, onClick }: Props) => (
             #{data.executionId}
           </MuiLink>
         ) : (
-          <Typography variant="h4" sx={{ mt: 1, color: appColors.brandBlueDark, fontWeight: 800 }}>
+          <Typography variant="h4" sx={{ mt: 1, color: 'primary.dark', fontWeight: 800 }}>
             #{data.executionId}
           </Typography>
         )}

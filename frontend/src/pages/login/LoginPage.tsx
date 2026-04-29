@@ -1,13 +1,19 @@
 import { Box, Button, Stack, Typography } from '@mui/material';
+import { ColorModeToggle } from '~/components';
 import GitHubIcon from '~/pages/login/components/GitHubIcon';
 import SpringLeafIcon from '~/pages/login/components/SpringLeafIcon';
+import { appColors, pageGradient, useColorMode } from '~/theme';
 
 type LoginPageProps = {
   checking: boolean;
   loginUrl: string;
 };
 
+const toggleSx = { position: 'absolute', top: 16, right: 16 } as const;
+
 const LoginPage = ({ checking, loginUrl }: LoginPageProps) => {
+  const { mode } = useColorMode();
+
   if (checking) {
     return (
       <Box
@@ -16,8 +22,11 @@ const LoginPage = ({ checking, loginUrl }: LoginPageProps) => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          background: pageGradient[mode],
+          position: 'relative',
         }}
       >
+        <ColorModeToggle sx={toggleSx} />
         <Typography variant="body1" color="text.secondary">
           Loading...
         </Typography>
@@ -32,28 +41,29 @@ const LoginPage = ({ checking, loginUrl }: LoginPageProps) => {
         display: 'grid',
         placeItems: 'center',
         px: 3,
-        background:
-          'radial-gradient(circle at 12% 18%, rgba(245, 124, 0, 0.24), transparent 40%), radial-gradient(circle at 88% 80%, rgba(21, 101, 192, 0.3), transparent 45%), linear-gradient(140deg, #031626 0%, #0A2D4A 50%, #123A5C 100%)',
+        background: pageGradient[mode],
+        position: 'relative',
       }}
     >
+      <ColorModeToggle sx={toggleSx} />
       <Box
         sx={{
           width: 'min(560px, 100%)',
           borderRadius: 2,
           p: { xs: 4, md: 6 },
-          backdropFilter: 'blur(8px)',
-          backgroundColor: 'rgba(255,255,255,0.08)',
-          border: '1px solid rgba(255,255,255,0.18)',
-          boxShadow: '0 24px 80px rgba(0, 0, 0, 0.35)',
+          backgroundColor: 'background.paper',
+          border: 1,
+          borderColor: 'divider',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
         }}
       >
         <Stack spacing={3}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-            <SpringLeafIcon sx={{ color: '#7FD36E', fontSize: 30, flexShrink: 0 }} />
+            <SpringLeafIcon sx={{ color: appColors.leafGreen, fontSize: 30, flexShrink: 0 }} />
             <Typography
               component="h1"
               sx={{
-                color: '#EAF4FF',
+                color: 'text.primary',
                 lineHeight: 1.1,
                 fontSize: { xs: '1.6rem', sm: '1.95rem' },
                 whiteSpace: 'nowrap',
@@ -79,8 +89,8 @@ const LoginPage = ({ checking, loginUrl }: LoginPageProps) => {
               py: 1.25,
               borderRadius: 1,
               fontWeight: 700,
-              bgcolor: '#F57C00',
-              '&:hover': { bgcolor: '#BB4D00' },
+              bgcolor: appColors.brandOrange,
+              '&:hover': { bgcolor: appColors.brandOrangeDark },
             }}
           >
             Login with GitHub
