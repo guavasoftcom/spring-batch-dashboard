@@ -139,6 +139,8 @@ The body shape is `{ timestamp, status, error, message, path }` — never includ
 
 `/api/auth/me`, `/api/logout`, `/`, `/error`, and the OAuth2 callback paths are `permitAll`. Everything else requires authentication.
 
+Unauthenticated `/api/**` requests get a clean **401** via a scoped `HttpStatusEntryPoint` (instead of being redirected through the OAuth2 entry-point chain, which produced a 404). This matches the contract the frontend's axios interceptor expects — see [`frontend/src/config/client.ts`](../frontend/src/config/client.ts), which redirects to `/` on a 401. Browser navigation outside `/api/**` still flows through the normal OAuth2 redirect.
+
 [AuthProperties](src/main/java/com/guavasoft/springbatch/dashboard/config/AuthProperties.java) (`app.auth.*`) controls two things:
 
 - `attributes.{login,name,avatar-url}` — provider attribute names that populate the fixed `/api/auth/me` response shape. Defaults match GitHub; override for other providers (e.g. Google: `login=email`, `avatar-url=picture`).

@@ -134,6 +134,18 @@ The PR workflow ([`.github/workflows/pull-request.yml`](.github/workflows/pull-r
 2. **Backend coverage (merged)** — downloads all matrix exec files, merges them into a single report, and runs the 80% gate against the union plus a per-package per-counter PR comment.
 3. **Frontend** — lint (with ESLint annotations), `tsc -b` + Vite build, vitest with coverage, JUnit + coverage PR comments.
 
+JDK and Node setup are extracted into composite actions at [`.github/actions/setup-java`](.github/actions/setup-java/action.yml) and [`.github/actions/setup-node`](.github/actions/setup-node/action.yml) so the toolchain version lives in one place.
+
+## Releases
+
+Releases are cut by manually dispatching [`.github/workflows/release.yml`](.github/workflows/release.yml) ("Run workflow" → pick `patch` / `minor` / `major`). The workflow:
+
+1. Reads the current version from [`frontend/package.json`](frontend/package.json) and computes the next semver per the chosen bump.
+2. Updates `frontend/package.json` (numeric) and `backend/pom.xml` (with the `-SNAPSHOT` qualifier) in lockstep.
+3. Commits the bump to `main`, tags `vX.Y.Z`, and creates a GitHub Release with auto-generated notes.
+
+The push and tag run as a dedicated GitHub App (not `github-actions[bot]`), so the App can be added to the bypass list of any Ruleset / branch-protection rule. Required repo secrets: `RELEASE_APP_ID`, `RELEASE_APP_PRIVATE_KEY`. The job is gated by the `Release` GitHub Environment (configure its **Deployment branches** to `main`-only) and additionally guards against `github.ref != refs/heads/main`.
+
 ## License
 
 Licensed under the [Apache License, Version 2.0](LICENSE). See the [`LICENSE`](LICENSE) file for the full text.
