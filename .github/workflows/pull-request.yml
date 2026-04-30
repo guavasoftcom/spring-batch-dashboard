@@ -29,12 +29,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: maven
+      - name: Set up JDK
+        uses: ./.github/actions/setup-java
 
       - name: Verify (checkstyle + tests + package)
         # `verify` runs the validate phase (Checkstyle), test phase, and package phase.
@@ -115,12 +111,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: maven
+      - name: Set up JDK
+        uses: ./.github/actions/setup-java
 
       - name: Compile main classes
         # The merge/report goals need target/classes to attribute coverage to source.
@@ -175,13 +167,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Enable corepack
-        run: corepack enable
+      - name: Set up Node
+        uses: ./.github/actions/setup-node
 
       - name: Install dependencies
         run: yarn install --immutable

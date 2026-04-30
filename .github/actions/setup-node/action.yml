@@ -1,0 +1,11 @@
+name: Set up Node
+description: Provision Node 20 with corepack enabled (Yarn 4 ready).
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    - name: Enable corepack
+      shell: bash
+      run: corepack enable

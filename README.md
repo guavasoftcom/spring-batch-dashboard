@@ -133,3 +133,7 @@ The PR workflow ([`.github/workflows/pull-request.yml`](.github/workflows/pull-r
 1. **Backend matrix** — Postgres + MySQL + Oracle builds in parallel: Checkstyle, Surefire, JaCoCo agent, Maven package. Per-matrix it annotates checkstyle violations, posts a JUnit check + comment, and uploads the `jacoco.exec` and per-profile HTML report.
 2. **Backend coverage (merged)** — downloads all matrix exec files, merges them into a single report, and runs the 80% gate against the union plus a per-package per-counter PR comment.
 3. **Frontend** — lint (with ESLint annotations), `tsc -b` + Vite build, vitest with coverage, JUnit + coverage PR comments.
+
+## License
+
+Licensed under the [Apache License, Version 2.0](LICENSE). See the [`LICENSE`](LICENSE) file for the full text.

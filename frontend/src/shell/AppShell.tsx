@@ -127,7 +127,7 @@ const AppShell = ({ children }: AppShellProps) => {
               </Typography>
             </Box>
           )}
-          <ColorModeToggle sx={{ mr: 1 }} />
+          <ColorModeToggle sx={{ mr: 2 }} />
           <Button
             color="inherit"
             onClick={handleLogout}
