@@ -47,4 +47,10 @@ class PostgresqlDialectTest {
         assertThat(dialect.paginationClause("1", "0"))
             .isEqualTo("LIMIT 1 OFFSET 0");
     }
+
+    @Test
+    void setSchemaSqlEmitsSearchPath() {
+        assertThat(dialect.setSchemaSql("batch_prod"))
+            .isEqualTo("SET search_path TO batch_prod");
+    }
 }

@@ -47,4 +47,9 @@ class MysqlDialectTest {
         assertThat(dialect.paginationClause("1", "0"))
             .isEqualTo("LIMIT 1 OFFSET 0");
     }
+
+    @Test
+    void setSchemaSqlReturnsNull() {
+        assertThat(dialect.setSchemaSql("batch_prod")).isNull();
+    }
 }

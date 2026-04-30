@@ -37,4 +37,10 @@ public class MysqlDialect implements SqlDialect {
     public String paginationClause(String sizeSql, String offsetSql) {
         return "LIMIT " + sizeSql + " OFFSET " + offsetSql;
     }
+
+    @Override
+    public String setSchemaSql(String schema) {
+        // MySQL uses the database in the JDBC URL as the schema; no init SQL needed.
+        return null;
+    }
 }

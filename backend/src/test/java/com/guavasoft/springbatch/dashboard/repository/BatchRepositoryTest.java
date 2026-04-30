@@ -6,6 +6,8 @@ import com.guavasoft.springbatch.dashboard.config.DynamicDataSourceConfig;
 import com.guavasoft.springbatch.dashboard.dialect.MysqlDialect;
 import com.guavasoft.springbatch.dashboard.dialect.OracleDialect;
 import com.guavasoft.springbatch.dashboard.dialect.PostgresqlDialect;
+import com.guavasoft.springbatch.dashboard.repository.rowmapper.JobRunRowMapper;
+import com.guavasoft.springbatch.dashboard.repository.rowmapper.StepDetailRowMapper;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -31,6 +33,8 @@ import org.springframework.context.annotation.Import;
     DynamicDataSourceConfig.class,
     JobExecutionRepositoryCustomImpl.class,
     StepExecutionRepositoryCustomImpl.class,
+    JobRunRowMapper.class,
+    StepDetailRowMapper.class,
     PostgresqlDialect.class,
     MysqlDialect.class,
     OracleDialect.class

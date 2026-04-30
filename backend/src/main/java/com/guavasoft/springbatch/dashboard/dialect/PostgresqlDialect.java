@@ -36,4 +36,9 @@ public class PostgresqlDialect implements SqlDialect {
     public String paginationClause(String sizeSql, String offsetSql) {
         return "LIMIT " + sizeSql + " OFFSET " + offsetSql;
     }
+
+    @Override
+    public String setSchemaSql(String schema) {
+        return "SET search_path TO " + schema;
+    }
 }

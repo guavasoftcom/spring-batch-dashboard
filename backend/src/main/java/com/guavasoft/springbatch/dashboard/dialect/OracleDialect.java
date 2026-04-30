@@ -36,4 +36,9 @@ public class OracleDialect implements SqlDialect {
     public String paginationClause(String sizeSql, String offsetSql) {
         return "OFFSET " + offsetSql + " ROWS FETCH NEXT " + sizeSql + " ROWS ONLY";
     }
+
+    @Override
+    public String setSchemaSql(String schema) {
+        return "ALTER SESSION SET CURRENT_SCHEMA = " + schema;
+    }
 }

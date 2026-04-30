@@ -3,15 +3,13 @@ package com.guavasoft.springbatch.dashboard.repository;
 import com.guavasoft.springbatch.dashboard.dialect.SqlDialect;
 import com.guavasoft.springbatch.dashboard.entity.projection.JobRunCounts;
 import com.guavasoft.springbatch.dashboard.entity.projection.JobRunRow;
-import java.sql.ResultSet;
-import java.sql.Timestamp;
+import com.guavasoft.springbatch.dashboard.repository.rowmapper.JobRunRowMapper;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -56,65 +54,9 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
             COL_WRITE_COUNT, "SUM(se.write_count)",
             COL_EXIT_CODE, "je.exit_code");
 
-    private static final RowMapper<JobRunRow> ROW_MAPPER = (ResultSet rs, int idx) -> {
-        long executionId = rs.getLong(COL_EXECUTION_ID);
-        String status = rs.getString(COL_STATUS);
-        LocalDateTime startTime = toLocalDateTime(rs.getTimestamp(COL_START_TIME));
-        LocalDateTime endTime = toLocalDateTime(rs.getTimestamp(COL_END_TIME));
-        long durationSeconds = rs.getLong(COL_DURATION_SECONDS);
-        long readCount = rs.getLong(COL_READ_COUNT);
-        long writeCount = rs.getLong(COL_WRITE_COUNT);
-        String exitCode = rs.getString(COL_EXIT_CODE);
-
-        return new JobRunRow() {
-            @Override
-            public long getExecutionId() {
-                return executionId;
-            }
-
-            @Override
-            public String getStatus() {
-                return status;
-            }
-
-            @Override
-            public LocalDateTime getStartTime() {
-                return startTime;
-            }
-
-            @Override
-            public LocalDateTime getEndTime() {
-                return endTime;
-            }
-
-            @Override
-            public long getDurationSeconds() {
-                return durationSeconds;
-            }
-
-            @Override
-            public long getReadCount() {
-                return readCount;
-            }
-
-            @Override
-            public long getWriteCount() {
-                return writeCount;
-            }
-
-            @Override
-            public String getExitCode() {
-                return exitCode;
-            }
-        };
-    };
-
-    private static LocalDateTime toLocalDateTime(Timestamp timestamp) {
-        return timestamp == null ? null : timestamp.toLocalDateTime();
-    }
-
     private final NamedParameterJdbcTemplate jdbc;
     private final SqlDialect dialect;
+    private final JobRunRowMapper jobRunRowMapper;
 
     @Override
     public List<JobRunRow> findRunsByJobName(String jobName, String sortBy, String sortDir, int page, int size) {
@@ -151,7 +93,7 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
                 .addValue(PARAM_SIZE, size)
                 .addValue(PARAM_OFFSET, (long) page * size);
 
-        return jdbc.query(sql, params, ROW_MAPPER);
+        return jdbc.query(sql, params, jobRunRowMapper);
     }
 
     @Override
@@ -262,7 +204,7 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue(PARAM_JOB_NAME, jobName)
                 .addValue(PARAM_SINCE, since);
-        return jdbc.query(sql, params, ROW_MAPPER);
+        return jdbc.query(sql, params, jobRunRowMapper);
     }
 
     @Override
@@ -290,7 +232,7 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
                 dialect.paginationClause("1", "0"));
 
         try {
-            JobRunRow jobRunRow = jdbc.queryForObject(sql, new MapSqlParameterSource(PARAM_JOB_NAME, jobName), ROW_MAPPER);
+            JobRunRow jobRunRow = jdbc.queryForObject(sql, new MapSqlParameterSource(PARAM_JOB_NAME, jobName), jobRunRowMapper);
             return Optional.ofNullable(jobRunRow);
         } catch (EmptyResultDataAccessException ex) {
             return Optional.empty();

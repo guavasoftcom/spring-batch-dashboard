@@ -78,9 +78,19 @@ Each frontend request includes an `X-Environment: <name>` header (set by the axi
 
 1. [DataSourceContextFilter](src/main/java/com/guavasoft/springbatch/dashboard/config/DataSourceContextFilter.java) — `OncePerRequestFilter` that copies the header into a ThreadLocal `DataSourceContext`.
 2. [DynamicDataSourceConfig](src/main/java/com/guavasoft/springbatch/dashboard/config/DynamicDataSourceConfig.java) — `AbstractRoutingDataSource` whose `determineCurrentLookupKey()` reads `DataSourceContext.get()`.
-3. Available environments come from `app.datasources` in [application-local-postgresql.yml](src/main/resources/application-local-postgresql.yml) / [application-local-mysql.yml](src/main/resources/application-local-mysql.yml) / [application-local-oracle.yml](src/main/resources/application-local-oracle.yml) (name, url, username, password). The first entry is the default when no header / unknown header is supplied.
+3. Available environments come from `app.datasources` in [application-local-postgresql.yml](src/main/resources/application-local-postgresql.yml) / [application-local-mysql.yml](src/main/resources/application-local-mysql.yml) / [application-local-oracle.yml](src/main/resources/application-local-oracle.yml) (`name`, `url`, `username`, `password`, optional `schema`). The first entry is the default when no header / unknown header is supplied.
 
 Adding a new environment: add another item under `app.datasources` (matching the active engine — multiple entries of the *same* type are fine) and restart. The frontend's `EnvironmentSelector` picks it up automatically from `GET /api/environments`.
+
+### Per-datasource schema
+
+Set `app.datasources[*].schema` when the `BATCH_*` tables don't live in the engine's default schema. The repository SQL is unqualified by design; the schema is applied as connection-init SQL on each pooled connection, dialect-specific:
+
+- **Postgres** → `SET search_path TO <schema>`
+- **Oracle** → `ALTER SESSION SET CURRENT_SCHEMA = <schema>`
+- **MySQL** → no init SQL (the database name in the JDBC URL plays the same role; leave `schema` unset)
+
+[DynamicDataSourceConfig](src/main/java/com/guavasoft/springbatch/dashboard/config/DynamicDataSourceConfig.java) validates the value against `^[A-Za-z_][A-Za-z0-9_$]*$` (max 128 chars) at bean creation, so the identifier can be safely concatenated into the init SQL — anything else fails the boot loudly. Hibernate's `@Table` lookups also pick up the connection-default schema, so JPA queries respect the same setting without per-entity changes.
 
 ## Controller / service / repository pattern
 
@@ -115,6 +125,8 @@ Do **not** use `JpaSort.unsafe(...)` or `Sort.by(...)` with a native query that 
 `dashboard/model/*` are Java records — immutable, no Lombok needed. Naming follows the dashboard tile they're sized for: `RunCounts`, `JobRunPage`, `IoSummary`, `StepDetail`, etc. Frontend types in [`src/types/`](../frontend/src/types/) and per-page `types.ts` files mirror these field-for-field; keep them in sync when changing either side.
 
 For paginated endpoints the response shape is `{ content, page, size, totalElements }` — see [JobRunPage](src/main/java/com/guavasoft/springbatch/dashboard/model/JobRunPage.java).
+
+Each record carries SpringDoc/OpenAPI annotations (`io.swagger.v3.oas.annotations.media.Schema`) at both the class level (description) and per-component level (description, `example`, `nullable`, `allowableValues` where appropriate). These power the Swagger UI body schemas at `/swagger-ui/index.html`; when adding a new response record, follow the existing pattern — class `@Schema(description = "…")` plus a per-parameter `@Schema(description = "…", example = "…")` on every component.
 
 The [`BatchStatus`](src/main/java/com/guavasoft/springbatch/dashboard/entity/BatchStatus.java) enum carries its own `label` and `color` per constant — adding a new status (e.g. `STOPPED`) means adding a single enum constant and the chart endpoints pick it up automatically. Don't hardcode chart labels/colors at the call site; iterate `BatchStatus.values()`.
 

@@ -47,4 +47,10 @@ class OracleDialectTest {
         assertThat(dialect.paginationClause("1", "0"))
             .isEqualTo("OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY");
     }
+
+    @Test
+    void setSchemaSqlEmitsAlterSession() {
+        assertThat(dialect.setSchemaSql("BATCH_PROD"))
+            .isEqualTo("ALTER SESSION SET CURRENT_SCHEMA = BATCH_PROD");
+    }
 }
