@@ -1,0 +1,126 @@
+# Pushes the version-bump commit + tag and creates the GitHub Release as a
+# dedicated GitHub App (better audit trail than the default `github-actions[bot]`,
+# and the App can be added to a branch-protection bypass list — works with both
+# Rulesets and classic Branch protection rules).
+#
+# Setup:
+#   1. Create a GitHub App on the org/user with these repository permissions:
+#        - Contents: Read and write
+#        - Metadata: Read-only
+#        - Pull requests: Read-only   (so --generate-notes can read merged PRs)
+#   2. Install the App on this repo.
+#   3. Copy its App ID and generate a private key. Add them as repo secrets:
+#        - RELEASE_APP_ID
+#        - RELEASE_APP_PRIVATE_KEY
+#   4. Add the App to the bypass list of any Ruleset / branch-protection rule
+#      that guards `main`.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Semver bump to apply"
+        required: true
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Cut release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Mint GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true
+
+      - name: Set up JDK
+        uses: ./.github/actions/setup-java
+
+      - name: Set up Node
+        uses: ./.github/actions/setup-node
+
+      - name: Compute next version
+        id: bump
+        run: |
+          set -euo pipefail
+          current=$(node -p "require('./frontend/package.json').version")
+          IFS='.' read -r major minor patch <<< "$current"
+          case "${{ inputs.bump }}" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+          esac
+          next="${major}.${minor}.${patch}"
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+          echo "next=$next"       >> "$GITHUB_OUTPUT"
+          echo "tag=v$next"       >> "$GITHUB_OUTPUT"
+          echo "Bumping $current → $next"
+
+      - name: Fail if tag already exists
+        run: |
+          if git rev-parse "refs/tags/${{ steps.bump.outputs.tag }}" >/dev/null 2>&1; then
+            echo "Tag ${{ steps.bump.outputs.tag }} already exists." >&2
+            exit 1
+          fi
+
+      - name: Update frontend/package.json
+        run: |
+          cd frontend
+          npm version --no-git-tag-version --allow-same-version "${{ steps.bump.outputs.next }}"
+
+      - name: Update backend/pom.xml
+        run: |
+          cd backend
+          ./mvnw -q -B versions:set -DnewVersion="${{ steps.bump.outputs.next }}-SNAPSHOT" -DgenerateBackupPoms=false
+
+      - name: Commit version bump
+        id: commit
+        env:
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          set -euo pipefail
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${{ steps.app-token.outputs.installation-id }}+${APP_SLUG}[bot]@users.noreply.github.com"
+          git add frontend/package.json backend/pom.xml
+          if git diff --cached --quiet; then
+            echo "Nothing to commit — versions already at target." >&2
+            exit 1
+          fi
+          git commit -m "chore(release): ${{ steps.bump.outputs.tag }}"
+          git push origin HEAD:${{ github.ref_name }}
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Tag release
+        run: |
+          git tag -a "${{ steps.bump.outputs.tag }}" -m "Release ${{ steps.bump.outputs.tag }}"
+          git push origin "${{ steps.bump.outputs.tag }}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh release create "${{ steps.bump.outputs.tag }}" \
+            --target "${{ steps.commit.outputs.sha }}" \
+            --title "${{ steps.bump.outputs.tag }}" \
+            --generate-notes
