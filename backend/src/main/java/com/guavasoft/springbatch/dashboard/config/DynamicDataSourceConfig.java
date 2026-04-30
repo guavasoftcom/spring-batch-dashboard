@@ -42,6 +42,16 @@ public class DynamicDataSourceConfig {
         Map<Object, Object> targets = new LinkedHashMap<>();
         DataSource defaultTarget = null;
         for (var entry : properties.getDatasources()) {
+            // Validate the schema *before* constructing the Hikari pool so misconfigured
+            // entries fail with a clear IllegalStateException instead of being shadowed by
+            // a driver-load failure (which surfaces from DataSourceBuilder.build()).
+            String schema = entry.getSchema();
+            String initSql = null;
+            if (StringUtils.isNotBlank(schema)) {
+                validateSchema(entry.getName(), schema);
+                initSql = dialect.setSchemaSql(schema);
+            }
+
             HikariDataSource ds = DataSourceBuilder.create()
                 .type(HikariDataSource.class)
                 .url(entry.getUrl())
@@ -52,14 +62,8 @@ public class DynamicDataSourceConfig {
             ds.setMaximumPoolSize(MAX_POOL_SIZE);
             ds.setMinimumIdle(0);
             ds.setIdleTimeout(IDLE_TIMEOUT_MS);
-
-            String schema = entry.getSchema();
-            if (StringUtils.isNotBlank(schema)) {
-                validateSchema(entry.getName(), schema);
-                String initSql = dialect.setSchemaSql(schema);
-                if (initSql != null) {
-                    ds.setConnectionInitSql(initSql);
-                }
+            if (initSql != null) {
+                ds.setConnectionInitSql(initSql);
             }
 
             targets.put(entry.getName(), ds);
