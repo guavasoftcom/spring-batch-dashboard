@@ -1,7 +1,6 @@
 import { Fragment } from 'react';
-import { Box, Link as MuiLink, Typography } from '@mui/material';
+import { Box, Link as MuiLink, Typography, useTheme } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { appColors } from '~/theme';
 import { humanize } from '~/utils';
 
 export type PageBreadcrumbSegment = {
@@ -21,7 +20,6 @@ const segmentTextSx = {
 
 const linkSx = {
   ...segmentTextSx,
-  color: appColors.brandBlueDark,
   textDecoration: 'none',
   background: 'none',
   border: 0,
@@ -30,10 +28,12 @@ const linkSx = {
   '&:hover': { textDecoration: 'underline' },
 };
 
-const PageBreadcrumb = ({ segments }: Props) => (
+const PageBreadcrumb = ({ segments }: Props) => {
+  const theme = useTheme();
+  return (
   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
     {segments.map((segment, idx) => {
-      const color = idx === 0 ? appColors.brandOrange : appColors.brandBlueDark;
+      const color = idx === 0 ? theme.palette.secondary.main : theme.palette.primary.dark;
       return (
         <Fragment key={`${idx}-${segment.label}`}>
           {idx > 0 && (
@@ -58,6 +58,7 @@ const PageBreadcrumb = ({ segments }: Props) => (
       );
     })}
   </Box>
-);
+  );
+};
 
 export default PageBreadcrumb;

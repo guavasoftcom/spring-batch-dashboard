@@ -1,4 +1,5 @@
 import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
+import type { Theme } from '@mui/material/styles';
 import { LineChart } from '@mui/x-charts';
 import { LargeTile } from '~/components';
 import { appColors } from '~/theme';
@@ -51,10 +52,16 @@ const RunDurationTrendTile = ({ data, loading, error, windowDays, windowOptions,
         ]}
         margin={{ top: 20, right: 70, bottom: 30, left: 60 }}
         sx={{
-          '& .MuiChartsAxis-tickLabel': { fill: '#37474F' },
-          '& .MuiChartsAxis-label': { fill: '#37474F' },
-          '& .MuiChartsLegend-label': { fill: '#37474F' },
-          '& .MuiChartsTooltip-paper': { backgroundColor: appColors.white, border: '1px solid #D5DBE3' },
+          '& .MuiChartsAxis-tickLabel': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
+          '& .MuiChartsAxis-label': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
+          '& .MuiChartsLegend-label': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
+          '& .MuiChartsTooltip-paper': {
+            backgroundColor: (theme: Theme) => theme.palette.background.paper,
+            border: (theme: Theme) => `1px solid ${theme.palette.divider}`,
+          },
+          '& .MuiChartsTooltip-root *': {
+            color: (theme: Theme) => `${theme.palette.text.primary} !important`,
+          },
         }}
       />
     )}

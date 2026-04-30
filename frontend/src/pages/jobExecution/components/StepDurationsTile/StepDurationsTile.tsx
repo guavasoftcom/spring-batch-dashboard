@@ -1,6 +1,6 @@
 import { BarChart } from '@mui/x-charts';
+import type { Theme } from '@mui/material/styles';
 import { LargeTile } from '~/components';
-import { appColors } from '~/theme';
 import type { StepDuration } from '~/pages/jobExecution/types';
 import { humanize } from '~/utils';
 
@@ -28,10 +28,16 @@ const StepDurationsTile = ({ data, loading, error }: Props) => (
         margin={{ top: 20, right: 20, bottom: 40, left: 60 }}
         slotProps={{ tooltip: { trigger: 'item' } }}
         sx={{
-          '& .MuiChartsAxis-tickLabel': { fill: '#37474F' },
-          '& .MuiChartsAxis-label': { fill: '#37474F' },
-          '& .MuiChartsLegend-label': { fill: '#37474F' },
-          '& .MuiChartsTooltip-paper': { backgroundColor: appColors.white, border: '1px solid #D5DBE3' },
+          '& .MuiChartsAxis-tickLabel': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
+          '& .MuiChartsAxis-label': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
+          '& .MuiChartsLegend-label': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
+          '& .MuiChartsTooltip-paper': {
+            backgroundColor: (theme: Theme) => theme.palette.background.paper,
+            border: (theme: Theme) => `1px solid ${theme.palette.divider}`,
+          },
+          '& .MuiChartsTooltip-root *': {
+            color: (theme: Theme) => `${theme.palette.text.primary} !important`,
+          },
         }}
       />
     )}

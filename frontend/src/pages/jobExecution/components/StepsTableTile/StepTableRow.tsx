@@ -10,7 +10,6 @@ import {
 } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
-import { appColors } from '~/theme';
 import type { StepRow, StepStatus } from '~/pages/jobExecution/types';
 import { humanize } from '~/utils';
 
@@ -75,7 +74,7 @@ const StepTableRow = ({ step }: { step: StepRow }) => {
               <Box>
                 <Typography
                   variant="subtitle2"
-                  sx={{ color: appColors.brandBlueDark, fontWeight: 700 }}
+                  sx={{ color: 'primary.dark', fontWeight: 700 }}
                 >
                   Exit Status
                 </Typography>
@@ -87,7 +86,7 @@ const StepTableRow = ({ step }: { step: StepRow }) => {
                 <Box>
                   <Typography
                     variant="subtitle2"
-                    sx={{ color: appColors.brandBlueDark, fontWeight: 700 }}
+                    sx={{ color: 'primary.dark', fontWeight: 700 }}
                   >
                     Failure Reason
                   </Typography>
@@ -109,7 +108,7 @@ const StepTableRow = ({ step }: { step: StepRow }) => {
               <Box>
                 <Typography
                   variant="subtitle2"
-                  sx={{ color: appColors.brandBlueDark, fontWeight: 700 }}
+                  sx={{ color: 'primary.dark', fontWeight: 700 }}
                 >
                   Execution Context
                 </Typography>

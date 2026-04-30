@@ -31,7 +31,9 @@ src/
     __tests__/              one *.test.ts per api module
   components/               shared cross-page components
     BatchJobsNav/
+    ColorModeToggle/        sun/moon IconButton wired to useColorMode
     EnvironmentSelector/
+    PageBreadcrumb/         themed breadcrumb (orange env → primary.dark page)
     TilePaper/              base styled Paper for tiles
     StatTile/               title + big value + subtitle (loading/error/empty)
     LargeTile/               title + optional headerAction + content (loading/error overrides)
@@ -47,7 +49,7 @@ src/
     overview/               OverviewPage (dashboard tiles + charts)
     jobDetail/              JobDetailPage (run-level tiles + JobRunsTable)
     jobExecution/           JobExecutionPage (per-execution tiles + StepsTable)
-  theme/                    appTheme.ts + appColors palette
+  theme/                    createAppTheme(mode), appColors, pageGradient, ColorModeProvider/useColorMode
   types/                    shared TS types
   hooks/, utils/
 ```
@@ -90,36 +92,30 @@ When writing a new tile, prefer extending `StatTile` / `LargeTile` over duplicat
 
 `AppShell` ([src/shell/AppShell.tsx](src/shell/AppShell.tsx)) provides:
 
-- AppBar with logo, current user avatar (initials fallback), Logout button
+- AppBar with logo, current user avatar (initials fallback), `ColorModeToggle`, Logout button
 - Left sidebar with `EnvironmentSelector` + `BatchJobsNav` (active item derived from `useParams().jobId`)
-- Footer
 - `EnvironmentContext.Provider` (persisted to `localStorage` under `spring-batch-dashboard.environment`)
 - Scrollable content area; pages render their own `Container` inside it
+- Outer wrapper renders the mode-aware `pageGradient` so the header sits in the top of one continuous gradient (no separate footer chrome)
 
 `useEnvironment()` works from any authenticated page since they all render under `AppShell`'s provider. Selected environment is also automatically forwarded to the backend on every request via the `X-Environment` header (interceptor in [client.ts](src/config/client.ts)).
 
 ## Page title convention
 
-Each page renders a breadcrumb-style title. Environment in `appColors.brandOrange`, separated by `<ChevronRightIcon />` from the rest in `appColors.brandBlueDark`. All segments `variant="h5"`, `fontWeight: 800`.
+Each page renders a breadcrumb-style title via the shared [`PageBreadcrumb`](src/components/PageBreadcrumb/) component — pass an array of `{ label, onClick? }` segments. The first segment renders in `palette.secondary.main` (brand orange) and subsequent ones in `palette.primary.dark` (which resolves to `#003C8F` in light mode and `#006bff` in dark mode). Clickable segments are rendered as `MuiLink` automatically when `onClick` is provided.
 
 ```tsx
-<Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-  <Typography variant="h5" sx={{ color: appColors.brandOrange, fontWeight: 800 }}>{environment}</Typography>
-  <ChevronRightIcon sx={{ color: 'text.secondary', mx: 0.5, fontSize: 28 }} />
-  <Typography variant="h5" sx={{ color: appColors.brandBlueDark, fontWeight: 800 }}>{pageName}</Typography>
-</Box>
+<PageBreadcrumb segments={[{ label: environment }, { label: 'Overview' }]} />
 ```
-
-For clickable segments use `MuiLink` with matching font sizing — see [JobExecutionPage](src/pages/jobExecution/JobExecutionPage.tsx).
 
 ## Charts
 
-`@mui/x-charts` for everything. On light tile backgrounds use this sx for axes/legend/tooltip:
+`@mui/x-charts` for everything. Axis/legend `fill` values must respond to color mode — pass a theme callback so labels switch to white in dark mode:
 
 ```ts
-'& .MuiChartsAxis-tickLabel': { fill: '#37474F' },
-'& .MuiChartsAxis-label': { fill: '#37474F' },
-'& .MuiChartsLegend-label': { fill: '#37474F' },
+'& .MuiChartsAxis-tickLabel': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
+'& .MuiChartsAxis-label': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
+'& .MuiChartsLegend-label': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
 '& .MuiChartsTooltip-root *': { color: '#1A2733 !important' },
 '& .MuiChartsTooltip-paper': { backgroundColor: appColors.white, border: '1px solid #D5DBE3' },
 ```
@@ -169,7 +165,11 @@ Coverage gate is **80%** on lines / statements / branches / functions, enforced 
 
 ## Theme
 
-Use `appColors` from `src/theme` for brand colors (don't hardcode hex values for blue/orange/etc.). MUI's theme also exposes them via `palette.primary` / `palette.secondary`.
+- `appColors` (in [src/theme/appTheme.ts](src/theme/appTheme.ts)) holds brand-only constants (orange, blue, green, white). Don't hardcode hex values for those.
+- `createAppTheme(mode)` returns the MUI theme for `'light'` or `'dark'`. `palette.primary.dark` is `#003C8F` in light mode and `#006bff` in dark mode; `background.default`, `background.paper`, and `divider` swap per mode. Reach for the sx tokens (`'primary.dark'`, `'background.paper'`, `'divider'`) instead of hardcoded values so chrome flips automatically.
+- `pageGradient.light` / `pageGradient.dark` are the full-page vertical gradients used by `AppShell` and `LoginPage`.
+- `ColorModeProvider` ([src/theme/ColorModeContext.tsx](src/theme/ColorModeContext.tsx)) wraps `ThemeProvider` + `CssBaseline`, holds the mode in state, and persists it to `localStorage` under `spring-batch-dashboard.colorMode`. `useColorMode()` returns `{ mode, toggleMode }`; outside the provider it returns a no-op `light` default so unwrapped tests don't blow up.
+- The toggle UI lives in [`ColorModeToggle`](src/components/ColorModeToggle/) — drop it anywhere and pass `sx` for positioning.
 
 ## Conventions
 

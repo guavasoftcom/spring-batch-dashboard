@@ -12,12 +12,13 @@ import {
   Typography,
 } from '@mui/material';
 import { BatchJobsNav } from '~/components/BatchJobsNav';
+import { ColorModeToggle } from '~/components/ColorModeToggle';
 import { EnvironmentSelector } from '~/components/EnvironmentSelector';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getCurrentUser, logout } from '~/api';
 import type { CurrentUserResponse } from '~/types';
 import SpringLeafIcon from '~/pages/login/components/SpringLeafIcon';
-import { appColors } from '~/theme';
+import { appColors, pageGradient, useColorMode } from '~/theme';
 import { EnvironmentContext } from './EnvironmentContext';
 
 const ENV_STORAGE_KEY = 'spring-batch-dashboard.environment';
@@ -38,6 +39,7 @@ const initialsFor = (user: CurrentUserResponse | null): string => {
 const AppShell = ({ children }: AppShellProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { mode } = useColorMode();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [environment, setEnvironmentState] = useState<string>(() => {
     const stored = typeof window !== 'undefined' ? window.localStorage.getItem(ENV_STORAGE_KEY) : null;
@@ -69,13 +71,15 @@ const AppShell = ({ children }: AppShellProps) => {
 
   return (
     <EnvironmentContext.Provider value={{ environment, setEnvironment }}>
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: appColors.loginGradient }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: pageGradient[mode] }}>
       <AppBar
         position="static"
         sx={{
-          background: appColors.loginGradient,
-          boxShadow: '0 18px 36px rgba(0, 0, 0, 0.25)',
-          borderBottom: `1px solid ${appColors.glassBorder}`,
+          background: 'transparent',
+          color: 'text.primary',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+          borderBottom: 1,
+          borderColor: 'divider',
         }}
       >
         <Toolbar sx={{ minHeight: 72 }}>
@@ -84,7 +88,7 @@ const AppShell = ({ children }: AppShellProps) => {
             <Typography
               component="h1"
               sx={{
-                color: appColors.textOnDark,
+                color: 'text.primary',
                 lineHeight: 1.1,
                 fontSize: { xs: '1.2rem', sm: '1.45rem' },
                 whiteSpace: 'nowrap',
@@ -108,20 +112,22 @@ const AppShell = ({ children }: AppShellProps) => {
                 sx={{
                   width: 36,
                   height: 36,
-                  bgcolor: appColors.brandBlueDark,
+                  bgcolor: 'primary.dark',
                   color: appColors.white,
                   fontSize: 14,
                   fontWeight: 700,
-                  border: `1px solid ${appColors.glassBorder}`,
+                  border: 1,
+                  borderColor: 'divider',
                 }}
               >
                 {initialsFor(user)}
               </Avatar>
-              <Typography sx={{ color: appColors.textOnDark, fontWeight: 600, fontSize: 14 }}>
+              <Typography sx={{ color: 'text.primary', fontWeight: 600, fontSize: 14 }}>
                 {displayName}
               </Typography>
             </Box>
           )}
+          <ColorModeToggle sx={{ mr: 1 }} />
           <Button
             color="inherit"
             onClick={handleLogout}
@@ -146,8 +152,9 @@ const AppShell = ({ children }: AppShellProps) => {
           sx={{
             width: 240,
             flexShrink: 0,
-            bgcolor: appColors.white,
-            borderRight: '1px solid #D5DBE3',
+            bgcolor: 'background.paper',
+            borderRight: 1,
+            borderColor: 'divider',
             py: 2,
           }}
         >
@@ -161,7 +168,7 @@ const AppShell = ({ children }: AppShellProps) => {
                 borderRadius: 1,
                 '&.Mui-selected': {
                   bgcolor: 'rgba(21, 101, 192, 0.12)',
-                  color: appColors.brandBlueDark,
+                  color: 'primary.dark',
                 },
                 '&.Mui-selected:hover': { bgcolor: 'rgba(21, 101, 192, 0.18)' },
               }}
@@ -177,24 +184,9 @@ const AppShell = ({ children }: AppShellProps) => {
           <BatchJobsNav />
         </Box>
 
-        <Box sx={{ flex: 1, bgcolor: '#ECEFF4', overflow: 'auto' }}>
+        <Box sx={{ flex: 1, bgcolor: 'background.default', overflow: 'auto' }}>
           {children}
         </Box>
-      </Box>
-
-      <Box
-        component="footer"
-        sx={{
-          py: 2,
-          textAlign: 'center',
-          borderTop: 1,
-          borderColor: 'divider',
-          bgcolor: 'transparent',
-        }}
-      >
-        <Typography variant="body2" sx={{ color: appColors.textOnDark }}>
-          © {new Date().getFullYear()} Spring Batch Dashboard
-        </Typography>
       </Box>
     </Box>
     </EnvironmentContext.Provider>

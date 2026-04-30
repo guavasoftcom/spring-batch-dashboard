@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { Box, Skeleton, Typography } from '@mui/material';
-import { appColors } from '~/theme';
 import { TilePaper } from '~/components/TilePaper';
 
 type Props = {
@@ -26,7 +25,7 @@ const LargeTile = ({
 }: Props) => (
   <TilePaper minHeight={minHeight}>
     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-      <Typography variant="h6" sx={{ color: appColors.brandBlueDark, fontWeight: 700 }}>
+      <Typography variant="h6" sx={{ color: 'primary.dark', fontWeight: 700 }}>
         {title}
       </Typography>
       {headerAction}
