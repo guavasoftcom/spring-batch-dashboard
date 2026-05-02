@@ -54,7 +54,6 @@ describe('JobDetailPage', () => {
       routePath: '/jobs/:jobId',
     });
 
-    expect(screen.getByText('Prod')).toBeInTheDocument();
     expect(screen.getByText('Import Users Job')).toBeInTheDocument();
 
     expect(await screen.findByText('Total Runs')).toBeInTheDocument();

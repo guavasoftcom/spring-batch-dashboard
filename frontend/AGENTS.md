@@ -23,7 +23,7 @@ src/
     index.ts                barrel
     client.ts               (re-exported from config/client.ts)
     authApi.ts              getCurrentUser, logout
-    environmentApi.ts       getEnvironments
+    environmentApi.ts       getEnvironments → EnvironmentInfo[] ({ name, type })
     jobsApi.ts              getJobs
     jobRunsApi.ts           run-level metrics + paginated runs
     jobExecutionStepsApi.ts per-execution step metrics
@@ -32,8 +32,10 @@ src/
   components/               shared cross-page components
     BatchJobsNav/
     ColorModeToggle/        sun/moon IconButton wired to useColorMode
-    EnvironmentSelector/
-    PageBreadcrumb/         themed breadcrumb (orange env → primary.dark page)
+    DatabaseIcon/           branded SVG icon per database engine (POSTGRESQL/MYSQL/ORACLE)
+    EnvironmentSelector/    Select with DatabaseIcon per option + tooltip on the trigger
+    ExecutionLink/          MuiLink-as-button + DataThresholdingIcon + #executionId (cell / large variants)
+    PageBreadcrumb/         themed breadcrumb; auto-prepends env (with DatabaseIcon) when nav is hidden
     TilePaper/              base styled Paper for tiles
     StatTile/               title + big value + subtitle (loading/error/empty)
     LargeTile/               title + optional headerAction + content (loading/error overrides)
@@ -44,6 +46,7 @@ src/
     AppShell.tsx            AppBar + sidebar; mounts once via AppShellLayout
     AppShellLayout.tsx      <Outlet/> wrapper for nested routes
     EnvironmentContext.tsx  global environment selection (persisted to localStorage)
+    NavContext.tsx          shared { navOpen, setNavOpen } for components that key off the side-nav state (e.g. PageBreadcrumb)
   pages/
     login/                  LoginPage (OAuth2 GitHub start)
     overview/               OverviewPage (dashboard tiles + charts)
@@ -92,21 +95,27 @@ When writing a new tile, prefer extending `StatTile` / `LargeTile` over duplicat
 
 `AppShell` ([src/shell/AppShell.tsx](src/shell/AppShell.tsx)) provides:
 
-- AppBar with logo, current user avatar (initials fallback), `ColorModeToggle`, Logout button
-- Left sidebar with `EnvironmentSelector` + `BatchJobsNav` (active item derived from `useParams().jobId`)
-- `EnvironmentContext.Provider` (persisted to `localStorage` under `spring-batch-dashboard.environment`)
-- Scrollable content area; pages render their own `Container` inside it
+- Sticky AppBar with menu-toggle button, logo, current user avatar (initials fallback), `ColorModeToggle`, Logout button
+- Left sidebar with `EnvironmentSelector` + `BatchJobsNav` (active item derived from `useParams().jobId`); sticky on `md+`, slide-in drawer on `xs`/`sm`. Open/closed state lives in `NavContext`
+- `EnvironmentContext.Provider` (persisted to `localStorage` under `spring-batch-dashboard.environment`) and `NavContext.Provider`
+- Scrolls back to top on every route change
 - Outer wrapper renders the mode-aware `pageGradient` so the header sits in the top of one continuous gradient (no separate footer chrome)
 
 `useEnvironment()` works from any authenticated page since they all render under `AppShell`'s provider. Selected environment is also automatically forwarded to the backend on every request via the `X-Environment` header (interceptor in [client.ts](src/config/client.ts)).
 
 ## Page title convention
 
-Each page renders a breadcrumb-style title via the shared [`PageBreadcrumb`](src/components/PageBreadcrumb/) component — pass an array of `{ label, onClick? }` segments. The first segment renders in `palette.secondary.main` (brand orange) and subsequent ones in `palette.primary.dark` (which resolves to `#003C8F` in light mode and `#006bff` in dark mode). Clickable segments are rendered as `MuiLink` automatically when `onClick` is provided.
+Each page renders a breadcrumb-style title via the shared [`PageBreadcrumb`](src/components/PageBreadcrumb/) component — pass an array of `{ label, onClick?, icon? }` segments. The first segment renders in `palette.secondary.main` (brand orange) and subsequent ones in `palette.primary.dark` (which resolves to `#003C8F` in light mode and `#006bff` in dark mode). Clickable segments are rendered as `MuiLink` automatically when `onClick` is provided. Pass `icon` to put a Material icon to the left of the label.
 
 ```tsx
-<PageBreadcrumb segments={[{ label: environment }, { label: 'Overview' }]} />
+<PageBreadcrumb
+  segments={[
+    { label: 'Overview', icon: <HomeIcon sx={{ fontSize: 26 }} /> },
+  ]}
+/>
 ```
+
+The current environment is **not** part of page-level segments — when the side nav is hidden, `PageBreadcrumb` reads `useEnvironment()` + the cached `['environments']` query and prepends an env segment with the matching `DatabaseIcon` automatically.
 
 ## Charts
 

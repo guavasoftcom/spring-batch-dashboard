@@ -80,7 +80,7 @@ Each frontend request includes an `X-Environment: <name>` header (set by the axi
 2. [DynamicDataSourceConfig](src/main/java/com/guavasoft/springbatch/dashboard/config/DynamicDataSourceConfig.java) — `AbstractRoutingDataSource` whose `determineCurrentLookupKey()` reads `DataSourceContext.get()`.
 3. Available environments come from `app.datasources` in [application-local-postgresql.yml](src/main/resources/application-local-postgresql.yml) / [application-local-mysql.yml](src/main/resources/application-local-mysql.yml) / [application-local-oracle.yml](src/main/resources/application-local-oracle.yml) (`name`, `url`, `username`, `password`, optional `schema`). The first entry is the default when no header / unknown header is supplied.
 
-Adding a new environment: add another item under `app.datasources` (matching the active engine — multiple entries of the *same* type are fine) and restart. The frontend's `EnvironmentSelector` picks it up automatically from `GET /api/environments`.
+Adding a new environment: add another item under `app.datasources` (matching the active engine — multiple entries of the *same* type are fine) and restart. The frontend's `EnvironmentSelector` picks it up automatically from `GET /api/environments`, which returns `[{ name, type }]` — `type` is derived from the JDBC URL prefix (`jdbc:<engine>:…` → `POSTGRESQL` / `MYSQL` / `ORACLE`, fallback `UNKNOWN`) by [EnvironmentService](src/main/java/com/guavasoft/springbatch/dashboard/service/EnvironmentService.java) and used by the UI to choose the right database icon.
 
 ### Per-datasource schema
 

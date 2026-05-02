@@ -9,7 +9,7 @@ vi.mock('~/api', async () => {
   return {
     ...actual,
     getCurrentUser: vi.fn().mockResolvedValue({ login: 'octo', name: 'Octo Cat', avatarUrl: null }),
-    getEnvironments: vi.fn().mockResolvedValue(['prod']),
+    getEnvironments: vi.fn().mockResolvedValue([{ name: 'prod', type: 'POSTGRESQL' }]),
     getJobs: vi.fn().mockResolvedValue([]),
     logout: vi.fn().mockResolvedValue(undefined),
   };

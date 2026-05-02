@@ -46,9 +46,8 @@ describe('OverviewPage', () => {
     vi.clearAllMocks();
   });
 
-  it('renders the breadcrumb with the active environment', () => {
+  it('renders the Overview breadcrumb', () => {
     renderWithProviders(<OverviewPage />, { environment: 'prod' });
-    expect(screen.getByText('Prod')).toBeInTheDocument();
     expect(screen.getByText('Overview')).toBeInTheDocument();
   });
 

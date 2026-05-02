@@ -1,10 +1,12 @@
 import {
   List,
   ListItemButton,
+  ListItemIcon,
   ListItemText,
   Skeleton,
   Typography,
 } from '@mui/material';
+import SourceIcon from '@mui/icons-material/Source';
 import { humanize } from '~/utils';
 
 type Props = {
@@ -55,6 +57,9 @@ const BatchJobsNav = ({ jobs, activeJobId, loading, onSelect }: Props) => (
                 '&.Mui-selected:hover': { bgcolor: 'rgba(21, 101, 192, 0.18)' },
               }}
             >
+              <ListItemIcon sx={{ minWidth: 32, color: 'inherit' }}>
+                <SourceIcon fontSize="small" />
+              </ListItemIcon>
               <ListItemText
                 primary={humanize(jobId)}
                 slotProps={{

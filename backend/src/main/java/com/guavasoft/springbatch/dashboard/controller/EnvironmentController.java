@@ -1,5 +1,6 @@
 package com.guavasoft.springbatch.dashboard.controller;
 
+import com.guavasoft.springbatch.dashboard.model.EnvironmentInfo;
 import com.guavasoft.springbatch.dashboard.service.EnvironmentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,8 +19,8 @@ public class EnvironmentController {
     private final EnvironmentService environmentService;
 
     @GetMapping
-    @Operation(summary = "List datasource names", description = "Names of all datasources currently configured for the dashboard.")
-    public List<String> getDatasourceNames() {
-        return environmentService.getDatasourceNames();
+    @Operation(summary = "List datasource environments", description = "All datasources currently configured for the dashboard, with database type derived from each JDBC URL.")
+    public List<EnvironmentInfo> getEnvironments() {
+        return environmentService.getEnvironments();
     }
 }

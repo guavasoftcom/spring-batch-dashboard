@@ -89,7 +89,7 @@ Mixing engines in one boot is not supported — every entry under `app.datasourc
 
 The dashboard supports browsing multiple databases of the active engine, switched via the environment selector in the sidebar. The selection is forwarded to the backend on every request as the `X-Environment` header, and the backend routes to the matching datasource at `app.datasources[*]` in the active local-profile YAML.
 
-To add a new environment, append an entry to that list (matching the active engine) and restart. The selector picks it up via `GET /api/environments`.
+To add a new environment, append an entry to that list (matching the active engine) and restart. The selector picks it up via `GET /api/environments`, which returns `[{ name, type }]` — the engine type is derived from each entry's JDBC URL prefix and drives the database icon shown next to the environment name in the selector and the page breadcrumb.
 
 ## Authentication
 

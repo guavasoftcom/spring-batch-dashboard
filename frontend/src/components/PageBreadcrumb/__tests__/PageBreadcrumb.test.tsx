@@ -1,11 +1,22 @@
-import { render, screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import PageBreadcrumb from '~/components/PageBreadcrumb/PageBreadcrumb';
+import { NavContext } from '~/shell/NavContext';
+import { renderWithProviders } from '~/test-utils/renderWithProviders';
+
+const apiMock = vi.hoisted(() => ({ getEnvironments: vi.fn() }));
+
+vi.mock('~/api', async () => {
+  const actual = await vi.importActual<object>('~/api');
+  return { ...actual, ...apiMock };
+});
+
+apiMock.getEnvironments.mockResolvedValue([]);
 
 describe('PageBreadcrumb', () => {
   it('renders all segments with humanized labels', () => {
-    render(
+    renderWithProviders(
       <PageBreadcrumb
         segments={[
           { label: 'prod' },
@@ -23,7 +34,7 @@ describe('PageBreadcrumb', () => {
   it('renders clickable segments as buttons that fire onClick', async () => {
     const user = userEvent.setup();
     const onJob = vi.fn();
-    render(
+    renderWithProviders(
       <PageBreadcrumb
         segments={[
           { label: 'prod' },
@@ -39,16 +50,43 @@ describe('PageBreadcrumb', () => {
   });
 
   it('renders a single segment without a chevron separator', () => {
-    const { container } = render(<PageBreadcrumb segments={[{ label: 'prod' }]} />);
+    const { container } = renderWithProviders(<PageBreadcrumb segments={[{ label: 'prod' }]} />);
 
     expect(container.querySelectorAll('svg').length).toBe(0);
   });
 
   it('inserts a chevron between consecutive segments', () => {
-    const { container } = render(
+    const { container } = renderWithProviders(
       <PageBreadcrumb segments={[{ label: 'prod' }, { label: 'importUsersJob' }]} />,
     );
 
     expect(container.querySelectorAll('svg').length).toBe(1);
+  });
+
+  it('prepends the active environment when the side nav is hidden', async () => {
+    apiMock.getEnvironments.mockResolvedValueOnce([
+      { name: 'prod', type: 'POSTGRESQL' },
+    ]);
+
+    renderWithProviders(
+      <NavContext.Provider value={{ navOpen: false, setNavOpen: () => {} }}>
+        <PageBreadcrumb segments={[{ label: 'Overview' }]} />
+      </NavContext.Provider>,
+      { environment: 'prod' },
+    );
+
+    await waitFor(() => expect(screen.getByText('Prod')).toBeInTheDocument());
+    expect(screen.getByText('Overview')).toBeInTheDocument();
+  });
+
+  it('does not prepend an env segment when the nav is open', () => {
+    renderWithProviders(
+      <NavContext.Provider value={{ navOpen: true, setNavOpen: () => {} }}>
+        <PageBreadcrumb segments={[{ label: 'Overview' }]} />
+      </NavContext.Provider>,
+      { environment: 'prod' },
+    );
+
+    expect(screen.queryByText('Prod')).not.toBeInTheDocument();
   });
 });

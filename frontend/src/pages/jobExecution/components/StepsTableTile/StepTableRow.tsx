@@ -115,8 +115,9 @@ const StepTableRow = ({ step }: { step: StepRow }) => {
                 <Box
                   component="pre"
                   sx={{
-                    bgcolor: '#F5F7FA',
-                    border: '1px solid #D5DBE3',
+                    bgcolor: 'background.default',
+                    border: 1,
+                    borderColor: 'divider',
                     borderRadius: 1,
                     p: 1.5,
                     m: 0,

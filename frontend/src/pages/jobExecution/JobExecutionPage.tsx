@@ -1,4 +1,6 @@
 import { Box, Container, Grid, Link as MuiLink } from '@mui/material';
+import SourceIcon from '@mui/icons-material/Source';
+import DataThresholdingIcon from '@mui/icons-material/DataThresholding';
 import { PageBreadcrumb } from '~/components';
 import { humanize } from '~/utils';
 import {
@@ -15,14 +17,12 @@ export type { StepRow, StepStatus } from './types';
 type Props = {
   jobId: string | undefined;
   executionId: string | undefined;
-  environment: string;
   onJobClick: () => void;
 };
 
 const JobExecutionPage = ({
   jobId,
   executionId,
-  environment,
   onJobClick,
 }: Props) => (
   <Container
@@ -32,9 +32,11 @@ const JobExecutionPage = ({
   >
     <PageBreadcrumb
       segments={[
-        { label: environment },
-        { label: jobId ?? 'Job', onClick: onJobClick },
-        { label: `Execution #${executionId ?? '—'}` },
+        { label: jobId ?? 'Job', onClick: onJobClick, icon: <SourceIcon sx={{ fontSize: 26 }} /> },
+        {
+          label: `Execution #${executionId ?? '—'}`,
+          icon: <DataThresholdingIcon sx={{ fontSize: 26 }} />,
+        },
       ]}
     />
 

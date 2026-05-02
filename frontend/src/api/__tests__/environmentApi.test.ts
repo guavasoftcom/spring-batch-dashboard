@@ -15,7 +15,11 @@ vi.mock( '~/config/client', () => ({
 import { apiClient } from '~/config/client';
 import { getEnvironments } from '~/api/environmentApi';
 
-const expectedMockEnvironments = ['Dev Datamart', 'Dev ETL', 'Test Datamart', 'Test ETL'];
+const expectedMockEnvironments = [
+  { name: 'Localhost Warehouse', type: 'POSTGRESQL' },
+  { name: 'Test Warehouse', type: 'MYSQL' },
+  { name: 'Prod Warehouse', type: 'ORACLE' },
+];
 
 describe('environmentApi', () => {
   beforeEach(() => {
@@ -27,9 +31,13 @@ describe('environmentApi', () => {
   });
 
   it('getEnvironments hits /api/environments in real mode', async () => {
-    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: ['prod', 'staging'] });
+    const payload = [
+      { name: 'prod', type: 'POSTGRESQL' },
+      { name: 'staging', type: 'MYSQL' },
+    ];
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: payload });
 
-    await expect(getEnvironments()).resolves.toEqual(['prod', 'staging']);
+    await expect(getEnvironments()).resolves.toEqual(payload);
     expect(apiClient.get).toHaveBeenCalledWith('/api/environments');
   });
 
