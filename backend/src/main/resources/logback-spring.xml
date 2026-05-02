@@ -2,14 +2,14 @@
 <configuration>
 	<include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
-	<springProfile name="local-postgresql,local-mysql,local-oracle">
+	<springProfile name="local">
 		<include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
 		<root level="INFO">
 			<appender-ref ref="CONSOLE"/>
 		</root>
 	</springProfile>
 
-	<springProfile name="!local-postgresql &amp; !local-mysql &amp; !local-oracle">
+	<springProfile name="!local">
 		<appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
 			<encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
 				<format>logstash</format>

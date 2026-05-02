@@ -1,0 +1,36 @@
+# Activated by surefire (spring.profiles.active=test). The datasource entries declare one
+# per supported engine; their placeholders are bound from the matching Testcontainers
+# DynamicPropertyRegistrar at context refresh, so URLs resolve against whichever ports
+# Docker maps for this run. The security stanza supplies stub values so the full Spring
+# Boot context (used by DashboardApplicationTests) loads — slice tests that disable the
+# security filter chain don't read these.
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: test-client-id
+            client-secret: test-client-secret
+
+app:
+  cors:
+    allowed-origins: http://localhost:5173
+  oauth2:
+    success-url: http://localhost:5173/overview
+  datasources:
+    - name: Test Postgres
+      type: POSTGRESQL
+      url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      username: ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
+    - name: Test MySQL
+      type: MYSQL
+      url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DB}
+      username: ${MYSQL_USER}
+      password: ${MYSQL_PASSWORD}
+    - name: Test Oracle
+      type: ORACLE
+      url: jdbc:oracle:thin:@//${ORACLE_HOST}:${ORACLE_PORT}/${ORACLE_DB}
+      username: ${ORACLE_USER}
+      password: ${ORACLE_PASSWORD}

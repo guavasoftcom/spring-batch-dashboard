@@ -15,19 +15,8 @@ public class EnvironmentService {
 
     public List<EnvironmentInfo> getEnvironments() {
         return datasourcesProperties.getDatasources().stream()
-            .map(entry -> new EnvironmentInfo(entry.getName(), databaseTypeFromUrl(entry.getUrl())))
+            .map(entry -> new EnvironmentInfo(entry.getName(), entry.getType().name()))
             .sorted(Comparator.comparing(EnvironmentInfo::name))
             .toList();
-    }
-
-    private static String databaseTypeFromUrl(String url) {
-        if (url == null || !url.startsWith("jdbc:")) {
-            return "UNKNOWN";
-        }
-        int colonAfterPrefix = url.indexOf(':', 5);
-        if (colonAfterPrefix < 0) {
-            return "UNKNOWN";
-        }
-        return url.substring(5, colonAfterPrefix).toUpperCase();
     }
 }

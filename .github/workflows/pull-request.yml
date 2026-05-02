@@ -11,16 +11,12 @@ concurrency:
 
 jobs:
   backend:
-    name: Backend (${{ matrix.profile }})
+    name: Backend
     runs-on: ubuntu-latest
     permissions:
       contents: read
       checks: write
       pull-requests: write
-    strategy:
-      fail-fast: false
-      matrix:
-        profile: [postgresql, mysql, oracle]
     defaults:
       run:
         working-directory: backend
@@ -35,29 +31,28 @@ jobs:
       - name: Verify (checkstyle + tests + package)
         # `verify` runs the validate phase (Checkstyle), test phase, and package phase.
         # Testcontainers picks up the Docker daemon that's already running on ubuntu-latest.
-        # The active profile decides which JDBC driver and Testcontainers DB module are bundled.
-        # Coverage is generated here (jacoco.exec) but the threshold check happens once
-        # in the downstream coverage job against the merged exec data from both matrix
-        # entries.
-        run: ./mvnw --batch-mode --no-transfer-progress -P${{ matrix.profile }} verify
+        # All three Postgres/MySQL/Oracle JDBC drivers are bundled, and repository slice
+        # tests boot one container per engine and parameterize over them — a single run
+        # exercises every dialect.
+        run: ./mvnw --batch-mode --no-transfer-progress verify
 
       - name: Annotate Checkstyle results
         if: always()
         uses: jwgmeligmeyling/checkstyle-github-action@master
         with:
           path: 'backend/target/checkstyle-result.xml'
-          name: Checkstyle (${{ matrix.profile }})
+          name: Checkstyle
 
       - name: Publish test report
         if: always()
         uses: mikepenz/action-junit-report@v5
         with:
           report_paths: backend/target/surefire-reports/TEST-*.xml
-          check_name: Backend tests (${{ matrix.profile }})
+          check_name: Backend tests
           require_tests: true
 
       - name: Comment test results on PR
-        if: matrix.profile == 'postgresql' && always()
+        if: always()
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           files: backend/target/surefire-reports/TEST-*.xml
@@ -69,73 +64,17 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: backend-surefire-reports-${{ matrix.profile }}
+          name: backend-surefire-reports
           path: backend/target/surefire-reports
           if-no-files-found: ignore
-
-      - name: Rename exec for downstream merge
-        if: always()
-        run: mv backend/target/jacoco.exec backend/target/jacoco-${{ matrix.profile }}.exec
-        working-directory: ${{ github.workspace }}
-
-      - name: Upload JaCoCo exec
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-jacoco-exec-${{ matrix.profile }}
-          path: backend/target/jacoco-${{ matrix.profile }}.exec
-          if-no-files-found: ignore
-
-      - name: Upload per-profile JaCoCo report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-jacoco-report-${{ matrix.profile }}
-          path: backend/target/site/jacoco
-          if-no-files-found: ignore
-
-  coverage:
-    name: Backend coverage (merged)
-    runs-on: ubuntu-latest
-    needs: backend
-    if: always()
-    permissions:
-      contents: read
-      checks: write
-      pull-requests: write
-    defaults:
-      run:
-        working-directory: backend
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK
-        uses: ./.github/actions/setup-java
-
-      - name: Compile main classes
-        # The merge/report goals need target/classes to attribute coverage to source.
-        # Use -Djacoco.skip=true to keep the agent off; we're not running tests here.
-        run: ./mvnw --batch-mode --no-transfer-progress -DskipTests -Djacoco.skip=true compile
-
-      - name: Download per-matrix exec files
-        uses: actions/download-artifact@v4
-        with:
-          pattern: backend-jacoco-exec-*
-          path: backend/target/jacoco-exec
-          merge-multiple: true
-
-      - name: Merge per-matrix coverage into a single report
-        run: ./mvnw --batch-mode --no-transfer-progress jacoco:merge@jacoco-merge jacoco:report@jacoco-report-merged
 
       - name: Publish + gate coverage on PR
         if: always()
         uses: PavanMudigonda/jacoco-reporter@v5.1
         with:
-          coverage_results_path: backend/target/site/jacoco-merged/jacoco.xml
+          coverage_results_path: backend/target/site/jacoco/jacoco.xml
           coverage_report_name: Backend coverage
-          coverage_report_title: Backend coverage (merged across matrix)
+          coverage_report_title: Backend coverage
           github_token: ${{ secrets.GITHUB_TOKEN }}
           minimum_coverage: 80
           minimum_coverage_changed_files: 80
@@ -144,12 +83,12 @@ jobs:
           pass_emoji: '✅'
           fail_emoji: '❌'
 
-      - name: Upload merged JaCoCo report
+      - name: Upload JaCoCo report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: backend-jacoco-merged
-          path: backend/target/site/jacoco-merged
+          name: backend-jacoco-report
+          path: backend/target/site/jacoco
           if-no-files-found: ignore
 
   frontend:

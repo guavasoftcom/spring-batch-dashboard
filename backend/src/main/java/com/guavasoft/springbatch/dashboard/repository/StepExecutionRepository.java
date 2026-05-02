@@ -2,8 +2,6 @@ package com.guavasoft.springbatch.dashboard.repository;
 
 import com.guavasoft.springbatch.dashboard.entity.BatchStatus;
 import com.guavasoft.springbatch.dashboard.entity.StepExecutionEntity;
-import java.util.List;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -33,10 +31,4 @@ public interface StepExecutionRepository extends JpaRepository<StepExecutionEnti
     @Query("SELECT COALESCE(SUM(COALESCE(s.readSkipCount, 0) + COALESCE(s.writeSkipCount, 0) + COALESCE(s.processSkipCount, 0)), 0) "
         + "FROM StepExecutionEntity s")
     long sumSkipCount();
-
-    // CASE WHEN ... THEN 1 ELSE 0 END emulates NULLS LAST and is portable across Postgres and MySQL.
-    @Query("SELECT s FROM StepExecutionEntity s "
-        + "WHERE s.status = 'FAILED' "
-        + "ORDER BY CASE WHEN s.endTime IS NULL THEN 1 ELSE 0 END, s.endTime DESC, s.lastUpdated DESC")
-    List<StepExecutionEntity> findMostRecentFailed(Pageable pageable);
 }

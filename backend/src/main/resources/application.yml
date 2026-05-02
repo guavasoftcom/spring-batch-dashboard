@@ -1,25 +1,25 @@
-app:
-  # POSTGRESQL, MYSQL, or ORACLE. Must match the JDBC driver bundled by the active
-  # Maven profile (postgresql is default; -Pmysql / -Poracle swap the driver in).
-  # When building with -Pmysql or -Poracle, set APP_DIALECT=MYSQL / ORACLE at runtime.
-  dialect: ${APP_DIALECT:POSTGRESQL}
-
 spring:
   profiles:
-    # Pick the local profile that matches the bundled JDBC driver:
-    # local-postgresql (default), local-mysql, or local-oracle.
-    active: ${LOCAL_PROFILE:local-postgresql}
+    # The `local` profile declares one app.datasources entry per supported engine, all
+    # pointing at the matching docker-compose container. Production deployments override
+    # app.datasources directly and can mix POSTGRESQL / MYSQL / ORACLE entries — all three
+    # JDBC drivers are bundled.
+    active: ${LOCAL_PROFILE:local}
   application:
     name: springbatch-dashboard
   jpa:
     hibernate:
-      ddl-auto: validate
+      # The dashboard is read-only against fixed external Spring Batch schemas. Hibernate's
+      # validate flags benign mismatches across engines (e.g. Oracle's upstream BATCH DDL
+      # uses CLOB for SERIALIZED_CONTEXT while Postgres/MySQL use TEXT), so skip validation
+      # entirely and trust the deployed schema.
+      ddl-auto: none
       naming:
         # Use names exactly as declared in @Table/@Column. Spring Boot's default would
         # lowercase the explicit BATCH_* table names which case-sensitive MySQL won't find.
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     # No explicit database-platform: Hibernate auto-detects per JDBC connection
-    # so the same boot can serve mixed Postgres + MySQL datasources.
+    # so the same boot can serve mixed Postgres + MySQL + Oracle datasources.
     properties:
       hibernate:
         format_sql: true

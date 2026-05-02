@@ -1,7 +1,13 @@
 package com.guavasoft.springbatch.dashboard.config;
 
+import com.guavasoft.springbatch.dashboard.dialect.DialectType;
+import com.guavasoft.springbatch.dashboard.dialect.MysqlDialect;
+import com.guavasoft.springbatch.dashboard.dialect.OracleDialect;
+import com.guavasoft.springbatch.dashboard.dialect.PostgresqlDialect;
+import com.guavasoft.springbatch.dashboard.dialect.RoutingSqlDialect;
 import com.guavasoft.springbatch.dashboard.dialect.SqlDialect;
 import com.zaxxer.hikari.HikariDataSource;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -28,7 +34,9 @@ public class DynamicDataSourceConfig {
     private static final Pattern SCHEMA_IDENTIFIER = Pattern.compile("^[A-Za-z_][A-Za-z0-9_$]*$");
 
     private final DatasourcesProperties properties;
-    private final SqlDialect dialect;
+    private final PostgresqlDialect postgresqlDialect;
+    private final MysqlDialect mysqlDialect;
+    private final OracleDialect oracleDialect;
 
     @Bean
     @Primary
@@ -37,11 +45,11 @@ public class DynamicDataSourceConfig {
             throw new IllegalStateException("No datasources configured under app.datasources");
         }
 
-        // All entries must point at databases of the same type — the active SqlDialect bean
-        // (selected by app.dialect) is shared across them.
+        Map<DialectType, SqlDialect> dialectByType = dialectsByType();
         Map<Object, Object> targets = new LinkedHashMap<>();
         DataSource defaultTarget = null;
         for (var entry : properties.getDatasources()) {
+            SqlDialect dialect = requireDialect(entry, dialectByType);
             // Validate the schema *before* constructing the Hikari pool so misconfigured
             // entries fail with a clear IllegalStateException instead of being shadowed by
             // a driver-load failure (which surfaces from DataSourceBuilder.build()).
@@ -82,6 +90,45 @@ public class DynamicDataSourceConfig {
         routing.setDefaultTargetDataSource(defaultTarget);
         routing.afterPropertiesSet();
         return routing;
+    }
+
+    @Bean
+    @Primary
+    SqlDialect sqlDialect() {
+        if (properties.getDatasources().isEmpty()) {
+            throw new IllegalStateException("No datasources configured under app.datasources");
+        }
+
+        Map<DialectType, SqlDialect> dialectByType = dialectsByType();
+        Map<String, SqlDialect> dialectByDatasource = new LinkedHashMap<>();
+        SqlDialect defaultDialect = null;
+        for (var entry : properties.getDatasources()) {
+            SqlDialect dialect = requireDialect(entry, dialectByType);
+            dialectByDatasource.put(entry.getName(), dialect);
+            if (defaultDialect == null) {
+                defaultDialect = dialect;
+            }
+        }
+        return new RoutingSqlDialect(dialectByDatasource, defaultDialect);
+    }
+
+    private Map<DialectType, SqlDialect> dialectsByType() {
+        Map<DialectType, SqlDialect> map = new EnumMap<>(DialectType.class);
+        map.put(DialectType.POSTGRESQL, postgresqlDialect);
+        map.put(DialectType.MYSQL, mysqlDialect);
+        map.put(DialectType.ORACLE, oracleDialect);
+        return map;
+    }
+
+    private static SqlDialect requireDialect(
+            DatasourcesProperties.DatasourceEntry entry, Map<DialectType, SqlDialect> dialectByType) {
+        DialectType type = entry.getType();
+        if (type == null) {
+            throw new IllegalStateException(
+                "Datasource '" + entry.getName() + "' is missing required property 'type' "
+                    + "(expected POSTGRESQL, MYSQL, or ORACLE).");
+        }
+        return dialectByType.get(type);
     }
 
     private static void validateSchema(String datasourceName, String schema) {
