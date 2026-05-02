@@ -20,7 +20,7 @@ describe('EnvironmentSelector', () => {
 
   it('renders a skeleton instead of the select when loading', () => {
     render(
-      <EnvironmentSelector value="prod" options={sampleOptions} onChange={() => {}} loading />,
+      <EnvironmentSelector value="prod" selectedType="MYSQL" options={sampleOptions} onChange={() => {}} loading />,
     );
 
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();

@@ -131,5 +131,33 @@ describe('jobRunsApi', () => {
       expect(apiClient.get).not.toHaveBeenCalled();
       expect(result.total).toBe(sampleRuns.length);
     });
+
+    it('getRunsTrend filters samples without HTTP', async () => {
+      const result = await getRunsTrend('jobA', 30);
+
+      expect(apiClient.get).not.toHaveBeenCalled();
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it('getRuns sorts by a field with null values (asc, null-last)', async () => {
+      const result = await getRuns('jobA', 'endTime', 'asc', 0, sampleRuns.length);
+
+      // Null endTimes should sort to the end regardless of direction.
+      expect(result.content.at(-1)?.endTime).toBeNull();
+    });
+
+    it('getRuns ascending sort orders smallest first', async () => {
+      const result = await getRuns('jobA', 'executionId', 'asc', 0, sampleRuns.length);
+
+      const ids = result.content.map((r) => r.executionId);
+      expect(ids).toEqual([...ids].sort((a, b) => a - b));
+    });
+
+    it('getRuns honours equal values without crashing', async () => {
+      // readCount has duplicates (e.g. two rows with 5012); the tie path returns 0.
+      const result = await getRuns('jobA', 'readCount', 'desc', 0, sampleRuns.length);
+
+      expect(result.content).toHaveLength(sampleRuns.length);
+    });
   });
 });
