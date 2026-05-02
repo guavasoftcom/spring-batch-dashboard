@@ -4,6 +4,7 @@ dist
 coverage
 test-results
 eslint-report.json
+tsconfig.tsbuildinfo
 
 # Yarn 4 is the package manager (see packageManager in package.json).
 # Keep npm's lockfile out — having both invites silent drift between them.

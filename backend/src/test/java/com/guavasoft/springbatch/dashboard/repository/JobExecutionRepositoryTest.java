@@ -2,12 +2,15 @@ package com.guavasoft.springbatch.dashboard.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.guavasoft.springbatch.dashboard.config.DataSourceContext;
 import com.guavasoft.springbatch.dashboard.entity.BatchStatus;
 import com.guavasoft.springbatch.dashboard.entity.projection.JobRunCounts;
 import com.guavasoft.springbatch.dashboard.entity.projection.JobRunRow;
+import com.guavasoft.springbatch.dashboard.repository.TestDatasources.AcrossDatasources;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -20,6 +23,13 @@ class JobExecutionRepositoryTest {
 
     @Autowired
     private JobExecutionRepository jobExecutionRepository;
+
+    @AfterEach
+    void clearDatasourceContext() {
+        DataSourceContext.clear();
+    }
+
+    // --- JPA derived / JPQL queries: portable, exercised against the default datasource --------
 
     @Test
     void countByStatusReflectsSeed() {
@@ -36,8 +46,11 @@ class JobExecutionRepositoryTest {
         assertThat(maxLastUpdated).isEqualTo(LocalDateTime.of(2026, 4, 24, 9, 30, 1));
     }
 
-    @Test
-    void findRunsByJobNameReturnsRowsInRequestedOrder() {
+    // --- Custom JdbcTemplate fragments: dialect-specific, parameterized over every engine ------
+
+    @AcrossDatasources
+    void findRunsByJobNameReturnsRowsInRequestedOrder(String datasource) {
+        DataSourceContext.set(datasource);
         List<JobRunRow> descending = jobExecutionRepository.findRunsByJobName(IMPORT_USERS, "executionId", "desc", 0, 10);
         assertThat(descending)
             .extracting(JobRunRow::getExecutionId)
@@ -49,8 +62,9 @@ class JobExecutionRepositoryTest {
             .containsExactly(1L, 2L);
     }
 
-    @Test
-    void findRunsByJobNameRespectsPageBounds() {
+    @AcrossDatasources
+    void findRunsByJobNameRespectsPageBounds(String datasource) {
+        DataSourceContext.set(datasource);
         List<JobRunRow> firstPage = jobExecutionRepository.findRunsByJobName(IMPORT_USERS, "executionId", "desc", 0, 1);
         List<JobRunRow> secondPage = jobExecutionRepository.findRunsByJobName(IMPORT_USERS, "executionId", "desc", 1, 1);
 
@@ -58,20 +72,23 @@ class JobExecutionRepositoryTest {
         assertThat(secondPage).hasSize(1).first().extracting(JobRunRow::getExecutionId).isEqualTo(1L);
     }
 
-    @Test
-    void findRunsByUnknownJobNameReturnsEmpty() {
+    @AcrossDatasources
+    void findRunsByUnknownJobNameReturnsEmpty(String datasource) {
+        DataSourceContext.set(datasource);
         assertThat(jobExecutionRepository.findRunsByJobName(UNKNOWN_JOB, "executionId", "desc", 0, 10)).isEmpty();
     }
 
-    @Test
-    void countRunsByJobNameReflectsSeed() {
+    @AcrossDatasources
+    void countRunsByJobNameReflectsSeed(String datasource) {
+        DataSourceContext.set(datasource);
         assertThat(jobExecutionRepository.countRunsByJobName(IMPORT_USERS)).isEqualTo(2);
         assertThat(jobExecutionRepository.countRunsByJobName(RECONCILE_LEDGER)).isEqualTo(1);
         assertThat(jobExecutionRepository.countRunsByJobName(UNKNOWN_JOB)).isZero();
     }
 
-    @Test
-    void durationAggregatesAreNonNegative() {
+    @AcrossDatasources
+    void durationAggregatesAreNonNegative(String datasource) {
+        DataSourceContext.set(datasource);
         double averageSeconds = jobExecutionRepository.findAverageDurationSeconds();
         double maxSeconds = jobExecutionRepository.findMaxDurationSeconds();
 
@@ -79,8 +96,9 @@ class JobExecutionRepositoryTest {
         assertThat(maxSeconds).isGreaterThanOrEqualTo(averageSeconds);
     }
 
-    @Test
-    void averageDurationByJobNameMatchesPerJobScope() {
+    @AcrossDatasources
+    void averageDurationByJobNameMatchesPerJobScope(String datasource) {
+        DataSourceContext.set(datasource);
         double importAvg = jobExecutionRepository.findAverageDurationSecondsByJobName(IMPORT_USERS);
         double reconcileAvg = jobExecutionRepository.findAverageDurationSecondsByJobName(RECONCILE_LEDGER);
 
@@ -88,13 +106,15 @@ class JobExecutionRepositoryTest {
         assertThat(reconcileAvg).isPositive();
     }
 
-    @Test
-    void averageDurationByUnknownJobNameIsZero() {
+    @AcrossDatasources
+    void averageDurationByUnknownJobNameIsZero(String datasource) {
+        DataSourceContext.set(datasource);
         assertThat(jobExecutionRepository.findAverageDurationSecondsByJobName(UNKNOWN_JOB)).isZero();
     }
 
-    @Test
-    void findRunCountsByJobNameAggregatesPerJob() {
+    @AcrossDatasources
+    void findRunCountsByJobNameAggregatesPerJob(String datasource) {
+        DataSourceContext.set(datasource);
         JobRunCounts importCounts = jobExecutionRepository.findRunCountsByJobName(IMPORT_USERS);
         assertThat(importCounts.getTotal()).isEqualTo(2);
         assertThat(importCounts.getCompleted()).isEqualTo(2);
@@ -108,8 +128,9 @@ class JobExecutionRepositoryTest {
         assertThat(reconcileCounts.getFinished()).isEqualTo(1);
     }
 
-    @Test
-    void findRunsByJobNameSinceFiltersByStartTime() {
+    @AcrossDatasources
+    void findRunsByJobNameSinceFiltersByStartTime(String datasource) {
+        DataSourceContext.set(datasource);
         LocalDateTime cutoff = LocalDateTime.of(2026, 4, 23, 0, 0);
 
         List<JobRunRow> recentRuns = jobExecutionRepository.findRunsByJobNameSince(IMPORT_USERS, cutoff);
@@ -119,22 +140,25 @@ class JobExecutionRepositoryTest {
             .containsExactly(2L);
     }
 
-    @Test
-    void findRunsByJobNameSinceWithFutureCutoffReturnsEmpty() {
+    @AcrossDatasources
+    void findRunsByJobNameSinceWithFutureCutoffReturnsEmpty(String datasource) {
+        DataSourceContext.set(datasource);
         LocalDateTime future = LocalDateTime.of(2099, 1, 1, 0, 0);
         assertThat(jobExecutionRepository.findRunsByJobNameSince(IMPORT_USERS, future)).isEmpty();
     }
 
-    @Test
-    void findLatestRunByJobNamePicksMostRecent() {
+    @AcrossDatasources
+    void findLatestRunByJobNamePicksMostRecent(String datasource) {
+        DataSourceContext.set(datasource);
         Optional<JobRunRow> latest = jobExecutionRepository.findLatestRunByJobName(IMPORT_USERS);
 
         assertThat(latest).isPresent();
         assertThat(latest.get().getExecutionId()).isEqualTo(2L);
     }
 
-    @Test
-    void findLatestRunByUnknownJobNameIsEmpty() {
+    @AcrossDatasources
+    void findLatestRunByUnknownJobNameIsEmpty(String datasource) {
+        DataSourceContext.set(datasource);
         assertThat(jobExecutionRepository.findLatestRunByJobName(UNKNOWN_JOB)).isEmpty();
     }
 }

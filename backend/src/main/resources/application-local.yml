@@ -4,14 +4,6 @@ spring:
   docker:
     compose:
       lifecycle-management: start_only
-  jpa:
-    hibernate:
-      # Oracle's upstream Spring Batch DDL uses CLOB for SERIALIZED_CONTEXT, while the
-      # Postgres/MySQL DDL uses TEXT. The shared entities declare columnDefinition = "TEXT"
-      # for those two engines; against Oracle, Hibernate's strict validator flags the
-      # CLOB-vs-TEXT mismatch even though queries work fine. Disable validation only on
-      # the Oracle profile — the dashboard is read-only against a fixed external schema.
-      ddl-auto: none
   security:
     oauth2:
       client:
@@ -26,7 +18,18 @@ app:
   oauth2:
     success-url: http://localhost:5173/overview
   datasources:
+    - name: Localhost Postgres
+      type: POSTGRESQL
+      url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB}?readOnly=true
+      username: ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
+    - name: Localhost MySQL
+      type: MYSQL
+      url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB}
+      username: ${MYSQL_USER}
+      password: ${MYSQL_PASSWORD}
     - name: Localhost Oracle
+      type: ORACLE
       url: jdbc:oracle:thin:@//${ORACLE_HOST:localhost}:${ORACLE_PORT:1521}/${ORACLE_DB:FREEPDB1}
       username: ${ORACLE_USER}
       password: ${ORACLE_PASSWORD}

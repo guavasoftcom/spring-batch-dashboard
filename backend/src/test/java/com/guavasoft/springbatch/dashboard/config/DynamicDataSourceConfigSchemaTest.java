@@ -3,40 +3,51 @@ package com.guavasoft.springbatch.dashboard.config;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.guavasoft.springbatch.dashboard.dialect.DialectType;
+import com.guavasoft.springbatch.dashboard.dialect.MysqlDialect;
+import com.guavasoft.springbatch.dashboard.dialect.OracleDialect;
 import com.guavasoft.springbatch.dashboard.dialect.PostgresqlDialect;
-import com.guavasoft.springbatch.dashboard.dialect.SqlDialect;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * Verifies that {@code DynamicDataSourceConfig} rejects unsafe schema names before they
- * are concatenated into connection-init SQL. The dataSource() bean is invoked with a
- * minimal in-memory configuration so that real JDBC connections aren't required.
+ * are concatenated into connection-init SQL, and that an entry without {@code type} fails
+ * fast. The dataSource() bean is invoked with a minimal in-memory configuration so that
+ * real JDBC connections aren't required.
  */
 class DynamicDataSourceConfigSchemaTest {
 
-    private final SqlDialect dialect = new PostgresqlDialect();
+    private final PostgresqlDialect postgresqlDialect = new PostgresqlDialect();
+    private final MysqlDialect mysqlDialect = new MysqlDialect();
+    private final OracleDialect oracleDialect = new OracleDialect();
 
     @Test
     void rejectsSchemaWithSemicolon() {
-        assertThatThrownBy(() -> buildConfig("public; DROP TABLE BATCH_JOB_EXECUTION").dataSource())
+        assertThatThrownBy(() -> buildConfig(DialectType.POSTGRESQL, "public; DROP TABLE BATCH_JOB_EXECUTION").dataSource())
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("invalid schema");
     }
 
     @Test
     void rejectsSchemaWithSpaces() {
-        assertThatThrownBy(() -> buildConfig("my schema").dataSource())
+        assertThatThrownBy(() -> buildConfig(DialectType.POSTGRESQL, "my schema").dataSource())
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("invalid schema");
     }
 
     @Test
     void rejectsLeadingDigit() {
-        assertThatThrownBy(() -> buildConfig("1schema").dataSource())
+        assertThatThrownBy(() -> buildConfig(DialectType.POSTGRESQL, "1schema").dataSource())
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("invalid schema");
+    }
+
+    @Test
+    void rejectsEntryWithoutType() {
+        assertThatThrownBy(() -> buildConfig(null, "public").dataSource())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("missing required property 'type'");
     }
 
     @Test
@@ -45,7 +56,7 @@ class DynamicDataSourceConfigSchemaTest {
         // that the validation step does not raise an IllegalStateException.
         assertThatCode(() -> {
             try {
-                buildConfig("batch_prod").dataSource();
+                buildConfig(DialectType.POSTGRESQL, "batch_prod").dataSource();
             } catch (IllegalStateException ex) {
                 throw ex;
             } catch (Exception ignoredHikariFailure) {
@@ -54,9 +65,10 @@ class DynamicDataSourceConfigSchemaTest {
         }).doesNotThrowAnyException();
     }
 
-    private DynamicDataSourceConfig buildConfig(String schema) {
+    private DynamicDataSourceConfig buildConfig(DialectType type, String schema) {
         DatasourcesProperties.DatasourceEntry entry = new DatasourcesProperties.DatasourceEntry();
         entry.setName("test");
+        entry.setType(type);
         entry.setUrl("jdbc:postgresql://localhost:1/test");
         entry.setUsername("u");
         entry.setPassword("p");
@@ -65,8 +77,6 @@ class DynamicDataSourceConfigSchemaTest {
         DatasourcesProperties props = new DatasourcesProperties();
         props.setDatasources(List.of(entry));
 
-        DynamicDataSourceConfig config = new DynamicDataSourceConfig(props, dialect);
-        ReflectionTestUtils.setField(config, "properties", props);
-        return config;
+        return new DynamicDataSourceConfig(props, postgresqlDialect, mysqlDialect, oracleDialect);
     }
 }

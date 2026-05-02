@@ -1,10 +1,8 @@
 package com.guavasoft.springbatch.dashboard.dialect;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(name = "app.dialect", havingValue = "MYSQL")
 public class MysqlDialect implements SqlDialect {
 
     @Override

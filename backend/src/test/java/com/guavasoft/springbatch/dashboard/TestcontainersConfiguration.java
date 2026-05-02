@@ -1,10 +1,9 @@
 package com.guavasoft.springbatch.dashboard;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import java.time.Duration;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.DynamicPropertyRegistrar;
-import java.time.Duration;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -12,11 +11,16 @@ import org.testcontainers.oracle.OracleContainer;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
+/**
+ * Boots one container per supported engine and registers the placeholders consumed by
+ * {@code application-test.yml}'s three datasource entries. Repository slice tests then
+ * parameterize over the datasource names to validate the per-dialect SQL produced by
+ * {@code SqlDialect}.
+ */
 @TestConfiguration(proxyBeanMethods = false)
 public class TestcontainersConfiguration {
 
     @Bean
-    @ConditionalOnProperty(name = "app.dialect", havingValue = "POSTGRESQL", matchIfMissing = true)
     PostgreSQLContainer<?> postgresContainer() {
         return new PostgreSQLContainer<>(DockerImageName.parse("postgres:latest"))
             .withCopyFileToContainer(
@@ -28,7 +32,6 @@ public class TestcontainersConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "app.dialect", havingValue = "POSTGRESQL", matchIfMissing = true)
     DynamicPropertyRegistrar postgresDatasourceProperties(PostgreSQLContainer<?> postgres) {
         return registry -> {
             registry.add("POSTGRES_HOST", postgres::getHost);
@@ -40,7 +43,6 @@ public class TestcontainersConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "app.dialect", havingValue = "MYSQL")
     MySQLContainer<?> mysqlContainer() {
         return new MySQLContainer<>(DockerImageName.parse("mysql:8"))
             .withCopyFileToContainer(
@@ -52,7 +54,6 @@ public class TestcontainersConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "app.dialect", havingValue = "MYSQL")
     DynamicPropertyRegistrar mysqlDatasourceProperties(MySQLContainer<?> mysql) {
         return registry -> {
             registry.add("MYSQL_HOST", mysql::getHost);
@@ -64,7 +65,6 @@ public class TestcontainersConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "app.dialect", havingValue = "ORACLE")
     OracleContainer oracleContainer() {
         // gvenzl/oracle-free runs scripts in /container-entrypoint-initdb.d/ as SYSTEM
         // into FREEPDB1, which is where the seeded BATCH_* tables land. OracleContainer
@@ -87,7 +87,6 @@ public class TestcontainersConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "app.dialect", havingValue = "ORACLE")
     DynamicPropertyRegistrar oracleDatasourceProperties(OracleContainer oracle) {
         return registry -> {
             registry.add("ORACLE_HOST", oracle::getHost);

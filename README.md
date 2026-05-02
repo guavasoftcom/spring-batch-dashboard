@@ -8,13 +8,13 @@
 [![Yarn 4](https://img.shields.io/badge/Yarn-4-2C8EBB.svg?logo=yarn&logoColor=white)](https://yarnpkg.com/)
 [![Coverage ≥ 80%](https://img.shields.io/badge/Coverage-%E2%89%A580%25-brightgreen.svg)](#ci)
 
-A web dashboard for inspecting Spring Batch metadata (job runs, step executions, throughput, status distributions) across multiple PostgreSQL, MySQL, **or** Oracle environments.
+A web dashboard for inspecting Spring Batch metadata (job runs, step executions, throughput, status distributions) across any mix of PostgreSQL, MySQL, and Oracle environments — all from a single deployment.
 
 ## What's in here
 
 | Component | Stack | Purpose |
 |---|---|---|
-| [`backend/`](backend/) | Spring Boot 4, Java 21, Spring Data JPA, OAuth2 | REST API that reads `BATCH_*` metadata and serves it to the frontend. Multi-environment via per-request datasource routing; supports Postgres, MySQL, or Oracle (one engine per boot, picked via Maven profile). |
+| [`backend/`](backend/) | Spring Boot 4, Java 21, Spring Data JPA, OAuth2 | REST API that reads `BATCH_*` metadata and serves it to the frontend. Multi-environment via per-request datasource routing; each `app.datasources` entry declares its own engine (POSTGRESQL / MYSQL / ORACLE) and a routing `SqlDialect` picks the right per-engine SQL on every call. All three JDBC drivers are bundled in one artifact. |
 | [`frontend/`](frontend/) | React 19, Vite, MUI, TanStack Query, Vitest | The dashboard SPA. Browses jobs, runs, and per-execution step details. |
 
 The components don't share code — they're independent apps that meet at the database.
@@ -54,14 +54,10 @@ The components don't share code — they're independent apps that meet at the da
 You'll need: JDK 21, Node 20+, Yarn 4 (Berry), Docker.
 
 ```bash
-# 1. Backend — pulls up Postgres + MySQL in docker containers, serves on :8080
+# 1. Backend — pulls up Postgres + MySQL + Oracle in docker containers, serves on :8080
 cd backend
 cp .env.example .env                      # add GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET (and DB creds)
-
-./mvnw spring-boot:run                    # Postgres (default)
-# or:
-./mvnw -Pmysql spring-boot:run            # MySQL
-./mvnw -Poracle spring-boot:run           # Oracle
+./mvnw spring-boot:run
 
 # 2. Frontend — serves on :5173
 cd ../frontend
@@ -73,23 +69,40 @@ Open `http://localhost:5173` and log in. The backend's interactive API docs are 
 
 To run the dashboard without configuring OAuth or a database, set `VITE_USE_MOCK_DATA=true` in `frontend/.env` — every API endpoint serves canned data instead.
 
-## Choosing the database engine
+## Datasources
 
-The Maven profile is the single switch. It bundles the right JDBC driver, sets `app.dialect`, and activates the matching local config:
+A single deployment can serve any combination of POSTGRESQL / MYSQL / ORACLE entries. Each `app.datasources` entry declares its own engine via `type`, and a routing `SqlDialect` picks the matching per-engine SQL (epoch math, `NULLS LAST`, pagination clause, schema-init SQL) on every call. All three JDBC drivers are bundled in the same artifact — no build flag picks one.
 
-| | Postgres (default) | MySQL | Oracle |
-|---|---|---|---|
-| Build / run | `./mvnw …` | `./mvnw -Pmysql …` | `./mvnw -Poracle …` |
-| Active config | [`application-local-postgresql.yml`](backend/src/main/resources/application-local-postgresql.yml) | [`application-local-mysql.yml`](backend/src/main/resources/application-local-mysql.yml) | [`application-local-oracle.yml`](backend/src/main/resources/application-local-oracle.yml) |
-| Driver | `org.postgresql:postgresql` | `com.mysql:mysql-connector-j` | `com.oracle.database.jdbc:ojdbc11` |
+```yaml
+app:
+  datasources:
+    - name: prod-postgres
+      type: POSTGRESQL
+      url: jdbc:postgresql://…
+      username: …
+      password: …
+    - name: prod-mysql
+      type: MYSQL
+      url: jdbc:mysql://…
+      username: …
+      password: …
+    - name: prod-oracle
+      type: ORACLE
+      url: jdbc:oracle:thin:@//…
+      username: …
+      password: …
+      schema: BATCH_PROD          # optional; applied as connection-init SQL per-dialect
+```
 
-Mixing engines in one boot is not supported — every entry under `app.datasources` must match the active engine. Engine-specific SQL (epoch math, `NULLS LAST`) is routed through the [`SqlDialect`](backend/src/main/java/com/guavasoft/springbatch/dashboard/dialect/SqlDialect.java) strategy so repository code stays portable.
+The local dev profile ([`application-local.yml`](backend/src/main/resources/application-local.yml)) ships one entry per engine pointing at the matching `docker compose` container, so a fresh `./mvnw spring-boot:run` already exposes Postgres + MySQL + Oracle to the UI.
 
-## Multi-environment
+> **Hibernate caveat.** Hibernate detects its dialect once on the first JDBC connection and caches it for the SessionFactory, so `Pageable`-driven JPA queries use whichever pagination syntax the *first* datasource implies (PG/MySQL share `LIMIT … OFFSET …`, Oracle differs). Anything cross-engine belongs in a JdbcTemplate fragment that goes through `SqlDialect`. Details in [backend/AGENTS.md](backend/AGENTS.md#hibernate-caveat).
 
-The dashboard supports browsing multiple databases of the active engine, switched via the environment selector in the sidebar. The selection is forwarded to the backend on every request as the `X-Environment` header, and the backend routes to the matching datasource at `app.datasources[*]` in the active local-profile YAML.
+## Multi-environment selector
 
-To add a new environment, append an entry to that list (matching the active engine) and restart. The selector picks it up via `GET /api/environments`, which returns `[{ name, type }]` — the engine type is derived from each entry's JDBC URL prefix and drives the database icon shown next to the environment name in the selector and the page breadcrumb.
+The frontend's environment selector lists every `app.datasources` entry. The selection is forwarded to the backend on every request as the `X-Environment` header, and a routing `DataSource` plus a routing `SqlDialect` dispatch to the matching pool and per-engine SQL.
+
+To add a new environment, append an entry to `app.datasources` (any engine; just set `type`) and restart. The selector picks it up via `GET /api/environments`, which returns `[{ name, type }]` — `type` drives the database icon shown next to the environment name in the selector and the page breadcrumb.
 
 ## Authentication
 
@@ -101,19 +114,24 @@ OAuth2 via Spring Security; defaults wire up GitHub but any provider works by re
 flowchart LR
     User((User))
     Frontend["Frontend<br/>React + Vite"]
-    Backend["Backend<br/>Spring Boot"]
+    Backend["Backend<br/>Spring Boot<br/>(routing DataSource +<br/>routing SqlDialect)"]
     OAuth2["OAuth2 Provider<br/>(GitHub default)"]
-    DB[("Postgres(es), MySQL(s), or Oracle(s)<br/>one engine per boot")]
+    PG[("Postgres(es)")]
+    MySQL[("MySQL(s)")]
+    Oracle[("Oracle(s)")]
 
     User -->|browser| Frontend
     Frontend -->|"REST + X-Environment header<br/>(JSESSIONID cookie)"| Backend
     Frontend -.->|"login redirect"| OAuth2
     OAuth2 -.->|"/login/oauth2/code/* callback"| Backend
-    Backend -->|"JPA / JdbcTemplate"| DB
+    Backend -->|"JPA / JdbcTemplate"| PG
+    Backend -->|"JPA / JdbcTemplate"| MySQL
+    Backend -->|"JPA / JdbcTemplate"| Oracle
 ```
 
 - **Backend** never writes to the BATCH_* schema — read-only.
 - **Frontend** persists the chosen environment to `localStorage` and forwards it on every request as `X-Environment`.
+- **Routing** — `AbstractRoutingDataSource` uses a `ThreadLocal` populated from `X-Environment` to pick the pool; `RoutingSqlDialect` reads the same key to pick the matching per-engine SQL. A single boot serves any mix of POSTGRESQL / MYSQL / ORACLE entries.
 - **OAuth2** flow: the frontend opens the provider login; the provider posts back to the backend's callback; the backend establishes a session (`JSESSIONID`) and redirects to `app.oauth2.success-url`. Subsequent API calls authenticate via the cookie. The provider is configurable via Spring Security; attribute-name mapping and an optional `app.auth.allowed-logins` allow-list make it provider-agnostic (see [Authentication](#authentication)).
 
 ## Documentation
@@ -121,26 +139,25 @@ flowchart LR
 Each component has its own conventions doc:
 
 - [AGENTS.md](AGENTS.md) — repo overview, runbook, cross-cutting conventions.
-- [backend/AGENTS.md](backend/AGENTS.md) — controller/service/repository patterns, engine selection, dialect strategy, dynamic datasource routing, MapStruct setup, error handling.
+- [backend/AGENTS.md](backend/AGENTS.md) — controller/service/repository patterns, dialect strategy, dynamic datasource routing, MapStruct setup, error handling.
 - [frontend/AGENTS.md](frontend/AGENTS.md) — page/tile container conventions, shared component inventory, query-hook pattern, alias setup.
 
 ## Tooling notes
 
 - Backend uses Maven via the wrapper (`./mvnw`); never `mvn` directly.
 - Frontend uses Yarn 4 (Berry) with the `node-modules` linker. `package-lock.json` is gitignored — don't run `npm install`.
-- Tests: `./mvnw test` (Postgres) / `./mvnw -Pmysql test` (MySQL) / `./mvnw -Poracle test` (Oracle); `yarn test` / `yarn test:coverage` on the frontend. CI runs all three backend engines as a matrix.
-- Coverage gate is **80%** on both sides. Backend uses JaCoCo (per-matrix exec files merged in CI, gated by [`PavanMudigonda/jacoco-reporter`](.github/workflows/pull-request.yml)); frontend uses vitest's `coverage.thresholds` ([`frontend/vite.config.ts`](frontend/vite.config.ts)). Both post sticky PR comments.
+- Tests: `./mvnw test` boots one Testcontainer per engine (Postgres + MySQL + Oracle) and parameterizes repository tests across all three; `yarn test` / `yarn test:coverage` on the frontend.
+- Coverage gate is **80%** on both sides. Backend uses JaCoCo (gated by [`PavanMudigonda/jacoco-reporter`](.github/workflows/pull-request.yml)); frontend uses vitest's `coverage.thresholds` ([`frontend/vite.config.ts`](frontend/vite.config.ts)). Both post sticky PR comments.
 - Imports in the frontend use the `~/` alias to `src/`; siblings stay relative.
 - Backend errors never leak SQL or class names to clients (see [GlobalExceptionHandler](backend/src/main/java/com/guavasoft/springbatch/dashboard/config/GlobalExceptionHandler.java)).
 - Backend Java naming: prefer expressive variable names (`throughputBars` over `bars`); short names are fine only for lambda parameters and generic type parameters. Captured in [backend/AGENTS.md](backend/AGENTS.md#conventions).
 
 ## CI
 
-The PR workflow ([`.github/workflows/pull-request.yml`](.github/workflows/pull-request.yml)) runs three jobs:
+The PR workflow ([`.github/workflows/pull-request.yml`](.github/workflows/pull-request.yml)) runs two jobs:
 
-1. **Backend matrix** — Postgres + MySQL + Oracle builds in parallel: Checkstyle, Surefire, JaCoCo agent, Maven package. Per-matrix it annotates checkstyle violations, posts a JUnit check + comment, and uploads the `jacoco.exec` and per-profile HTML report.
-2. **Backend coverage (merged)** — downloads all matrix exec files, merges them into a single report, and runs the 80% gate against the union plus a per-package per-counter PR comment.
-3. **Frontend** — lint (with ESLint annotations), `tsc -b` + Vite build, vitest with coverage, JUnit + coverage PR comments.
+1. **Backend** — Checkstyle, Surefire, JaCoCo agent, Maven package. Boots all three Testcontainers in one run so repository tests exercise every dialect; uploads Surefire + JaCoCo reports, posts a JUnit check + comment, and gates coverage at 80% via [`PavanMudigonda/jacoco-reporter`](.github/workflows/pull-request.yml) against `target/site/jacoco/jacoco.xml`.
+2. **Frontend** — lint (with ESLint annotations), `tsc -b` + Vite build, vitest with coverage, JUnit + coverage PR comments.
 
 JDK and Node setup are extracted into composite actions at [`.github/actions/setup-java`](.github/actions/setup-java/action.yml) and [`.github/actions/setup-node`](.github/actions/setup-node/action.yml) so the toolchain version lives in one place.
 

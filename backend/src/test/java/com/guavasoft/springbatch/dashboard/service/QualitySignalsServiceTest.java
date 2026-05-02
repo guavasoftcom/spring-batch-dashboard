@@ -1,24 +1,20 @@
 package com.guavasoft.springbatch.dashboard.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.guavasoft.springbatch.dashboard.entity.JobExecutionEntity;
-import com.guavasoft.springbatch.dashboard.entity.JobInstanceEntity;
-import com.guavasoft.springbatch.dashboard.entity.StepExecutionEntity;
+import com.guavasoft.springbatch.dashboard.model.LastFailedStep;
 import com.guavasoft.springbatch.dashboard.model.ProcessingTotals;
 import com.guavasoft.springbatch.dashboard.model.QualitySignals;
 import com.guavasoft.springbatch.dashboard.repository.JobExecutionRepository;
 import com.guavasoft.springbatch.dashboard.repository.StepExecutionRepository;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class QualitySignalsServiceTest {
@@ -41,9 +37,8 @@ class QualitySignalsServiceTest {
         when(stepExecutionRepository.sumRollbackCount()).thenReturn(1L);
         when(stepExecutionRepository.sumSkipCount()).thenReturn(2L);
 
-        StepExecutionEntity failedStep = stepWithJobName("importUsersJob", "readUsersStep");
-        when(stepExecutionRepository.findMostRecentFailed(any(Pageable.class)))
-            .thenReturn(List.of(failedStep));
+        when(stepExecutionRepository.findMostRecentFailed())
+            .thenReturn(Optional.of(new LastFailedStep("importUsersJob", "readUsersStep")));
 
         when(jobExecutionRepository.findMaxLastUpdated())
             .thenReturn(LocalDateTime.of(2026, 4, 27, 10, 15, 30));
@@ -57,7 +52,7 @@ class QualitySignalsServiceTest {
 
     @Test
     void getSignalsReturnsNullLabelWhenNoFailedStep() {
-        when(stepExecutionRepository.findMostRecentFailed(any(Pageable.class))).thenReturn(List.of());
+        when(stepExecutionRepository.findMostRecentFailed()).thenReturn(Optional.empty());
         when(jobExecutionRepository.findMaxLastUpdated()).thenReturn(null);
 
         QualitySignals signals = qualitySignalsService.getSignals();
@@ -67,38 +62,13 @@ class QualitySignalsServiceTest {
     }
 
     @Test
-    void formatFailureFallsBackToUnknownWhenJobExecutionMissing() {
-        StepExecutionEntity orphan = new StepExecutionEntity();
-        orphan.setStepName("readUsersStep");
-        when(stepExecutionRepository.findMostRecentFailed(any(Pageable.class))).thenReturn(List.of(orphan));
+    void formatFailureFallsBackToUnknownWhenJobNameIsNull() {
+        when(stepExecutionRepository.findMostRecentFailed())
+            .thenReturn(Optional.of(new LastFailedStep(null, "readUsersStep")));
         when(jobExecutionRepository.findMaxLastUpdated()).thenReturn(null);
 
         QualitySignals signals = qualitySignalsService.getSignals();
 
         assertThat(signals.lastFailure()).isEqualTo("unknown / readUsersStep");
-    }
-
-    @Test
-    void formatFailureFallsBackToUnknownWhenJobInstanceMissing() {
-        StepExecutionEntity step = new StepExecutionEntity();
-        step.setStepName("readUsersStep");
-        step.setJobExecution(new JobExecutionEntity());
-        when(stepExecutionRepository.findMostRecentFailed(any(Pageable.class))).thenReturn(List.of(step));
-        when(jobExecutionRepository.findMaxLastUpdated()).thenReturn(null);
-
-        QualitySignals signals = qualitySignalsService.getSignals();
-
-        assertThat(signals.lastFailure()).isEqualTo("unknown / readUsersStep");
-    }
-
-    private static StepExecutionEntity stepWithJobName(String jobName, String stepName) {
-        JobInstanceEntity instance = new JobInstanceEntity();
-        instance.setJobName(jobName);
-        JobExecutionEntity execution = new JobExecutionEntity();
-        execution.setJobInstance(instance);
-        StepExecutionEntity step = new StepExecutionEntity();
-        step.setStepName(stepName);
-        step.setJobExecution(execution);
-        return step;
     }
 }

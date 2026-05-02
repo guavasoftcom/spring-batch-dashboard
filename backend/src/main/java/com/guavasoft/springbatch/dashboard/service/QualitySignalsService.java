@@ -1,16 +1,13 @@
 package com.guavasoft.springbatch.dashboard.service;
 
+import com.guavasoft.springbatch.dashboard.model.LastFailedStep;
 import com.guavasoft.springbatch.dashboard.model.ProcessingTotals;
 import com.guavasoft.springbatch.dashboard.model.QualitySignals;
-import com.guavasoft.springbatch.dashboard.entity.JobExecutionEntity;
-import com.guavasoft.springbatch.dashboard.entity.JobInstanceEntity;
-import com.guavasoft.springbatch.dashboard.entity.StepExecutionEntity;
 import com.guavasoft.springbatch.dashboard.repository.JobExecutionRepository;
 import com.guavasoft.springbatch.dashboard.repository.StepExecutionRepository;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,8 +32,8 @@ public class QualitySignalsService {
             stepExecutionRepository.sumSkipCount()
         );
 
-        String lastFailure = stepExecutionRepository.findMostRecentFailed(PageRequest.of(0, 1))
-            .stream().findFirst().map(this::formatFailure).orElse(null);
+        String lastFailure = stepExecutionRepository.findMostRecentFailed()
+            .map(this::formatFailure).orElse(null);
 
         String latestUpdateStr = Optional.ofNullable(jobExecutionRepository.findMaxLastUpdated())
             .map(TIMESTAMP_FORMAT::format)
@@ -45,11 +42,8 @@ public class QualitySignalsService {
         return new QualitySignals(lastFailure, processing, latestUpdateStr);
     }
 
-    private String formatFailure(StepExecutionEntity step) {
-        String jobName = Optional.ofNullable(step.getJobExecution())
-            .map(JobExecutionEntity::getJobInstance)
-            .map(JobInstanceEntity::getJobName)
-            .orElse(UNKNOWN_JOB_NAME);
-        return jobName + " / " + step.getStepName();
+    private String formatFailure(LastFailedStep failedStep) {
+        String jobName = failedStep.jobName() != null ? failedStep.jobName() : UNKNOWN_JOB_NAME;
+        return jobName + " / " + failedStep.stepName();
     }
 }

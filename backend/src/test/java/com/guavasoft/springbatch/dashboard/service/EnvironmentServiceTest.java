@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.guavasoft.springbatch.dashboard.config.DatasourcesProperties;
 import com.guavasoft.springbatch.dashboard.config.DatasourcesProperties.DatasourceEntry;
+import com.guavasoft.springbatch.dashboard.dialect.DialectType;
 import com.guavasoft.springbatch.dashboard.model.EnvironmentInfo;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -24,11 +25,11 @@ class EnvironmentServiceTest {
     private EnvironmentService environmentService;
 
     @Test
-    void getEnvironmentsReturnsAlphabeticallySortedEntriesWithDerivedType() {
+    void getEnvironmentsReturnsAlphabeticallySortedEntriesWithDeclaredType() {
         when(datasourcesProperties.getDatasources()).thenReturn(List.of(
-            entry("prod", "jdbc:postgresql://host/db"),
-            entry("dev", "jdbc:mysql://host/db"),
-            entry("staging", "jdbc:oracle:thin:@host:1521:db")));
+            entry("prod", DialectType.POSTGRESQL),
+            entry("dev", DialectType.MYSQL),
+            entry("staging", DialectType.ORACLE)));
 
         assertThat(environmentService.getEnvironments())
             .extracting(EnvironmentInfo::name, EnvironmentInfo::type)
@@ -45,46 +46,10 @@ class EnvironmentServiceTest {
         assertThat(environmentService.getEnvironments()).isEmpty();
     }
 
-    @Test
-    void getEnvironmentsReturnsUnknownTypeForMalformedUrl() {
-        when(datasourcesProperties.getDatasources()).thenReturn(List.of(entry("oddball", "not-a-jdbc-url")));
-
-        assertThat(environmentService.getEnvironments())
-            .extracting(EnvironmentInfo::type)
-            .containsExactly("UNKNOWN");
-    }
-
-    @Test
-    void getEnvironmentsReturnsUnknownTypeForNullUrl() {
-        when(datasourcesProperties.getDatasources()).thenReturn(List.of(entry("nullUrl", null)));
-
-        assertThat(environmentService.getEnvironments())
-            .extracting(EnvironmentInfo::type)
-            .containsExactly("UNKNOWN");
-    }
-
-    @Test
-    void getEnvironmentsReturnsUnknownTypeForPrefixOnlyUrl() {
-        when(datasourcesProperties.getDatasources()).thenReturn(List.of(entry("prefixOnly", "jdbc:")));
-
-        assertThat(environmentService.getEnvironments())
-            .extracting(EnvironmentInfo::type)
-            .containsExactly("UNKNOWN");
-    }
-
-    @Test
-    void getEnvironmentsUppercasesLowercaseEngineToken() {
-        when(datasourcesProperties.getDatasources()).thenReturn(List.of(entry("camel", "jdbc:postgresql://h/d")));
-
-        assertThat(environmentService.getEnvironments())
-            .extracting(EnvironmentInfo::type)
-            .containsExactly("POSTGRESQL");
-    }
-
-    private static DatasourceEntry entry(String name, String url) {
+    private static DatasourceEntry entry(String name, DialectType type) {
         DatasourceEntry e = new DatasourceEntry();
         e.setName(name);
-        e.setUrl(url);
+        e.setType(type);
         return e;
     }
 }
