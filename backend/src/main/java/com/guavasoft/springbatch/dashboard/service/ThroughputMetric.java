@@ -1,7 +1,8 @@
 package com.guavasoft.springbatch.dashboard.service;
 
 import com.guavasoft.springbatch.dashboard.repository.StepExecutionRepository;
-import java.util.function.ToLongFunction;
+import java.time.LocalDateTime;
+import java.util.function.ToLongBiFunction;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -15,9 +16,9 @@ public enum ThroughputMetric {
     ROLLBACKS("Rollbacks", StepExecutionRepository::sumRollbackCount);
 
     private final String label;
-    private final ToLongFunction<StepExecutionRepository> valueResolver;
+    private final ToLongBiFunction<StepExecutionRepository, LocalDateTime> valueResolver;
 
-    public long valueFrom(StepExecutionRepository repository) {
-        return valueResolver.applyAsLong(repository);
+    public long valueFrom(StepExecutionRepository repository, LocalDateTime since) {
+        return valueResolver.applyAsLong(repository, since);
     }
 }

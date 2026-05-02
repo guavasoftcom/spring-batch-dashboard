@@ -16,11 +16,12 @@ class JobInstanceRepositoryTest {
     void findDistinctJobNamesReturnsAlphabeticallyOrderedNames() {
         List<String> names = jobInstanceRepository.findDistinctJobNames();
 
-        assertThat(names).containsExactly("importUsersJob", "reconcileLedgerJob", "sendDigestEmailJob");
+        assertThat(names).containsExactly("dailyImportJob", "reconcileLedgerJob", "sendDigestEmailJob");
     }
 
     @Test
     void countMatchesSeededInstances() {
-        assertThat(jobInstanceRepository.count()).isEqualTo(4);
+        // 90 dailyImportJob + 1 reconcileLedgerJob + 1 sendDigestEmailJob = 92
+        assertThat(jobInstanceRepository.count()).isEqualTo(92);
     }
 }

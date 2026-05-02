@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getRuns } from '~/api';
 import type { RunSortField } from '~/api/jobRunsApi';
 import { useJobQuery, useTableState } from '~/hooks';
+import { useWindow } from '~/shell/WindowContext';
 import JobRunsTableTile from './JobRunsTableTile';
 
 const PAGE_SIZE = 10;
@@ -11,10 +12,11 @@ const JobRunsTableTileContainer = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
   const { sortBy, sortDir, page, setPage, onSortChange } = useTableState<RunSortField>('executionId');
+  const { windowDays } = useWindow();
 
   const { data, loading, error } = useJobQuery(
-    ['job-runs', sortBy, sortDir, page, PAGE_SIZE],
-    (id) => getRuns(id, sortBy, sortDir, page, PAGE_SIZE),
+    ['job-runs', sortBy, sortDir, page, PAGE_SIZE, windowDays],
+    (id) => getRuns(id, sortBy, sortDir, page, PAGE_SIZE, windowDays),
     { placeholderData: keepPreviousData },
   );
 

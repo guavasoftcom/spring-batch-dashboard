@@ -27,6 +27,7 @@ import SpringLeafIcon from '~/pages/login/components/SpringLeafIcon';
 import { appColors, pageGradient, pageGradientBottom, useColorMode } from '~/theme';
 import { EnvironmentContext } from './EnvironmentContext';
 import { NavContext } from './NavContext';
+import { DEFAULT_WINDOW_DAYS, WINDOW_STORAGE_KEY, WindowContext } from './WindowContext';
 
 const ENV_STORAGE_KEY = 'spring-batch-dashboard.environment';
 
@@ -59,6 +60,15 @@ const AppShell = ({ children }: AppShellProps) => {
     setEnvironmentState(value);
     window.localStorage.setItem(ENV_STORAGE_KEY, value);
   };
+  const [windowDays, setWindowDaysState] = useState<number>(() => {
+    const stored = typeof window !== 'undefined' ? window.localStorage.getItem(WINDOW_STORAGE_KEY) : null;
+    const parsed = stored != null ? Number(stored) : Number.NaN;
+    return Number.isFinite(parsed) ? parsed : DEFAULT_WINDOW_DAYS;
+  });
+  const setWindowDays = (value: number) => {
+    setWindowDaysState(value);
+    window.localStorage.setItem(WINDOW_STORAGE_KEY, String(value));
+  };
   const { data: user = null } = useQuery<CurrentUserResponse | null>({
     queryKey: ['current-user'],
     queryFn: () => getCurrentUser().catch(() => null),
@@ -85,6 +95,7 @@ const AppShell = ({ children }: AppShellProps) => {
 
   return (
     <EnvironmentContext.Provider value={{ environment, setEnvironment }}>
+    <WindowContext.Provider value={{ windowDays, setWindowDays }}>
     <NavContext.Provider value={{ navOpen, setNavOpen: (v) => setNavOpen(v) }}>
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: pageGradient[mode] }}>
       <AppBar
@@ -258,6 +269,7 @@ const AppShell = ({ children }: AppShellProps) => {
       </Box>
     </Box>
     </NavContext.Provider>
+    </WindowContext.Provider>
     </EnvironmentContext.Provider>
   );
 };

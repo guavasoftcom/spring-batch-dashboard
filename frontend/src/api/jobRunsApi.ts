@@ -11,39 +11,43 @@ import type { AvgDuration, JobRun, RunCounts, SuccessRate } from '~/types';
 
 const base = (jobId: string) => `/api/jobs/${encodeURIComponent(jobId)}/runs`;
 
-export const getRunCounts = async (jobId: string): Promise<RunCounts> => {
+export const getRunCounts = async (jobId: string, windowDays: number): Promise<RunCounts> => {
   if (USE_MOCK_DATA) {
-    return computeRunCounts(sampleRuns);
+    return computeRunCounts(filterTrendRuns(sampleRuns, windowDays));
   }
-  const response = await apiClient.get<RunCounts>(`${base(jobId)}/counts`);
+  const response = await apiClient.get<RunCounts>(`${base(jobId)}/counts`, {
+    params: { window: windowDays },
+  });
   return response.data;
 };
 
-export const getSuccessRate = async (jobId: string): Promise<SuccessRate> => {
+export const getSuccessRate = async (jobId: string, windowDays: number): Promise<SuccessRate> => {
   if (USE_MOCK_DATA) {
-    return computeSuccessRate(sampleRuns);
+    return computeSuccessRate(filterTrendRuns(sampleRuns, windowDays));
   }
-  const response = await apiClient.get<SuccessRate>(
-    `${base(jobId)}/success-rate`,
-  );
+  const response = await apiClient.get<SuccessRate>(`${base(jobId)}/success-rate`, {
+    params: { window: windowDays },
+  });
   return response.data;
 };
 
-export const getAvgDuration = async (jobId: string): Promise<AvgDuration> => {
+export const getAvgDuration = async (jobId: string, windowDays: number): Promise<AvgDuration> => {
   if (USE_MOCK_DATA) {
-    return computeAvgDuration(sampleRuns);
+    return computeAvgDuration(filterTrendRuns(sampleRuns, windowDays));
   }
-  const response = await apiClient.get<AvgDuration>(
-    `${base(jobId)}/avg-duration`,
-  );
+  const response = await apiClient.get<AvgDuration>(`${base(jobId)}/avg-duration`, {
+    params: { window: windowDays },
+  });
   return response.data;
 };
 
-export const getLastRun = async (jobId: string): Promise<JobRun | null> => {
+export const getLastRun = async (jobId: string, windowDays: number): Promise<JobRun | null> => {
   if (USE_MOCK_DATA) {
-    return sampleRuns[0] ?? null;
+    return filterTrendRuns(sampleRuns, windowDays)[0] ?? null;
   }
-  const response = await apiClient.get<JobRun | null>(`${base(jobId)}/last`);
+  const response = await apiClient.get<JobRun | null>(`${base(jobId)}/last`, {
+    params: { window: windowDays },
+  });
   return response.data;
 };
 
@@ -63,9 +67,11 @@ export const getRuns = async (
   sortDir: SortDir = 'desc',
   page = 0,
   size = 20,
+  windowDays = 7,
 ): Promise<JobRunPage> => {
   if (USE_MOCK_DATA) {
-    const sorted = [...sampleRuns].sort((a, b) => {
+    const windowed = filterTrendRuns(sampleRuns, windowDays);
+    const sorted = [...windowed].sort((a, b) => {
       const av = a[sortBy];
       const bv = b[sortBy];
       if (av === bv) {
@@ -89,7 +95,7 @@ export const getRuns = async (
     };
   }
   const response = await apiClient.get<JobRunPage>(base(jobId), {
-    params: { sortBy, sortDir, page, size },
+    params: { sortBy, sortDir, page, size, window: windowDays },
   });
   return response.data;
 };

@@ -5,6 +5,7 @@ import com.guavasoft.springbatch.dashboard.model.ProcessingTotals;
 import com.guavasoft.springbatch.dashboard.model.QualitySignals;
 import com.guavasoft.springbatch.dashboard.repository.JobExecutionRepository;
 import com.guavasoft.springbatch.dashboard.repository.StepExecutionRepository;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -22,20 +23,22 @@ public class QualitySignalsService {
     private final JobExecutionRepository jobExecutionRepository;
     private final StepExecutionRepository stepExecutionRepository;
 
-    public QualitySignals getSignals() {
+    public QualitySignals getSignals(int windowDays) {
+        LocalDateTime since = LocalDateTime.now().minusDays(windowDays);
+
         ProcessingTotals processing = new ProcessingTotals(
-            stepExecutionRepository.sumReadCount(),
-            stepExecutionRepository.sumWriteCount(),
-            stepExecutionRepository.sumCommitCount(),
-            stepExecutionRepository.sumFilterCount(),
-            stepExecutionRepository.sumRollbackCount(),
-            stepExecutionRepository.sumSkipCount()
+            stepExecutionRepository.sumReadCount(since),
+            stepExecutionRepository.sumWriteCount(since),
+            stepExecutionRepository.sumCommitCount(since),
+            stepExecutionRepository.sumFilterCount(since),
+            stepExecutionRepository.sumRollbackCount(since),
+            stepExecutionRepository.sumSkipCount(since)
         );
 
         String lastFailure = stepExecutionRepository.findMostRecentFailed()
             .map(this::formatFailure).orElse(null);
 
-        String latestUpdateStr = Optional.ofNullable(jobExecutionRepository.findMaxLastUpdated())
+        String latestUpdateStr = Optional.ofNullable(jobExecutionRepository.findMaxLastUpdated(since))
             .map(TIMESTAMP_FORMAT::format)
             .orElse(null);
 

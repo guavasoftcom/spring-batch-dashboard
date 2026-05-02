@@ -1,5 +1,6 @@
 package com.guavasoft.springbatch.dashboard.controller;
 
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -21,6 +22,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc(addFilters = false)
 class JobExecutionControllerTest {
 
+    private static final int DEFAULT_WINDOW = 7;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -29,7 +32,7 @@ class JobExecutionControllerTest {
 
     @Test
     void returnsJobCounts() throws Exception {
-        when(jobExecutionService.getCounts()).thenReturn(new ExecutionCounts(50, 40, 5, 5));
+        when(jobExecutionService.getCounts(DEFAULT_WINDOW)).thenReturn(new ExecutionCounts(50, 40, 5, 5));
 
         mockMvc.perform(get("/api/overview/job-counts"))
             .andExpect(status().isOk())
@@ -40,8 +43,24 @@ class JobExecutionControllerTest {
     }
 
     @Test
+    void returnsJobCountsWithExplicitWindow() throws Exception {
+        when(jobExecutionService.getCounts(30)).thenReturn(new ExecutionCounts(0, 0, 0, 0));
+
+        mockMvc.perform(get("/api/overview/job-counts").param("window", "30"))
+            .andExpect(status().isOk());
+
+        verify(jobExecutionService).getCounts(30);
+    }
+
+    @Test
+    void rejectsJobCountsWindowAboveMax() throws Exception {
+        mockMvc.perform(get("/api/overview/job-counts").param("window", "91"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void returnsRuntime() throws Exception {
-        when(jobExecutionService.getRuntime()).thenReturn(new Durations(120L, 600L));
+        when(jobExecutionService.getRuntime(DEFAULT_WINDOW)).thenReturn(new Durations(120L, 600L));
 
         mockMvc.perform(get("/api/overview/runtime"))
             .andExpect(status().isOk())
@@ -51,7 +70,7 @@ class JobExecutionControllerTest {
 
     @Test
     void returnsJobStatusChart() throws Exception {
-        when(jobExecutionService.getStatusChart()).thenReturn(List.of(
+        when(jobExecutionService.getStatusChart(DEFAULT_WINDOW)).thenReturn(List.of(
             new JobStatusSlice(0, "Completed", 40, "#0a0"),
             new JobStatusSlice(1, "Failed", 5, "#a00")));
 

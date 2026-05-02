@@ -2,6 +2,8 @@ package com.guavasoft.springbatch.dashboard.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -30,6 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class JobRunServiceTest {
 
     private static final String JOB = "importUsersJob";
+    private static final int WINDOW = 7;
 
     @Mock
     private JobExecutionRepository jobExecutionRepository;
@@ -42,40 +45,45 @@ class JobRunServiceTest {
 
     @Test
     void getCountsMapsProjectionToRunCounts() {
-        when(jobExecutionRepository.findRunCountsByJobName(JOB)).thenReturn(stubCounts(20, 18, 1, 19));
+        when(jobExecutionRepository.findRunCountsByJobName(eq(JOB), any(LocalDateTime.class)))
+            .thenReturn(stubCounts(20, 18, 1, 19));
 
-        assertThat(jobRunService.getCounts(JOB)).isEqualTo(new RunCounts(20, 18, 1, 19));
+        assertThat(jobRunService.getCounts(JOB, WINDOW)).isEqualTo(new RunCounts(20, 18, 1, 19));
     }
 
     @Test
     void getSuccessRateUsesProjectionTotals() {
-        when(jobExecutionRepository.findRunCountsByJobName(JOB)).thenReturn(stubCounts(20, 18, 1, 19));
+        when(jobExecutionRepository.findRunCountsByJobName(eq(JOB), any(LocalDateTime.class)))
+            .thenReturn(stubCounts(20, 18, 1, 19));
 
-        assertThat(jobRunService.getSuccessRate(JOB)).isEqualTo(SuccessRate.of(18, 19));
+        assertThat(jobRunService.getSuccessRate(JOB, WINDOW)).isEqualTo(SuccessRate.of(18, 19));
     }
 
     @Test
     void getAvgDurationRoundsRepositoryValue() {
-        when(jobExecutionRepository.findAverageDurationSecondsByJobName(JOB)).thenReturn(120.4);
+        when(jobExecutionRepository.findAverageDurationSecondsByJobName(eq(JOB), any(LocalDateTime.class)))
+            .thenReturn(120.4);
 
-        assertThat(jobRunService.getAvgDuration(JOB)).isEqualTo(new AvgDuration(120));
+        assertThat(jobRunService.getAvgDuration(JOB, WINDOW)).isEqualTo(new AvgDuration(120));
     }
 
     @Test
     void getLastRunMapsPresentRow() {
         JobRunRow latestRow = mock(JobRunRow.class);
         JobRun mappedJobRun = sampleJobRun(7L);
-        when(jobExecutionRepository.findLatestRunByJobName(JOB)).thenReturn(Optional.of(latestRow));
+        when(jobExecutionRepository.findLatestRunByJobName(eq(JOB), any(LocalDateTime.class)))
+            .thenReturn(Optional.of(latestRow));
         when(jobRunMapper.toDto(latestRow)).thenReturn(mappedJobRun);
 
-        assertThat(jobRunService.getLastRun(JOB)).isSameAs(mappedJobRun);
+        assertThat(jobRunService.getLastRun(JOB, WINDOW)).isSameAs(mappedJobRun);
     }
 
     @Test
     void getLastRunReturnsNullWhenNoRow() {
-        when(jobExecutionRepository.findLatestRunByJobName(JOB)).thenReturn(Optional.empty());
+        when(jobExecutionRepository.findLatestRunByJobName(eq(JOB), any(LocalDateTime.class)))
+            .thenReturn(Optional.empty());
 
-        assertThat(jobRunService.getLastRun(JOB)).isNull();
+        assertThat(jobRunService.getLastRun(JOB, WINDOW)).isNull();
     }
 
     @Test
@@ -84,15 +92,30 @@ class JobRunServiceTest {
         JobRunRow secondRow = mock(JobRunRow.class);
         JobRun firstJobRun = sampleJobRun(1L);
         JobRun secondJobRun = sampleJobRun(2L);
-        when(jobExecutionRepository.findRunsByJobName(JOB, "executionId", "desc", 0, 20))
+        when(jobExecutionRepository.findRunsByJobName(eq(JOB), anyString(), anyString(), anyInt(), anyInt(), any(LocalDateTime.class)))
             .thenReturn(List.of(firstRow, secondRow));
         when(jobRunMapper.toDto(firstRow)).thenReturn(firstJobRun);
         when(jobRunMapper.toDto(secondRow)).thenReturn(secondJobRun);
-        when(jobExecutionRepository.countRunsByJobName(JOB)).thenReturn(7L);
+        when(jobExecutionRepository.countRunsByJobName(eq(JOB), any(LocalDateTime.class))).thenReturn(7L);
 
-        JobRunPage jobRunPage = jobRunService.getRuns(JOB, "executionId", "desc", 0, 20);
+        JobRunPage jobRunPage = jobRunService.getRuns(JOB, "executionId", "desc", 0, 20, WINDOW);
 
         assertThat(jobRunPage).isEqualTo(new JobRunPage(List.of(firstJobRun, secondJobRun), 0, 20, 7));
+    }
+
+    @Test
+    void getCountsPassesNowMinusWindowAsCutoff() {
+        when(jobExecutionRepository.findRunCountsByJobName(eq(JOB), any(LocalDateTime.class)))
+            .thenReturn(stubCounts(0, 0, 0, 0));
+
+        LocalDateTime beforeCall = LocalDateTime.now();
+        jobRunService.getCounts(JOB, 30);
+        LocalDateTime afterCall = LocalDateTime.now();
+
+        ArgumentCaptor<LocalDateTime> sinceCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
+        verify(jobExecutionRepository).findRunCountsByJobName(eq(JOB), sinceCaptor.capture());
+        assertThat(sinceCaptor.getValue())
+            .isBetween(beforeCall.minusDays(30), afterCall.minusDays(30));
     }
 
     @Test

@@ -36,7 +36,7 @@ const EnvironmentSelectorContainer = () => {
     navigate('/overview');
   }, [environment, setEnvironment, navigate]);
 
-  if (!isPending && options.length <= 1) {
+  if (!isPending && options.length <= 0) {
     return null;
   }
 

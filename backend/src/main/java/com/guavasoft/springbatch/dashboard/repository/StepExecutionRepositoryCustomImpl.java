@@ -185,10 +185,9 @@ public class StepExecutionRepositoryCustomImpl implements StepExecutionRepositor
 
     @Override
     public Optional<LastFailedStep> findMostRecentFailed() {
-        // Routed through SqlDialect.paginationClause so the same JPQL/Pageable shape used
-        // before — which Hibernate compiled to its single cached dialect's syntax — now
-        // emits LIMIT/OFFSET for Postgres+MySQL and OFFSET … FETCH NEXT … for Oracle.
-        // Only the headline (jobName / stepName) is needed by QualitySignalsService.
+        // Routed through SqlDialect.paginationClause so the row-limit clause emits LIMIT/OFFSET
+        // for Postgres+MySQL and OFFSET … FETCH NEXT … for Oracle. Replaces a Pageable JPA query
+        // that Hibernate compiled to its single cached dialect's syntax — see AGENTS.md.
         String sql = """
             SELECT ji.job_name AS job_name, se.step_name AS step_name
             FROM BATCH_STEP_EXECUTION se

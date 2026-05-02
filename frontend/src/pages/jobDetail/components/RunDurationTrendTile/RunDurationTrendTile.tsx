@@ -1,42 +1,17 @@
-import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
 import type { Theme } from '@mui/material/styles';
 import { LineChart } from '@mui/x-charts';
 import { LargeTile } from '~/components';
 import { appColors } from '~/theme';
 import type { JobRun } from '~/types';
 
-export type TrendWindowOption = { value: number; label: string };
-
 type Props = {
   data: JobRun[] | null;
   loading: boolean;
   error: string | null;
-  windowDays: number;
-  windowOptions: readonly TrendWindowOption[];
-  onWindowChange: (value: number) => void;
 };
 
-const RunDurationTrendTile = ({ data, loading, error, windowDays, windowOptions, onWindowChange }: Props) => (
-  <LargeTile
-    title="Run Duration Trend"
-    loading={loading}
-    error={error}
-    headerAction={
-      <FormControl size="small" sx={{ minWidth: 160 }}>
-        <InputLabel id="trend-window-label">Window</InputLabel>
-        <Select
-          labelId="trend-window-label"
-          label="Window"
-          value={windowDays}
-          onChange={(e) => onWindowChange(Number(e.target.value))}
-        >
-          {windowOptions.map((opt) => (
-            <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-    }
-  >
+const RunDurationTrendTile = ({ data, loading, error }: Props) => (
+  <LargeTile title="Run Duration Trend" loading={loading} error={error}>
     {data && (
       <LineChart
         height={220}

@@ -1,9 +1,11 @@
 import { getQualitySignals } from '~/api';
 import { useEnvQuery } from '~/hooks';
+import { useWindow } from '~/shell/WindowContext';
 import QualitySignalsTile from './QualitySignalsTile';
 
 const QualitySignalsTileContainer = () => {
-  const state = useEnvQuery(['quality-signals'], getQualitySignals);
+  const { windowDays } = useWindow();
+  const state = useEnvQuery(['quality-signals', windowDays], () => getQualitySignals(windowDays));
   return <QualitySignalsTile {...state} />;
 };
 

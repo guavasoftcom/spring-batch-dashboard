@@ -1,12 +1,17 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { getLastRun } from '~/api';
 import { useJobQuery } from '~/hooks';
+import { useWindow } from '~/shell/WindowContext';
 import LastRunTile from './LastRunTile';
 
 const LastRunTileContainer = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
-  const state = useJobQuery(['job-last-run'], getLastRun);
+  const { windowDays } = useWindow();
+  const state = useJobQuery(
+    ['job-last-run', windowDays],
+    (id) => getLastRun(id, windowDays),
+  );
   return (
     <LastRunTile
       {...state}

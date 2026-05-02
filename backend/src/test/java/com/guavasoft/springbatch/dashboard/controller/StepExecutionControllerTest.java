@@ -1,5 +1,6 @@
 package com.guavasoft.springbatch.dashboard.controller;
 
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -21,6 +22,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc(addFilters = false)
 class StepExecutionControllerTest {
 
+    private static final int DEFAULT_WINDOW = 7;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -29,7 +32,7 @@ class StepExecutionControllerTest {
 
     @Test
     void returnsStepCounts() throws Exception {
-        when(stepExecutionService.getCounts()).thenReturn(new ExecutionCounts(200, 180, 10, 10));
+        when(stepExecutionService.getCounts(DEFAULT_WINDOW)).thenReturn(new ExecutionCounts(200, 180, 10, 10));
 
         mockMvc.perform(get("/api/overview/step-counts"))
             .andExpect(status().isOk())
@@ -40,8 +43,24 @@ class StepExecutionControllerTest {
     }
 
     @Test
+    void returnsStepCountsWithExplicitWindow() throws Exception {
+        when(stepExecutionService.getCounts(60)).thenReturn(new ExecutionCounts(0, 0, 0, 0));
+
+        mockMvc.perform(get("/api/overview/step-counts").param("window", "60"))
+            .andExpect(status().isOk());
+
+        verify(stepExecutionService).getCounts(60);
+    }
+
+    @Test
+    void rejectsStepCountsWindowAboveMax() throws Exception {
+        mockMvc.perform(get("/api/overview/step-counts").param("window", "91"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void returnsThroughput() throws Exception {
-        when(stepExecutionService.getThroughput()).thenReturn(new ThroughputSummary(1000, 950));
+        when(stepExecutionService.getThroughput(DEFAULT_WINDOW)).thenReturn(new ThroughputSummary(1000, 950));
 
         mockMvc.perform(get("/api/overview/throughput"))
             .andExpect(status().isOk())
@@ -51,7 +70,7 @@ class StepExecutionControllerTest {
 
     @Test
     void returnsProcessingMetrics() throws Exception {
-        when(stepExecutionService.getProcessingMetrics()).thenReturn(List.of(
+        when(stepExecutionService.getProcessingMetrics(DEFAULT_WINDOW)).thenReturn(List.of(
             new ThroughputBar("read", 1000),
             new ThroughputBar("write", 950),
             new ThroughputBar("commit", 100)));

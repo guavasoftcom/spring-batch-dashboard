@@ -25,6 +25,7 @@ const EnvironmentSelector = ({ value, selectedType, options, onChange, loading }
       <Select
         labelId="env-select-label"
         label="Environment"
+        readOnly={options?.length <= 1}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         renderValue={(selected) => (
