@@ -1,7 +1,7 @@
-import { Link as MuiLink, Skeleton, Typography } from '@mui/material';
+import { Skeleton, Typography } from '@mui/material';
 import { appColors } from '~/theme';
 import type { JobRun } from '~/types';
-import { TilePaper } from '~/components';
+import { ExecutionLink, TilePaper } from '~/components';
 
 type Props = {
   data: JobRun | null;
@@ -25,26 +25,7 @@ const LastRunTile = ({ data, loading, error, onClick }: Props) => (
     {data && (
       <>
         {onClick ? (
-          <MuiLink
-            component="button"
-            onClick={() => onClick(data.executionId)}
-            sx={{
-              mt: 1,
-              color: 'primary.dark',
-              fontWeight: 800,
-              fontSize: '2.125rem',
-              lineHeight: 1.235,
-              textDecoration: 'none',
-              background: 'none',
-              border: 0,
-              p: 0,
-              cursor: 'pointer',
-              display: 'block',
-              '&:hover': { textDecoration: 'underline' },
-            }}
-          >
-            #{data.executionId}
-          </MuiLink>
+          <ExecutionLink executionId={data.executionId} onClick={onClick} variant="large" />
         ) : (
           <Typography variant="h4" sx={{ mt: 1, color: 'primary.dark', fontWeight: 800 }}>
             #{data.executionId}

@@ -12,7 +12,11 @@ vi.mock('~/api', async () => {
 
 describe('EnvironmentSelector container', () => {
   beforeEach(() => {
-    apiMocks.getEnvironments.mockResolvedValue(['dev', 'prod', 'staging']);
+    apiMocks.getEnvironments.mockResolvedValue([
+      { name: 'dev', type: 'POSTGRESQL' },
+      { name: 'prod', type: 'POSTGRESQL' },
+      { name: 'staging', type: 'MYSQL' },
+    ]);
   });
 
   afterEach(() => {
@@ -37,7 +41,7 @@ describe('EnvironmentSelector container', () => {
   });
 
   it('renders nothing when only one environment is available', async () => {
-    apiMocks.getEnvironments.mockResolvedValueOnce(['only-one']);
+    apiMocks.getEnvironments.mockResolvedValueOnce([{ name: 'only-one', type: 'POSTGRESQL' }]);
 
     const { container } = renderWithProviders(<EnvironmentSelectorContainer />);
 

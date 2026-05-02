@@ -1,4 +1,5 @@
 import { Container, Grid } from '@mui/material';
+import HomeIcon from '@mui/icons-material/Home';
 import { PageBreadcrumb } from '~/components';
 import {
   JobExecutionsTile,
@@ -10,11 +11,13 @@ import {
   ThroughputTile,
 } from './components';
 
-type Props = { environment: string };
-
-const OverviewPage = ({ environment }: Props) => (
+const OverviewPage = () => (
   <Container component="main" maxWidth="xl" sx={{ py: 4, color: 'text.primary' }}>
-    <PageBreadcrumb segments={[{ label: environment }, { label: 'Overview' }]} />
+    <PageBreadcrumb
+      segments={[
+        { label: 'Overview', icon: <HomeIcon sx={{ fontSize: 26 }} /> },
+      ]}
+    />
     <Grid container spacing={2.5}>
       <Grid size={{ xs: 12, sm: 6, lg: 3 }}><JobExecutionsTile /></Grid>
       <Grid size={{ xs: 12, sm: 6, lg: 3 }}><StepExecutionsTile /></Grid>

@@ -1,6 +1,5 @@
 import {
   Chip,
-  Link as MuiLink,
   Table,
   TableBody,
   TableCell,
@@ -11,7 +10,7 @@ import {
   TableSortLabel,
 } from '@mui/material';
 import type { RunSortField, SortDir } from '~/api/jobRunsApi';
-import { LargeTile } from '~/components';
+import { ExecutionLink, LargeTile } from '~/components';
 import type { JobRun, RunStatus } from '~/types';
 
 const statusColor: Record<RunStatus, 'success' | 'error' | 'info'> = {
@@ -91,13 +90,7 @@ const JobRunsTableTile = ({
             {data.map((run) => (
               <TableRow key={run.executionId} hover>
                 <TableCell>
-                  <MuiLink
-                    component="button"
-                    onClick={() => onRunClick(run.executionId)}
-                    sx={{ color: 'primary.dark', fontWeight: 700, textDecoration: 'none' }}
-                  >
-                    #{run.executionId}
-                  </MuiLink>
+                  <ExecutionLink executionId={run.executionId} onClick={onRunClick} />
                 </TableCell>
                 <TableCell>
                   <Chip label={run.status} color={statusColor[run.status]} size="small" />

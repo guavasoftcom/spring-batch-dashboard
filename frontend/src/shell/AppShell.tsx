@@ -1,16 +1,22 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   AppBar,
   Avatar,
   Box,
   Button,
+  IconButton,
   List,
   ListItemButton,
+  ListItemIcon,
   ListItemText,
   Toolbar,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import HomeIcon from '@mui/icons-material/Home';
 import { BatchJobsNav } from '~/components/BatchJobsNav';
 import { ColorModeToggle } from '~/components/ColorModeToggle';
 import { EnvironmentSelector } from '~/components/EnvironmentSelector';
@@ -18,8 +24,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { getCurrentUser, logout } from '~/api';
 import type { CurrentUserResponse } from '~/types';
 import SpringLeafIcon from '~/pages/login/components/SpringLeafIcon';
-import { appColors, pageGradient, useColorMode } from '~/theme';
+import { appColors, pageGradient, pageGradientBottom, useColorMode } from '~/theme';
 import { EnvironmentContext } from './EnvironmentContext';
+import { NavContext } from './NavContext';
 
 const ENV_STORAGE_KEY = 'spring-batch-dashboard.environment';
 
@@ -40,6 +47,9 @@ const AppShell = ({ children }: AppShellProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { mode } = useColorMode();
+  const theme = useTheme();
+  const isWide = useMediaQuery(theme.breakpoints.up('md'));
+  const [navOpen, setNavOpen] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [environment, setEnvironmentState] = useState<string>(() => {
     const stored = typeof window !== 'undefined' ? window.localStorage.getItem(ENV_STORAGE_KEY) : null;
@@ -59,6 +69,10 @@ const AppShell = ({ children }: AppShellProps) => {
 
   const onDashboard = location.pathname === '/overview';
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [location.pathname]);
+
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
@@ -71,24 +85,45 @@ const AppShell = ({ children }: AppShellProps) => {
 
   return (
     <EnvironmentContext.Provider value={{ environment, setEnvironment }}>
+    <NavContext.Provider value={{ navOpen, setNavOpen: (v) => setNavOpen(v) }}>
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: pageGradient[mode] }}>
       <AppBar
-        position="static"
+        position="sticky"
         sx={{
-          background: 'transparent',
-          color: 'text.primary',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-          borderBottom: 1,
-          borderColor: 'divider',
+          top: 0,
+          zIndex: (theme) => theme.zIndex.appBar,
+          background: mode === 'light' ? '#134B99' : pageGradientBottom.dark,
+          color: appColors.white,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0) 100%), url(/login-pattern-${mode}.png)`,
+            backgroundRepeat: 'no-repeat, repeat',
+            backgroundPosition: '0 0, center -50px',
+            maskImage: 'linear-gradient(to right, black 0%, black 35%, transparent 60%)',
+            WebkitMaskImage: 'linear-gradient(to right, black 0%, black 35%, transparent 60%)',
+            opacity: mode === 'light' ? 0.45 : 0.18,
+            pointerEvents: 'none',
+          },
         }}
       >
-        <Toolbar sx={{ minHeight: 72 }}>
+        <Toolbar sx={{ minHeight: 64, position: 'relative' }}>
+          <IconButton
+            onClick={() => setNavOpen((v) => !v)}
+            aria-label="toggle navigation"
+            sx={{ color: appColors.white, mr: 1 }}
+          >
+            <MenuIcon />
+          </IconButton>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.1, flexGrow: 1 }}>
             <SpringLeafIcon sx={{ color: appColors.leafGreen, fontSize: 28, flexShrink: 0 }} />
             <Typography
               component="h1"
               sx={{
-                color: 'text.primary',
+                color: appColors.white,
                 lineHeight: 1.1,
                 fontSize: { xs: '1.2rem', sm: '1.45rem' },
                 whiteSpace: 'nowrap',
@@ -122,12 +157,12 @@ const AppShell = ({ children }: AppShellProps) => {
               >
                 {initialsFor(user)}
               </Avatar>
-              <Typography sx={{ color: 'text.primary', fontWeight: 600, fontSize: 14 }}>
+              <Typography sx={{ color: appColors.white, fontWeight: 600, fontSize: 14 }}>
                 {displayName}
               </Typography>
             </Box>
           )}
-          <ColorModeToggle sx={{ mr: 2 }} />
+          <ColorModeToggle sx={{ mr: 2, color: appColors.white }} />
           <Button
             color="inherit"
             onClick={handleLogout}
@@ -146,7 +181,19 @@ const AppShell = ({ children }: AppShellProps) => {
         </Toolbar>
       </AppBar>
 
-      <Box sx={{ flex: 1, display: 'flex', minHeight: 0 }}>
+      <Box sx={{ flex: 1, display: 'flex', minHeight: 0, position: 'relative' }}>
+        {!isWide && navOpen && (
+          <Box
+            onClick={() => setNavOpen(false)}
+            sx={{
+              position: 'fixed',
+              inset: 0,
+              top: 64,
+              bgcolor: 'rgba(0,0,0,0.4)',
+              zIndex: (t) => t.zIndex.drawer - 1,
+            }}
+          />
+        )}
         <Box
           component="nav"
           sx={{
@@ -155,7 +202,25 @@ const AppShell = ({ children }: AppShellProps) => {
             bgcolor: 'background.paper',
             borderRight: 1,
             borderColor: 'divider',
-            py: 2,
+            pb: 2,
+            overflowY: 'auto',
+            ...(isWide
+              ? {
+                  position: 'sticky',
+                  top: 64,
+                  height: 'calc(100vh - 64px)',
+                  display: navOpen ? 'block' : 'none',
+                }
+              : {
+                  position: 'fixed',
+                  top: 64,
+                  left: 0,
+                  height: 'calc(100vh - 64px)',
+                  zIndex: (t) => t.zIndex.drawer,
+                  transform: navOpen ? 'translateX(0)' : 'translateX(-100%)',
+                  transition: 'transform 200ms ease',
+                  boxShadow: navOpen ? '4px 0 12px rgba(0,0,0,0.2)' : 'none',
+                }),
           }}
         >
           <EnvironmentSelector />
@@ -173,6 +238,9 @@ const AppShell = ({ children }: AppShellProps) => {
                 '&.Mui-selected:hover': { bgcolor: 'rgba(21, 101, 192, 0.18)' },
               }}
             >
+              <ListItemIcon sx={{ minWidth: 32, color: 'inherit' }}>
+                <HomeIcon fontSize="small" />
+              </ListItemIcon>
               <ListItemText
                 primary="Overview"
                 slotProps={{
@@ -184,11 +252,12 @@ const AppShell = ({ children }: AppShellProps) => {
           <BatchJobsNav />
         </Box>
 
-        <Box sx={{ flex: 1, bgcolor: 'background.default', overflow: 'auto' }}>
+        <Box sx={{ flex: 1, bgcolor: 'background.default', minWidth: 0 }}>
           {children}
         </Box>
       </Box>
     </Box>
+    </NavContext.Provider>
     </EnvironmentContext.Provider>
   );
 };

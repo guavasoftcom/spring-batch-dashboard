@@ -1,11 +1,17 @@
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import PageBreadcrumb from '~/components/PageBreadcrumb/PageBreadcrumb';
+import { renderWithProviders } from '~/test-utils/renderWithProviders';
+
+vi.mock('~/api', async () => {
+  const actual = await vi.importActual<object>('~/api');
+  return { ...actual, getEnvironments: vi.fn().mockResolvedValue([]) };
+});
 
 describe('PageBreadcrumb', () => {
   it('renders all segments with humanized labels', () => {
-    render(
+    renderWithProviders(
       <PageBreadcrumb
         segments={[
           { label: 'prod' },
@@ -23,7 +29,7 @@ describe('PageBreadcrumb', () => {
   it('renders clickable segments as buttons that fire onClick', async () => {
     const user = userEvent.setup();
     const onJob = vi.fn();
-    render(
+    renderWithProviders(
       <PageBreadcrumb
         segments={[
           { label: 'prod' },
@@ -39,13 +45,13 @@ describe('PageBreadcrumb', () => {
   });
 
   it('renders a single segment without a chevron separator', () => {
-    const { container } = render(<PageBreadcrumb segments={[{ label: 'prod' }]} />);
+    const { container } = renderWithProviders(<PageBreadcrumb segments={[{ label: 'prod' }]} />);
 
     expect(container.querySelectorAll('svg').length).toBe(0);
   });
 
   it('inserts a chevron between consecutive segments', () => {
-    const { container } = render(
+    const { container } = renderWithProviders(
       <PageBreadcrumb segments={[{ label: 'prod' }, { label: 'importUsersJob' }]} />,
     );
 

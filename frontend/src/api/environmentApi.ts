@@ -1,12 +1,17 @@
 import { apiClient } from '~/config/client';
 import { USE_MOCK_DATA } from '~/config/env';
+import type { EnvironmentInfo } from '~/types';
 
-const mockEnvironments = ['Dev Datamart', 'Dev ETL', 'Test Datamart', 'Test ETL'];
+const mockEnvironments: EnvironmentInfo[] = [
+  { name: 'Localhost Warehouse', type: 'POSTGRESQL' },
+  { name: 'Test Warehouse', type: 'MYSQL' },
+  { name: 'Prod Warehouse', type: 'ORACLE' },
+];
 
-export const getEnvironments = async (): Promise<string[]> => {
+export const getEnvironments = async (): Promise<EnvironmentInfo[]> => {
   if (USE_MOCK_DATA) {
-    return [...mockEnvironments];
+    return mockEnvironments.map((env) => ({ ...env }));
   }
-  const response = await apiClient.get<string[]>('/api/environments');
+  const response = await apiClient.get<EnvironmentInfo[]>('/api/environments');
   return response.data;
 };

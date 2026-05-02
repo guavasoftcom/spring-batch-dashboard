@@ -15,15 +15,21 @@ const EnvironmentSelectorContainer = () => {
   });
 
   const options = useMemo(() => data ?? [], [data]);
+  const optionNames = useMemo(() => options.map((env) => env.name), [options]);
+  const selectedType = useMemo(
+    () => options.find((env) => env.name === environment)?.type ?? '',
+    [options, environment],
+  );
+  const validValue = optionNames.includes(environment) ? environment : '';
 
   useEffect(() => {
-    if (options.length > 0 && !options.includes(environment)) {
-      setEnvironment(options[0]);
+    if (optionNames.length > 0 && !optionNames.includes(environment)) {
+      setEnvironment(optionNames[0]);
     }
-  }, [options, environment, setEnvironment]);
+  }, [optionNames, environment, setEnvironment]);
 
   const handleChange = useCallback((next: string) => {
-    if (next === environment) { 
+    if (next === environment) {
       return;
     }
     setEnvironment(next);
@@ -36,7 +42,8 @@ const EnvironmentSelectorContainer = () => {
 
   return (
     <EnvironmentSelector
-      value={environment}
+      value={validValue}
+      selectedType={selectedType}
       options={options}
       onChange={handleChange}
       loading={isPending}

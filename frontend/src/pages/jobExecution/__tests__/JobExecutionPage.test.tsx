@@ -61,7 +61,6 @@ describe('JobExecutionPage', () => {
       routePath: '/jobs/:jobId/executions/:executionId',
     });
 
-    expect(screen.getByText('Prod')).toBeInTheDocument();
     expect(screen.getByText('Import Users Job')).toBeInTheDocument();
     expect(screen.getByText('Execution #7')).toBeInTheDocument();
 

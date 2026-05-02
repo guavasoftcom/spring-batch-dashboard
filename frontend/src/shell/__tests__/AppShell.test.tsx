@@ -23,7 +23,10 @@ describe('AppShell', () => {
       name: 'The Octocat',
       avatarUrl: null,
     });
-    apiMocks.getEnvironments.mockResolvedValue(['prod', 'staging']);
+    apiMocks.getEnvironments.mockResolvedValue([
+      { name: 'prod', type: 'POSTGRESQL' },
+      { name: 'staging', type: 'MYSQL' },
+    ]);
     apiMocks.getJobs.mockResolvedValue(['importUsersJob']);
     apiMocks.logout.mockResolvedValue(undefined);
     window.localStorage.clear();

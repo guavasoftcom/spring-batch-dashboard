@@ -1,10 +1,12 @@
 package com.guavasoft.springbatch.dashboard.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.when;
 
 import com.guavasoft.springbatch.dashboard.config.DatasourcesProperties;
 import com.guavasoft.springbatch.dashboard.config.DatasourcesProperties.DatasourceEntry;
+import com.guavasoft.springbatch.dashboard.model.EnvironmentInfo;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,23 +24,67 @@ class EnvironmentServiceTest {
     private EnvironmentService environmentService;
 
     @Test
-    void getDatasourceNamesReturnsAlphabeticallySortedNames() {
+    void getEnvironmentsReturnsAlphabeticallySortedEntriesWithDerivedType() {
         when(datasourcesProperties.getDatasources()).thenReturn(List.of(
-            entry("prod"), entry("dev"), entry("staging")));
+            entry("prod", "jdbc:postgresql://host/db"),
+            entry("dev", "jdbc:mysql://host/db"),
+            entry("staging", "jdbc:oracle:thin:@host:1521:db")));
 
-        assertThat(environmentService.getDatasourceNames()).containsExactly("dev", "prod", "staging");
+        assertThat(environmentService.getEnvironments())
+            .extracting(EnvironmentInfo::name, EnvironmentInfo::type)
+            .containsExactly(
+                tuple("dev", "MYSQL"),
+                tuple("prod", "POSTGRESQL"),
+                tuple("staging", "ORACLE"));
     }
 
     @Test
-    void getDatasourceNamesReturnsEmptyListWhenNoneConfigured() {
+    void getEnvironmentsReturnsEmptyListWhenNoneConfigured() {
         when(datasourcesProperties.getDatasources()).thenReturn(List.of());
 
-        assertThat(environmentService.getDatasourceNames()).isEmpty();
+        assertThat(environmentService.getEnvironments()).isEmpty();
     }
 
-    private static DatasourceEntry entry(String name) {
+    @Test
+    void getEnvironmentsReturnsUnknownTypeForMalformedUrl() {
+        when(datasourcesProperties.getDatasources()).thenReturn(List.of(entry("oddball", "not-a-jdbc-url")));
+
+        assertThat(environmentService.getEnvironments())
+            .extracting(EnvironmentInfo::type)
+            .containsExactly("UNKNOWN");
+    }
+
+    @Test
+    void getEnvironmentsReturnsUnknownTypeForNullUrl() {
+        when(datasourcesProperties.getDatasources()).thenReturn(List.of(entry("nullUrl", null)));
+
+        assertThat(environmentService.getEnvironments())
+            .extracting(EnvironmentInfo::type)
+            .containsExactly("UNKNOWN");
+    }
+
+    @Test
+    void getEnvironmentsReturnsUnknownTypeForPrefixOnlyUrl() {
+        when(datasourcesProperties.getDatasources()).thenReturn(List.of(entry("prefixOnly", "jdbc:")));
+
+        assertThat(environmentService.getEnvironments())
+            .extracting(EnvironmentInfo::type)
+            .containsExactly("UNKNOWN");
+    }
+
+    @Test
+    void getEnvironmentsUppercasesLowercaseEngineToken() {
+        when(datasourcesProperties.getDatasources()).thenReturn(List.of(entry("camel", "jdbc:postgresql://h/d")));
+
+        assertThat(environmentService.getEnvironments())
+            .extracting(EnvironmentInfo::type)
+            .containsExactly("POSTGRESQL");
+    }
+
+    private static DatasourceEntry entry(String name, String url) {
         DatasourceEntry e = new DatasourceEntry();
         e.setName(name);
+        e.setUrl(url);
         return e;
     }
 }

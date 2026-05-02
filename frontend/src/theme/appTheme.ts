@@ -13,9 +13,14 @@ export const appColors = {
   leafGreen: '#7FD36E',
 };
 
+export const pageGradientBottom: Record<ColorMode, string> = {
+  light: '#003C8F',
+  dark: '#02080F',
+};
+
 export const pageGradient: Record<ColorMode, string> = {
-  light: 'linear-gradient(180deg, #DCE9F7 0%, #6B9BD1 100%)',
-  dark: 'linear-gradient(180deg, #0A2D4A 0%, #031626 100%)',
+  light: `linear-gradient(180deg, #BFD7EC 0%, #6B9BD1 55%, ${pageGradientBottom.light} 100%)`,
+  dark: `linear-gradient(180deg, #0E2238 0%, #06192C 55%, ${pageGradientBottom.dark} 100%)`,
 };
 
 export const createAppTheme = (mode: ColorMode): Theme =>
