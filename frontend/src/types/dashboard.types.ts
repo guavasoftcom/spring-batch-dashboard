@@ -1,3 +1,5 @@
+import type { JobRun } from './jobRuns.types';
+
 export type ExecutionCounts = {
   total: number;
   completed: number;
@@ -19,17 +21,7 @@ export type JobStatusSlice = { id: number; label: string; value: number; color: 
 
 export type ThroughputBar = { metric: string; value: number };
 
-export type ProcessingTotals = {
-  readCount: number;
-  writeCount: number;
-  commitCount: number;
-  filterCount: number;
-  rollbackCount: number;
-  skipCount: number;
-};
-
-export type QualitySignals = {
-  lastFailure: string | null;
-  processing: ProcessingTotals;
-  latestUpdate: string | null;
+export type JobLastRun = {
+  jobName: string;
+  run: JobRun | null;
 };

@@ -4,14 +4,11 @@ import com.guavasoft.springbatch.dashboard.dialect.SqlDialect;
 import com.guavasoft.springbatch.dashboard.model.DurationSummary;
 import com.guavasoft.springbatch.dashboard.model.IoSummary;
 import com.guavasoft.springbatch.dashboard.model.JobExecutionStepCounts;
-import com.guavasoft.springbatch.dashboard.model.LastFailedStep;
 import com.guavasoft.springbatch.dashboard.model.StepDetail;
 import com.guavasoft.springbatch.dashboard.repository.rowmapper.StepDetailRowMapper;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -163,32 +160,6 @@ public class StepExecutionRepositoryCustomImpl implements StepExecutionRepositor
                 "SELECT COUNT(*) FROM BATCH_STEP_EXECUTION WHERE job_execution_id = :id",
                 params(jobExecutionId), Long.class);
         return count == null ? 0L : count;
-    }
-
-    @Override
-    public Optional<LastFailedStep> findMostRecentFailed() {
-        // Routed through SqlDialect.paginationClause so the row-limit clause emits LIMIT/OFFSET
-        // for Postgres+MySQL and OFFSET … FETCH NEXT … for Oracle. Replaces a Pageable JPA query
-        // that Hibernate compiled to its single cached dialect's syntax — see AGENTS.md.
-        String sql = """
-            SELECT ji.job_name AS job_name, se.step_name AS step_name
-            FROM BATCH_STEP_EXECUTION se
-            JOIN BATCH_JOB_EXECUTION je ON je.job_execution_id = se.job_execution_id
-            JOIN BATCH_JOB_INSTANCE ji ON ji.job_instance_id = je.job_instance_id
-            WHERE se.status = 'FAILED'
-            ORDER BY %s, se.last_updated DESC
-            %s
-            """.formatted(
-                dialect.orderByNullsLast("se.end_time", DIR_DESC),
-                dialect.paginationClause("1", "0"));
-
-        try {
-            LastFailedStep failedStep = jdbc.queryForObject(sql, new MapSqlParameterSource(), (rs, i) ->
-                    new LastFailedStep(rs.getString("job_name"), rs.getString("step_name")));
-            return Optional.ofNullable(failedStep);
-        } catch (EmptyResultDataAccessException ex) {
-            return Optional.empty();
-        }
     }
 
     private MapSqlParameterSource params(long jobExecutionId) {

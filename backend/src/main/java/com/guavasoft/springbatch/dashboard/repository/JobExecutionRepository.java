@@ -4,8 +4,6 @@ import com.guavasoft.springbatch.dashboard.entity.BatchStatus;
 import com.guavasoft.springbatch.dashboard.entity.JobExecutionEntity;
 import java.time.LocalDateTime;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 public interface JobExecutionRepository extends JpaRepository<JobExecutionEntity, Long>, JobExecutionRepositoryCustom {
 
@@ -16,7 +14,4 @@ public interface JobExecutionRepository extends JpaRepository<JobExecutionEntity
     }
 
     long countByStartTimeGreaterThanEqual(LocalDateTime since);
-
-    @Query("SELECT MAX(j.lastUpdated) FROM JobExecutionEntity j WHERE j.startTime >= :since")
-    LocalDateTime findMaxLastUpdated(@Param("since") LocalDateTime since);
 }

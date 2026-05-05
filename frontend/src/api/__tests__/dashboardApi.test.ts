@@ -15,18 +15,18 @@ vi.mock( '~/config/client', () => ({
 import { apiClient } from '~/config/client';
 import {
   jobCountsMock,
+  jobLastRunsMock,
   jobStatusChartMock,
   processingMetricsMock,
-  qualitySignalsMock,
   runtimeMock,
   stepCountsMock,
   throughputMock,
 } from '~/pages/overview/seedSummary';
 import {
   getJobCounts,
+  getJobLastRuns,
   getJobStatusChart,
   getProcessingMetrics,
-  getQualitySignals,
   getRuntime,
   getStepCounts,
   getThroughput,
@@ -51,7 +51,7 @@ describe('dashboardApi', () => {
       ['getRuntime', getRuntime, '/api/overview/runtime', { averageSeconds: 4 }],
       ['getJobStatusChart', getJobStatusChart, '/api/overview/job-status-chart', [{ id: 1 }]],
       ['getProcessingMetrics', getProcessingMetrics, '/api/overview/processing-metrics', [{ metric: 'x' }]],
-      ['getQualitySignals', getQualitySignals, '/api/overview/quality-signals', { lastFailure: null }],
+      ['getJobLastRuns', getJobLastRuns, '/api/overview/job-last-runs', [{ jobName: 'j', run: null }]],
     ];
 
     it.each(cases)('%s hits %s with window param', async (_name, fn, path, payload) => {
@@ -74,7 +74,7 @@ describe('dashboardApi', () => {
       await expect(getRuntime(WINDOW)).resolves.toEqual(runtimeMock);
       await expect(getJobStatusChart(WINDOW)).resolves.toEqual(jobStatusChartMock);
       await expect(getProcessingMetrics(WINDOW)).resolves.toEqual(processingMetricsMock);
-      await expect(getQualitySignals(WINDOW)).resolves.toEqual(qualitySignalsMock);
+      await expect(getJobLastRuns(WINDOW)).resolves.toEqual(jobLastRunsMock);
       expect(apiClient.get).not.toHaveBeenCalled();
     });
   });

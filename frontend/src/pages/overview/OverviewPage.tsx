@@ -3,9 +3,9 @@ import HomeIcon from '@mui/icons-material/Home';
 import { PageBreadcrumb, WindowSelect } from '~/components';
 import {
   JobExecutionsTile,
+  JobLastRunsTile,
   JobStatusChartTile,
   ProcessingMetricsTile,
-  QualitySignalsTile,
   RuntimeTile,
   StepExecutionsTile,
   ThroughputTile,
@@ -28,7 +28,7 @@ const OverviewPage = () => (
       <Grid size={{ xs: 12, sm: 6, lg: 3 }}><RuntimeTile /></Grid>
       <Grid size={{ xs: 12, md: 5 }}><JobStatusChartTile /></Grid>
       <Grid size={{ xs: 12, md: 7 }}><ProcessingMetricsTile /></Grid>
-      <Grid size={{ xs: 12 }}><QualitySignalsTile /></Grid>
+      <Grid size={{ xs: 12 }}><JobLastRunsTile /></Grid>
     </Grid>
   </Container>
 );

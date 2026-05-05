@@ -103,7 +103,7 @@ class JobRunControllerTest {
         JobRun run = new JobRun(1, "COMPLETED",
             "2026-04-27T09:00:00Z", "2026-04-27T09:01:00Z",
             60, 100, 95, "COMPLETED");
-        when(jobRunService.getRuns(eq(JOB_ID), eq("executionId"), eq("desc"), eq(0), eq(20), eq(DEFAULT_WINDOW)))
+        when(jobRunService.getRuns(eq(JOB_ID), eq("executionId"), eq("desc"), eq(0), eq(20)))
             .thenReturn(new JobRunPage(List.of(run), 0, 20, 1));
 
         mockMvc.perform(get("/api/jobs/{jobId}/runs", JOB_ID))
@@ -113,12 +113,12 @@ class JobRunControllerTest {
             .andExpect(jsonPath("$.totalElements").value(1))
             .andExpect(jsonPath("$.content[0].executionId").value(1));
 
-        verify(jobRunService).getRuns(JOB_ID, "executionId", "desc", 0, 20, DEFAULT_WINDOW);
+        verify(jobRunService).getRuns(JOB_ID, "executionId", "desc", 0, 20);
     }
 
     @Test
     void clampsRunListPaging() throws Exception {
-        when(jobRunService.getRuns(eq(JOB_ID), eq("startTime"), eq("asc"), eq(0), eq(100), eq(DEFAULT_WINDOW)))
+        when(jobRunService.getRuns(eq(JOB_ID), eq("startTime"), eq("asc"), eq(0), eq(100)))
             .thenReturn(new JobRunPage(List.of(), 0, 100, 0));
 
         mockMvc.perform(get("/api/jobs/{jobId}/runs", JOB_ID)
@@ -128,18 +128,7 @@ class JobRunControllerTest {
                 .param("size", "5000"))
             .andExpect(status().isOk());
 
-        verify(jobRunService).getRuns(JOB_ID, "startTime", "asc", 0, 100, DEFAULT_WINDOW);
-    }
-
-    @Test
-    void listsRunsWithExplicitWindow() throws Exception {
-        when(jobRunService.getRuns(eq(JOB_ID), eq("executionId"), eq("desc"), eq(0), eq(20), eq(60)))
-            .thenReturn(new JobRunPage(List.of(), 0, 20, 0));
-
-        mockMvc.perform(get("/api/jobs/{jobId}/runs", JOB_ID).param("window", "60"))
-            .andExpect(status().isOk());
-
-        verify(jobRunService).getRuns(JOB_ID, "executionId", "desc", 0, 20, 60);
+        verify(jobRunService).getRuns(JOB_ID, "startTime", "asc", 0, 100);
     }
 
     @Test

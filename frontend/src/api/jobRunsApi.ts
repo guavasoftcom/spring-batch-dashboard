@@ -7,6 +7,7 @@ import {
   filterTrendRuns,
   sampleRuns,
 } from '~/pages/jobDetail/components/seedData';
+
 import type { AvgDuration, JobRun, RunCounts, SuccessRate } from '~/types';
 
 const base = (jobId: string) => `/api/jobs/${encodeURIComponent(jobId)}/runs`;
@@ -67,11 +68,9 @@ export const getRuns = async (
   sortDir: SortDir = 'desc',
   page = 0,
   size = 20,
-  windowDays = 7,
 ): Promise<JobRunPage> => {
   if (USE_MOCK_DATA) {
-    const windowed = filterTrendRuns(sampleRuns, windowDays);
-    const sorted = [...windowed].sort((a, b) => {
+    const sorted = [...sampleRuns].sort((a, b) => {
       const av = a[sortBy];
       const bv = b[sortBy];
       if (av === bv) {
@@ -95,7 +94,7 @@ export const getRuns = async (
     };
   }
   const response = await apiClient.get<JobRunPage>(base(jobId), {
-    params: { sortBy, sortDir, page, size, window: windowDays },
+    params: { sortBy, sortDir, page, size },
   });
   return response.data;
 };

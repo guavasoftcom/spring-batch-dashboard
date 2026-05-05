@@ -7,12 +7,10 @@ import com.guavasoft.springbatch.dashboard.entity.BatchStatus;
 import com.guavasoft.springbatch.dashboard.model.DurationSummary;
 import com.guavasoft.springbatch.dashboard.model.IoSummary;
 import com.guavasoft.springbatch.dashboard.model.JobExecutionStepCounts;
-import com.guavasoft.springbatch.dashboard.model.LastFailedStep;
 import com.guavasoft.springbatch.dashboard.model.StepDetail;
 import com.guavasoft.springbatch.dashboard.repository.TestDatasources.AcrossDatasources;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,9 +89,8 @@ class StepExecutionRepositoryTest {
             .isBetween(minDailyWrite + reconcileWrite     + digestHistWriteMin + digestTodayWrite,
                        maxDailyWrite + reconcileWriteMax  + digestHistWriteMax + digestTodayWrite);
 
-        // Filter / skip counts are zero everywhere; rollback is on each FAILED daily write step
+        // Skip counts are zero everywhere; rollback is on each FAILED daily write step
         // plus each FAILED reconcile step (today's reconcile guarantees ≥ 1).
-        assertThat(stepExecutionRepository.sumFilterCount(ALL_TIME)).isZero();
         assertThat(stepExecutionRepository.sumRollbackCount(ALL_TIME)).isBetween(1L, 60L);
         assertThat(stepExecutionRepository.sumSkipCount(ALL_TIME)).isZero();
         // Commit: daily 8..12 per step, reconcile 4..5 per step, digest historical 2 each, today 0.
@@ -103,18 +100,6 @@ class StepExecutionRepositoryTest {
     }
 
     // --- Custom JdbcTemplate fragments: dialect-specific, parameterized over every engine ------
-
-    @AcrossDatasources
-    void findMostRecentFailedReturnsHeadlineForLatestFailure(String datasource) {
-        DataSourceContext.set(datasource);
-        // Today's reconcile is FAILED at 18:05, later than any other seeded FAILED step.
-        Optional<LastFailedStep> failed = stepExecutionRepository.findMostRecentFailed();
-
-        assertThat(failed).hasValueSatisfying(headline -> {
-            assertThat(headline.jobName()).isEqualTo("reconcileLedgerJob");
-            assertThat(headline.stepName()).isEqualTo("reconcileStep");
-        });
-    }
 
     @AcrossDatasources
     void countsByJobExecutionIdAggregatesPerExecution(String datasource) {

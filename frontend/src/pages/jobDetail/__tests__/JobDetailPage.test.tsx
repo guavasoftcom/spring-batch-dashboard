@@ -69,6 +69,20 @@ describe('JobDetailPage', () => {
     expect((await screen.findAllByText('#7')).length).toBeGreaterThan(0);
   });
 
+  // Regression guard: the durationSeconds column header was wrapping "(s)" onto a second
+  // line in narrow viewports. The column config carries `noWrap: true` which adds
+  // whiteSpace: 'nowrap' to the header cell.
+  it('keeps the Duration (s) column header on a single line', async () => {
+    renderWithProviders(<JobDetailPage />, {
+      environment: 'prod',
+      initialEntries: ['/jobs/importUsersJob'],
+      routePath: '/jobs/:jobId',
+    });
+
+    const header = (await screen.findByText('Duration (s)')).closest('th');
+    expect(header).toHaveStyle({ whiteSpace: 'nowrap' });
+  });
+
   it('skips the queries when no environment is set', () => {
     renderWithProviders(<JobDetailPage />, {
       environment: '',

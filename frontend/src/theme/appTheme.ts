@@ -1,4 +1,5 @@
 import { createTheme, type Theme } from '@mui/material/styles';
+import '@mui/x-charts/themeAugmentation';
 
 export type ColorMode = 'light' | 'dark';
 
@@ -23,6 +24,9 @@ export const pageGradient: Record<ColorMode, string> = {
   dark: `linear-gradient(180deg, #0E2238 0%, #06192C 55%, ${pageGradientBottom.dark} 100%)`,
 };
 
+const chartTextFill = (theme: Theme) =>
+  theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F';
+
 export const createAppTheme = (mode: ColorMode): Theme =>
   createTheme({
     palette: {
@@ -39,6 +43,9 @@ export const createAppTheme = (mode: ColorMode): Theme =>
         dark: appColors.brandOrangeDark,
         contrastText: appColors.white,
       },
+      success: { main: '#2E7D32', contrastText: appColors.white },
+      error: { main: '#D32F2F', contrastText: appColors.white },
+      info: { main: '#0288D1', contrastText: appColors.white },
       background:
         mode === 'light'
           ? { default: '#F7F9FC', paper: appColors.white }
@@ -50,6 +57,36 @@ export const createAppTheme = (mode: ColorMode): Theme =>
       fontFamily: '"Segoe UI", "Helvetica Neue", Arial, sans-serif',
       h4: { fontWeight: 700 },
       h6: { fontWeight: 700 },
+    },
+    components: {
+      MuiChartsAxis: {
+        styleOverrides: {
+          root: ({ theme }) => ({
+            '& .MuiChartsAxis-tickLabel': { fill: chartTextFill(theme) },
+            '& .MuiChartsAxis-label': { fill: chartTextFill(theme) },
+          }),
+        },
+      },
+      MuiChartsLegend: {
+        styleOverrides: {
+          root: ({ theme }) => ({
+            '& .MuiChartsLegend-label': { fill: chartTextFill(theme) },
+          }),
+        },
+      },
+      MuiChartsTooltip: {
+        styleOverrides: {
+          paper: ({ theme }) => ({
+            backgroundColor: theme.palette.background.paper,
+            border: `1px solid ${theme.palette.divider}`,
+          }),
+          // Scoped to the default tooltip's own cells so we don't recolor descendants
+          // of custom tooltips that happen to live inside ChartsTooltipContainer
+          // (e.g. status Chips in RunStatusTooltip).
+          cell: ({ theme }) => ({ color: theme.palette.text.primary }),
+          axisValueCell: ({ theme }) => ({ color: theme.palette.text.primary, fontWeight: 700 }),
+        },
+      },
     },
   });
 

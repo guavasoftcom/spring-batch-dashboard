@@ -73,14 +73,14 @@ describe('jobRunsApi', () => {
       });
     });
 
-    it('getRuns sends sort, pagination, and window params', async () => {
+    it('getRuns sends sort and pagination params', async () => {
       const page = { content: [], page: 0, size: 20, totalElements: 0 };
       vi.mocked(apiClient.get).mockResolvedValueOnce({ data: page });
 
-      await getRuns('jobA', 'startTime', 'asc', 2, 10, 30);
+      await getRuns('jobA', 'startTime', 'asc', 2, 10);
 
       expect(apiClient.get).toHaveBeenCalledWith('/api/jobs/jobA/runs', {
-        params: { sortBy: 'startTime', sortDir: 'asc', page: 2, size: 10, window: 30 },
+        params: { sortBy: 'startTime', sortDir: 'asc', page: 2, size: 10 },
       });
     });
 
@@ -92,7 +92,7 @@ describe('jobRunsApi', () => {
       await getRuns('jobA');
 
       expect(apiClient.get).toHaveBeenCalledWith('/api/jobs/jobA/runs', {
-        params: { sortBy: 'executionId', sortDir: 'desc', page: 0, size: 20, window: 7 },
+        params: { sortBy: 'executionId', sortDir: 'desc', page: 0, size: 20 },
       });
     });
 
@@ -123,7 +123,7 @@ describe('jobRunsApi', () => {
     });
 
     it('getRuns sorts and paginates locally', async () => {
-      const result = await getRuns('jobA', 'executionId', 'desc', 0, 2, ALL_RUNS_WINDOW);
+      const result = await getRuns('jobA', 'executionId', 'desc', 0, 2);
 
       expect(apiClient.get).not.toHaveBeenCalled();
       expect(result.totalElements).toBe(sampleRuns.length);
@@ -153,14 +153,14 @@ describe('jobRunsApi', () => {
     });
 
     it('getRuns sorts by a field with null values (asc, null-last)', async () => {
-      const result = await getRuns('jobA', 'endTime', 'asc', 0, sampleRuns.length, ALL_RUNS_WINDOW);
+      const result = await getRuns('jobA', 'endTime', 'asc', 0, sampleRuns.length);
 
       // Null endTimes should sort to the end regardless of direction.
       expect(result.content.at(-1)?.endTime).toBeNull();
     });
 
     it('getRuns ascending sort orders smallest first', async () => {
-      const result = await getRuns('jobA', 'executionId', 'asc', 0, sampleRuns.length, ALL_RUNS_WINDOW);
+      const result = await getRuns('jobA', 'executionId', 'asc', 0, sampleRuns.length);
 
       const ids = result.content.map((r) => r.executionId);
       expect(ids).toEqual([...ids].sort((a, b) => a - b));
@@ -168,7 +168,7 @@ describe('jobRunsApi', () => {
 
     it('getRuns honours equal values without crashing', async () => {
       // readCount has duplicates (e.g. two rows with 5012); the tie path returns 0.
-      const result = await getRuns('jobA', 'readCount', 'desc', 0, sampleRuns.length, ALL_RUNS_WINDOW);
+      const result = await getRuns('jobA', 'readCount', 'desc', 0, sampleRuns.length);
 
       expect(result.content).toHaveLength(sampleRuns.length);
     });

@@ -23,6 +23,7 @@ type Column = {
   field: RunSortField;
   label: string;
   align?: 'right';
+  noWrap?: boolean;
 };
 
 const columns: Column[] = [
@@ -30,7 +31,7 @@ const columns: Column[] = [
   { field: 'status', label: 'Status' },
   { field: 'startTime', label: 'Started' },
   { field: 'endTime', label: 'Completed' },
-  { field: 'durationSeconds', label: 'Duration (s)', align: 'right' },
+  { field: 'durationSeconds', label: 'Duration (s)', align: 'right', noWrap: true },
   { field: 'readCount', label: 'Read', align: 'right' },
   { field: 'writeCount', label: 'Write', align: 'right' },
   { field: 'exitCode', label: 'Exit Code' },
@@ -74,6 +75,7 @@ const JobRunsTableTile = ({
                   key={col.field}
                   align={col.align}
                   sortDirection={sortBy === col.field ? sortDir : false}
+                  sx={col.noWrap ? { whiteSpace: 'nowrap' } : undefined}
                 >
                   <TableSortLabel
                     active={sortBy === col.field}
