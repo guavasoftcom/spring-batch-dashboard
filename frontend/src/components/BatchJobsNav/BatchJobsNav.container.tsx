@@ -4,7 +4,11 @@ import { getJobs } from '~/api';
 import { useEnvironment } from '~/shell/EnvironmentContext';
 import BatchJobsNav from './BatchJobsNav';
 
-const BatchJobsNavContainer = () => {
+type Props = {
+  collapsed?: boolean;
+};
+
+const BatchJobsNavContainer = ({ collapsed = false }: Props) => {
   const navigate = useNavigate();
   const { jobId } = useParams<{ jobId?: string }>();
   const { environment } = useEnvironment();
@@ -19,6 +23,7 @@ const BatchJobsNavContainer = () => {
       jobs={data ?? []}
       activeJobId={jobId ?? null}
       loading={isPending}
+      collapsed={collapsed}
       onSelect={(id) => navigate(`/jobs/${id}`)}
     />
   );

@@ -32,6 +32,8 @@ import {
   getThroughput,
 } from '~/api/dashboardApi';
 
+const WINDOW = 7;
+
 describe('dashboardApi', () => {
   beforeEach(() => {
     mockState.useMock = false;
@@ -42,7 +44,7 @@ describe('dashboardApi', () => {
   });
 
   describe('real mode', () => {
-    const cases: Array<[string, () => Promise<unknown>, string, unknown]> = [
+    const cases: Array<[string, (windowDays: number) => Promise<unknown>, string, unknown]> = [
       ['getJobCounts', getJobCounts, '/api/overview/job-counts', { total: 1 }],
       ['getStepCounts', getStepCounts, '/api/overview/step-counts', { total: 2 }],
       ['getThroughput', getThroughput, '/api/overview/throughput', { readCount: 3 }],
@@ -52,11 +54,11 @@ describe('dashboardApi', () => {
       ['getQualitySignals', getQualitySignals, '/api/overview/quality-signals', { lastFailure: null }],
     ];
 
-    it.each(cases)('%s hits %s', async (_name, fn, path, payload) => {
+    it.each(cases)('%s hits %s with window param', async (_name, fn, path, payload) => {
       vi.mocked(apiClient.get).mockResolvedValueOnce({ data: payload });
 
-      await expect(fn()).resolves.toEqual(payload);
-      expect(apiClient.get).toHaveBeenCalledWith(path);
+      await expect(fn(WINDOW)).resolves.toEqual(payload);
+      expect(apiClient.get).toHaveBeenCalledWith(path, { params: { window: WINDOW } });
     });
   });
 
@@ -66,13 +68,13 @@ describe('dashboardApi', () => {
     });
 
     it('returns canned mocks without HTTP', async () => {
-      await expect(getJobCounts()).resolves.toEqual(jobCountsMock);
-      await expect(getStepCounts()).resolves.toEqual(stepCountsMock);
-      await expect(getThroughput()).resolves.toEqual(throughputMock);
-      await expect(getRuntime()).resolves.toEqual(runtimeMock);
-      await expect(getJobStatusChart()).resolves.toEqual(jobStatusChartMock);
-      await expect(getProcessingMetrics()).resolves.toEqual(processingMetricsMock);
-      await expect(getQualitySignals()).resolves.toEqual(qualitySignalsMock);
+      await expect(getJobCounts(WINDOW)).resolves.toEqual(jobCountsMock);
+      await expect(getStepCounts(WINDOW)).resolves.toEqual(stepCountsMock);
+      await expect(getThroughput(WINDOW)).resolves.toEqual(throughputMock);
+      await expect(getRuntime(WINDOW)).resolves.toEqual(runtimeMock);
+      await expect(getJobStatusChart(WINDOW)).resolves.toEqual(jobStatusChartMock);
+      await expect(getProcessingMetrics(WINDOW)).resolves.toEqual(processingMetricsMock);
+      await expect(getQualitySignals(WINDOW)).resolves.toEqual(qualitySignalsMock);
       expect(apiClient.get).not.toHaveBeenCalled();
     });
   });

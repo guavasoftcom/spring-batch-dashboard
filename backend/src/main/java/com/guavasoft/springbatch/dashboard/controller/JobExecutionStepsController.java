@@ -4,11 +4,9 @@ import com.guavasoft.springbatch.dashboard.model.DurationSummary;
 import com.guavasoft.springbatch.dashboard.model.IoSummary;
 import com.guavasoft.springbatch.dashboard.model.JobExecutionStepCounts;
 import com.guavasoft.springbatch.dashboard.model.StepDetailPage;
-import com.guavasoft.springbatch.dashboard.model.StepDuration;
 import com.guavasoft.springbatch.dashboard.service.JobExecutionStepsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,13 +41,6 @@ public class JobExecutionStepsController {
             description = "Sum of finished step durations in seconds.")
     public DurationSummary getDurationSummary(@PathVariable long executionId) {
         return service.getDurationSummary(executionId);
-    }
-
-    @GetMapping("/step-durations")
-    @Operation(summary = "Per-step durations",
-            description = "Step name and duration in seconds, ordered by start time.")
-    public List<StepDuration> getStepDurations(@PathVariable long executionId) {
-        return service.getStepDurations(executionId);
     }
 
     @GetMapping("/steps")

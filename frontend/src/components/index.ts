@@ -8,3 +8,5 @@ export { PageBreadcrumb } from './PageBreadcrumb';
 export type { PageBreadcrumbSegment } from './PageBreadcrumb';
 export { StatTile } from './StatTile';
 export { TilePaper } from './TilePaper';
+export { WindowSelect, WINDOW_OPTIONS } from './WindowSelect';
+export type { WindowOption } from './WindowSelect';

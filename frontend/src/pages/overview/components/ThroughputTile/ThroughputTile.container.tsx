@@ -1,9 +1,11 @@
 import { getThroughput } from '~/api';
 import { useEnvQuery } from '~/hooks';
+import { useWindow } from '~/shell/WindowContext';
 import ThroughputTile from './ThroughputTile';
 
 const ThroughputTileContainer = () => {
-  const state = useEnvQuery(['throughput'], getThroughput);
+  const { windowDays } = useWindow();
+  const state = useEnvQuery(['throughput', windowDays], () => getThroughput(windowDays));
   return <ThroughputTile {...state} />;
 };
 

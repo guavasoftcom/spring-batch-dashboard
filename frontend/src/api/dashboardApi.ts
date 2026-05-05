@@ -18,31 +18,31 @@ import type {
   ThroughputSummary,
 } from '~/types';
 
-const get = async <T>(path: string, mock: T): Promise<T> => {
+const get = async <T>(path: string, windowDays: number, mock: T): Promise<T> => {
   if (USE_MOCK_DATA) {
     return mock;
   }
-  const response = await apiClient.get<T>(path);
+  const response = await apiClient.get<T>(path, { params: { window: windowDays } });
   return response.data;
 };
 
-export const getJobCounts = (): Promise<ExecutionCounts> =>
-  get('/api/overview/job-counts', jobCountsMock);
+export const getJobCounts = (windowDays: number): Promise<ExecutionCounts> =>
+  get('/api/overview/job-counts', windowDays, jobCountsMock);
 
-export const getStepCounts = (): Promise<ExecutionCounts> =>
-  get('/api/overview/step-counts', stepCountsMock);
+export const getStepCounts = (windowDays: number): Promise<ExecutionCounts> =>
+  get('/api/overview/step-counts', windowDays, stepCountsMock);
 
-export const getThroughput = (): Promise<ThroughputSummary> =>
-  get('/api/overview/throughput', throughputMock);
+export const getThroughput = (windowDays: number): Promise<ThroughputSummary> =>
+  get('/api/overview/throughput', windowDays, throughputMock);
 
-export const getRuntime = (): Promise<Durations> =>
-  get('/api/overview/runtime', runtimeMock);
+export const getRuntime = (windowDays: number): Promise<Durations> =>
+  get('/api/overview/runtime', windowDays, runtimeMock);
 
-export const getJobStatusChart = (): Promise<JobStatusSlice[]> =>
-  get('/api/overview/job-status-chart', jobStatusChartMock);
+export const getJobStatusChart = (windowDays: number): Promise<JobStatusSlice[]> =>
+  get('/api/overview/job-status-chart', windowDays, jobStatusChartMock);
 
-export const getProcessingMetrics = (): Promise<ThroughputBar[]> =>
-  get('/api/overview/processing-metrics', processingMetricsMock);
+export const getProcessingMetrics = (windowDays: number): Promise<ThroughputBar[]> =>
+  get('/api/overview/processing-metrics', windowDays, processingMetricsMock);
 
-export const getQualitySignals = (): Promise<QualitySignals> =>
-  get('/api/overview/quality-signals', qualitySignalsMock);
+export const getQualitySignals = (windowDays: number): Promise<QualitySignals> =>
+  get('/api/overview/quality-signals', windowDays, qualitySignalsMock);

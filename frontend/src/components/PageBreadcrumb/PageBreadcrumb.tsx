@@ -1,12 +1,6 @@
-import { Fragment, useMemo, type ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { Box, Link as MuiLink, Typography, useTheme } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { useQuery } from '@tanstack/react-query';
-import { getEnvironments } from '~/api';
-import { DatabaseIcon } from '~/components/DatabaseIcon';
-import { useEnvironment } from '~/shell/EnvironmentContext';
-import { useNav } from '~/shell/NavContext';
-import type { EnvironmentInfo } from '~/types';
 import { humanize } from '~/utils';
 
 export type PageBreadcrumbSegment = {
@@ -37,31 +31,10 @@ const linkSx = {
 
 const PageBreadcrumb = ({ segments }: Props) => {
   const theme = useTheme();
-  const { environment } = useEnvironment();
-  const { navOpen } = useNav();
-  const { data: environments } = useQuery<EnvironmentInfo[]>({
-    queryKey: ['environments'],
-    queryFn: getEnvironments,
-  });
-
-  const currentEnvType = environments?.find((env) => env.name === environment)?.type;
-
-  const visibleSegments = useMemo<PageBreadcrumbSegment[]>(() => {
-    if (!navOpen && environment) {
-      return [
-        {
-          label: environment,
-          icon: currentEnvType ? <DatabaseIcon type={currentEnvType} sx={{ fontSize: 28 }} /> : undefined,
-        },
-        ...segments,
-      ];
-    }
-    return segments;
-  }, [navOpen, environment, currentEnvType, segments]);
 
   return (
   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
-    {visibleSegments.map((segment, idx) => {
+    {segments.map((segment, idx) => {
       const color = idx === 0 ? theme.palette.secondary.main : theme.palette.primary.dark;
       return (
         <Fragment key={`${idx}-${segment.label}`}>

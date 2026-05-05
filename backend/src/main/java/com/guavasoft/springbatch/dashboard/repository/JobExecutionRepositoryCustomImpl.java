@@ -59,7 +59,7 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
     private final JobRunRowMapper jobRunRowMapper;
 
     @Override
-    public List<JobRunRow> findRunsByJobName(String jobName, String sortBy, String sortDir, int page, int size) {
+    public List<JobRunRow> findRunsByJobName(String jobName, String sortBy, String sortDir, int page, int size, LocalDateTime since) {
         String sortKey = SORT_EXPRESSIONS.containsKey(sortBy) ? sortBy : DEFAULT_SORT_FIELD;
         String expression = COL_DURATION_SECONDS.equals(sortKey)
                 ? dialect.durationSeconds(START_COL, END_COL)
@@ -80,6 +80,7 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
             JOIN BATCH_JOB_INSTANCE ji ON je.job_instance_id = ji.job_instance_id
             LEFT JOIN BATCH_STEP_EXECUTION se ON se.job_execution_id = je.job_execution_id
             WHERE ji.job_name = :jobName
+              AND je.start_time >= :since
             GROUP BY je.job_execution_id, je.status, je.start_time, je.end_time, je.exit_code
             ORDER BY %s
             %s
@@ -90,6 +91,7 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
 
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue(PARAM_JOB_NAME, jobName)
+                .addValue(PARAM_SINCE, since)
                 .addValue(PARAM_SIZE, size)
                 .addValue(PARAM_OFFSET, (long) page * size);
 
@@ -97,33 +99,39 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
     }
 
     @Override
-    public long countRunsByJobName(String jobName) {
+    public long countRunsByJobName(String jobName, LocalDateTime since) {
         Long count = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM BATCH_JOB_EXECUTION je "
                         + "JOIN BATCH_JOB_INSTANCE ji ON je.job_instance_id = ji.job_instance_id "
-                        + "WHERE ji.job_name = :jobName",
-                new MapSqlParameterSource(PARAM_JOB_NAME, jobName), Long.class);
+                        + "WHERE ji.job_name = :jobName "
+                        + "  AND je.start_time >= :since",
+                new MapSqlParameterSource()
+                        .addValue(PARAM_JOB_NAME, jobName)
+                        .addValue(PARAM_SINCE, since),
+                Long.class);
         return count == null ? 0L : count;
     }
 
     @Override
-    public double findAverageDurationSeconds() {
+    public double findAverageDurationSeconds(LocalDateTime since) {
         String sql = "SELECT " + dialect.avgDurationSeconds("start_time", "end_time")
-                + " FROM BATCH_JOB_EXECUTION WHERE end_time IS NOT NULL AND start_time IS NOT NULL";
-        Double averageSeconds = jdbc.getJdbcTemplate().queryForObject(sql, Double.class);
+                + " FROM BATCH_JOB_EXECUTION WHERE end_time IS NOT NULL AND start_time IS NOT NULL"
+                + " AND start_time >= :since";
+        Double averageSeconds = jdbc.queryForObject(sql, new MapSqlParameterSource(PARAM_SINCE, since), Double.class);
         return averageSeconds == null ? 0.0 : averageSeconds;
     }
 
     @Override
-    public double findMaxDurationSeconds() {
+    public double findMaxDurationSeconds(LocalDateTime since) {
         String sql = "SELECT " + dialect.maxDurationSeconds("start_time", "end_time")
-                + " FROM BATCH_JOB_EXECUTION WHERE end_time IS NOT NULL AND start_time IS NOT NULL";
-        Double maxSeconds = jdbc.getJdbcTemplate().queryForObject(sql, Double.class);
+                + " FROM BATCH_JOB_EXECUTION WHERE end_time IS NOT NULL AND start_time IS NOT NULL"
+                + " AND start_time >= :since";
+        Double maxSeconds = jdbc.queryForObject(sql, new MapSqlParameterSource(PARAM_SINCE, since), Double.class);
         return maxSeconds == null ? 0.0 : maxSeconds;
     }
 
     @Override
-    public double findAverageDurationSecondsByJobName(String jobName) {
+    public double findAverageDurationSecondsByJobName(String jobName, LocalDateTime since) {
         String sql = """
             SELECT %s
             FROM BATCH_JOB_EXECUTION je
@@ -131,13 +139,17 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
             WHERE ji.job_name = :jobName
               AND je.end_time IS NOT NULL
               AND je.start_time IS NOT NULL
+              AND je.start_time >= :since
             """.formatted(dialect.avgDurationSeconds("je.start_time", "je.end_time"));
-        Double averageSeconds = jdbc.queryForObject(sql, new MapSqlParameterSource(PARAM_JOB_NAME, jobName), Double.class);
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue(PARAM_JOB_NAME, jobName)
+                .addValue(PARAM_SINCE, since);
+        Double averageSeconds = jdbc.queryForObject(sql, params, Double.class);
         return averageSeconds == null ? 0.0 : averageSeconds;
     }
 
     @Override
-    public JobRunCounts findRunCountsByJobName(String jobName) {
+    public JobRunCounts findRunCountsByJobName(String jobName, LocalDateTime since) {
         // SUM(CASE WHEN ...) is portable across Postgres and MySQL; avoids COUNT(*) FILTER.
         String sql = """
             SELECT
@@ -148,8 +160,12 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
             FROM BATCH_JOB_EXECUTION je
             JOIN BATCH_JOB_INSTANCE ji ON je.job_instance_id = ji.job_instance_id
             WHERE ji.job_name = :jobName
+              AND je.start_time >= :since
             """;
-        return jdbc.queryForObject(sql, new MapSqlParameterSource(PARAM_JOB_NAME, jobName), (rs, i) -> {
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue(PARAM_JOB_NAME, jobName)
+                .addValue(PARAM_SINCE, since);
+        return jdbc.queryForObject(sql, params, (rs, i) -> {
             long total = rs.getLong("total");
             long completed = rs.getLong("completed");
             long failed = rs.getLong("failed");
@@ -208,7 +224,7 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
     }
 
     @Override
-    public Optional<JobRunRow> findLatestRunByJobName(String jobName) {
+    public Optional<JobRunRow> findLatestRunByJobName(String jobName, LocalDateTime since) {
         String sql = """
             SELECT
                 je.job_execution_id              AS executionId,
@@ -223,6 +239,7 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
             JOIN BATCH_JOB_INSTANCE ji ON je.job_instance_id = ji.job_instance_id
             LEFT JOIN BATCH_STEP_EXECUTION se ON se.job_execution_id = je.job_execution_id
             WHERE ji.job_name = :jobName
+              AND je.start_time >= :since
             GROUP BY je.job_execution_id, je.status, je.start_time, je.end_time, je.exit_code
             ORDER BY %s
             %s
@@ -231,8 +248,11 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
                 dialect.orderByNullsLast("je.start_time", DIR_DESC),
                 dialect.paginationClause("1", "0"));
 
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue(PARAM_JOB_NAME, jobName)
+                .addValue(PARAM_SINCE, since);
         try {
-            JobRunRow jobRunRow = jdbc.queryForObject(sql, new MapSqlParameterSource(PARAM_JOB_NAME, jobName), jobRunRowMapper);
+            JobRunRow jobRunRow = jdbc.queryForObject(sql, params, jobRunRowMapper);
             return Optional.ofNullable(jobRunRow);
         } catch (EmptyResultDataAccessException ex) {
             return Optional.empty();

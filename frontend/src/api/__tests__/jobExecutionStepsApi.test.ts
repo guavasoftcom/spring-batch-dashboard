@@ -19,7 +19,6 @@ import {
   getIoSummary,
   getJobExecutionStepCounts,
   getStepDetails,
-  getStepDurations,
 } from '~/api/jobExecutionStepsApi';
 
 describe('jobExecutionStepsApi', () => {
@@ -54,14 +53,6 @@ describe('jobExecutionStepsApi', () => {
       await getDurationSummary(42);
 
       expect(apiClient.get).toHaveBeenCalledWith('/api/job-executions/42/summary/duration');
-    });
-
-    it('getStepDurations hits /step-durations', async () => {
-      vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [] });
-
-      await getStepDurations(42);
-
-      expect(apiClient.get).toHaveBeenCalledWith('/api/job-executions/42/step-durations');
     });
 
     it('getStepDetails sends sort and pagination params', async () => {
@@ -124,14 +115,6 @@ describe('jobExecutionStepsApi', () => {
 
       expect(result.totalDurationSeconds).toBe(
         sampleSteps.reduce((acc, s) => acc + s.durationSeconds, 0),
-      );
-    });
-
-    it('getStepDurations maps to {stepName, durationSeconds}', async () => {
-      const result = await getStepDurations(1);
-
-      expect(result).toEqual(
-        sampleSteps.map((s) => ({ stepName: s.stepName, durationSeconds: s.durationSeconds })),
       );
     });
 

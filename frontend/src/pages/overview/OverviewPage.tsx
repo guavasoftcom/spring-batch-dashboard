@@ -1,6 +1,6 @@
-import { Container, Grid } from '@mui/material';
+import { Box, Container, Grid } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
-import { PageBreadcrumb } from '~/components';
+import { PageBreadcrumb, WindowSelect } from '~/components';
 import {
   JobExecutionsTile,
   JobStatusChartTile,
@@ -13,11 +13,14 @@ import {
 
 const OverviewPage = () => (
   <Container component="main" maxWidth="xl" sx={{ py: 4, color: 'text.primary' }}>
-    <PageBreadcrumb
-      segments={[
-        { label: 'Overview', icon: <HomeIcon sx={{ fontSize: 26 }} /> },
-      ]}
-    />
+    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, mb: 2 }}>
+      <PageBreadcrumb
+        segments={[
+          { label: 'Overview', icon: <HomeIcon sx={{ fontSize: 26 }} /> },
+        ]}
+      />
+      <WindowSelect />
+    </Box>
     <Grid container spacing={2.5}>
       <Grid size={{ xs: 12, sm: 6, lg: 3 }}><JobExecutionsTile /></Grid>
       <Grid size={{ xs: 12, sm: 6, lg: 3 }}><StepExecutionsTile /></Grid>

@@ -6,7 +6,6 @@ import com.guavasoft.springbatch.dashboard.model.IoSummary;
 import com.guavasoft.springbatch.dashboard.model.JobExecutionStepCounts;
 import com.guavasoft.springbatch.dashboard.model.LastFailedStep;
 import com.guavasoft.springbatch.dashboard.model.StepDetail;
-import com.guavasoft.springbatch.dashboard.model.StepDuration;
 import com.guavasoft.springbatch.dashboard.repository.rowmapper.StepDetailRowMapper;
 import java.util.List;
 import java.util.Map;
@@ -44,8 +43,6 @@ public class StepExecutionRepositoryCustomImpl implements StepExecutionRepositor
     private static final String COL_READ_TOTAL = "read_total";
     private static final String COL_WRITE_TOTAL = "write_total";
     private static final String COL_TOTAL_DURATION = "total_duration";
-    private static final String COL_STEP_NAME = "step_name";
-    private static final String COL_DURATION_SECONDS = "duration_seconds";
 
     // Named parameter keys.
     private static final String PARAM_ID = "id";
@@ -118,21 +115,6 @@ public class StepExecutionRepositoryCustomImpl implements StepExecutionRepositor
     }
 
     @Override
-    public List<StepDuration> stepDurationsByJobExecutionId(long jobExecutionId) {
-        String sql = """
-            SELECT step_name,
-                   %s AS duration_seconds
-            FROM BATCH_STEP_EXECUTION
-            WHERE job_execution_id = :id
-            ORDER BY %s, step_execution_id ASC
-            """.formatted(
-                dialect.durationSeconds("start_time", "end_time"),
-                dialect.orderByNullsLast("start_time", DIR_ASC));
-        return jdbc.query(sql, params(jobExecutionId), (rs, i) ->
-                new StepDuration(rs.getString(COL_STEP_NAME), rs.getLong(COL_DURATION_SECONDS)));
-    }
-
-    @Override
     public List<StepDetail> stepDetailsByJobExecutionId(long jobExecutionId, String sortBy, String sortDir, int page, int size) {
 
         String sortKey = STEP_SORT_EXPRESSIONS.containsKey(sortBy) ? sortBy : DEFAULT_SORT_FIELD;
@@ -185,10 +167,9 @@ public class StepExecutionRepositoryCustomImpl implements StepExecutionRepositor
 
     @Override
     public Optional<LastFailedStep> findMostRecentFailed() {
-        // Routed through SqlDialect.paginationClause so the same JPQL/Pageable shape used
-        // before — which Hibernate compiled to its single cached dialect's syntax — now
-        // emits LIMIT/OFFSET for Postgres+MySQL and OFFSET … FETCH NEXT … for Oracle.
-        // Only the headline (jobName / stepName) is needed by QualitySignalsService.
+        // Routed through SqlDialect.paginationClause so the row-limit clause emits LIMIT/OFFSET
+        // for Postgres+MySQL and OFFSET … FETCH NEXT … for Oracle. Replaces a Pageable JPA query
+        // that Hibernate compiled to its single cached dialect's syntax — see AGENTS.md.
         String sql = """
             SELECT ji.job_name AS job_name, se.step_name AS step_name
             FROM BATCH_STEP_EXECUTION se

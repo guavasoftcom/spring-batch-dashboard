@@ -4,6 +4,7 @@ import {
   ListItemIcon,
   ListItemText,
   Skeleton,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import SourceIcon from '@mui/icons-material/Source';
@@ -13,19 +14,22 @@ type Props = {
   jobs: string[];
   activeJobId: string | null;
   loading: boolean;
+  collapsed?: boolean;
   onSelect: (jobId: string) => void;
 };
 
-const BatchJobsNav = ({ jobs, activeJobId, loading, onSelect }: Props) => (
+const BatchJobsNav = ({ jobs, activeJobId, loading, collapsed = false, onSelect }: Props) => (
   <>
-    <Typography
-      variant="overline"
-      sx={{ px: 2, color: 'text.secondary', fontWeight: 700, letterSpacing: 1 }}
-    >
-      Batch Jobs
-    </Typography>
-    <List dense>
-      {loading &&
+    {!collapsed && (
+      <Typography
+        variant="overline"
+        sx={{ px: 2, color: 'text.secondary', fontWeight: 700, letterSpacing: 1 }}
+      >
+        Batch Jobs
+      </Typography>
+    )}
+    <List>
+      {loading && !collapsed &&
         [0, 1, 2].map((i) => (
           <Skeleton
             key={i}
@@ -34,7 +38,7 @@ const BatchJobsNav = ({ jobs, activeJobId, loading, onSelect }: Props) => (
             sx={{ mx: 2, my: 0.5 }}
           />
         ))}
-      {!loading && jobs.length === 0 && (
+      {!loading && jobs.length === 0 && !collapsed && (
         <Typography variant="body2" sx={{ px: 2, color: 'text.secondary' }}>
           No jobs found
         </Typography>
@@ -42,14 +46,18 @@ const BatchJobsNav = ({ jobs, activeJobId, loading, onSelect }: Props) => (
       {!loading &&
         jobs.map((jobId) => {
           const selected = jobId === activeJobId;
-          return (
+          const label = humanize(jobId);
+          const button = (
             <ListItemButton
               key={jobId}
               selected={selected}
               onClick={() => onSelect(jobId)}
+              aria-label={label}
               sx={{
                 mx: 1,
                 borderRadius: 1,
+                justifyContent: collapsed ? 'center' : 'flex-start',
+                minWidth: 0,
                 '&.Mui-selected': {
                   bgcolor: 'rgba(21, 101, 192, 0.12)',
                   color: 'primary.dark',
@@ -57,18 +65,30 @@ const BatchJobsNav = ({ jobs, activeJobId, loading, onSelect }: Props) => (
                 '&.Mui-selected:hover': { bgcolor: 'rgba(21, 101, 192, 0.18)' },
               }}
             >
-              <ListItemIcon sx={{ minWidth: 32, color: 'inherit' }}>
+              <ListItemIcon sx={{ minWidth: collapsed ? 0 : 32, color: 'inherit', justifyContent: 'center' }}>
                 <SourceIcon fontSize="small" />
               </ListItemIcon>
-              <ListItemText
-                primary={humanize(jobId)}
-                slotProps={{
-                  primary: {
-                    sx: { fontWeight: selected ? 700 : 500, fontSize: 14 },
-                  },
-                }}
-              />
+              {!collapsed && (
+                <ListItemText
+                  primary={label}
+                  slotProps={{
+                    primary: {
+                      noWrap: true,
+                      sx: { fontWeight: selected ? 700 : 500, fontSize: 14 },
+                    },
+                  }}
+                  sx={{ minWidth: 0 }}
+                />
+              )}
             </ListItemButton>
+          );
+
+          return collapsed ? (
+            <Tooltip key={jobId} title={label} placement="right">
+              {button}
+            </Tooltip>
+          ) : (
+            button
           );
         })}
     </List>

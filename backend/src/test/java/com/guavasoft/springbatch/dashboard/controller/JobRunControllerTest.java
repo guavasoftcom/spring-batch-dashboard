@@ -26,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 class JobRunControllerTest {
 
     private static final String JOB_ID = "importUsers";
+    private static final int DEFAULT_WINDOW = 7;
 
     @Autowired
     private MockMvc mockMvc;
@@ -35,7 +36,7 @@ class JobRunControllerTest {
 
     @Test
     void returnsCounts() throws Exception {
-        when(jobRunService.getCounts(JOB_ID)).thenReturn(new RunCounts(20, 18, 1, 19));
+        when(jobRunService.getCounts(JOB_ID, DEFAULT_WINDOW)).thenReturn(new RunCounts(20, 18, 1, 19));
 
         mockMvc.perform(get("/api/jobs/{jobId}/runs/counts", JOB_ID))
             .andExpect(status().isOk())
@@ -46,8 +47,18 @@ class JobRunControllerTest {
     }
 
     @Test
+    void returnsCountsWithExplicitWindow() throws Exception {
+        when(jobRunService.getCounts(JOB_ID, 30)).thenReturn(new RunCounts(5, 5, 0, 5));
+
+        mockMvc.perform(get("/api/jobs/{jobId}/runs/counts", JOB_ID).param("window", "30"))
+            .andExpect(status().isOk());
+
+        verify(jobRunService).getCounts(JOB_ID, 30);
+    }
+
+    @Test
     void returnsSuccessRate() throws Exception {
-        when(jobRunService.getSuccessRate(JOB_ID)).thenReturn(SuccessRate.of(18, 19));
+        when(jobRunService.getSuccessRate(JOB_ID, DEFAULT_WINDOW)).thenReturn(SuccessRate.of(18, 19));
 
         mockMvc.perform(get("/api/jobs/{jobId}/runs/success-rate", JOB_ID))
             .andExpect(status().isOk())
@@ -58,7 +69,7 @@ class JobRunControllerTest {
 
     @Test
     void returnsAvgDuration() throws Exception {
-        when(jobRunService.getAvgDuration(JOB_ID)).thenReturn(new AvgDuration(120));
+        when(jobRunService.getAvgDuration(JOB_ID, DEFAULT_WINDOW)).thenReturn(new AvgDuration(120));
 
         mockMvc.perform(get("/api/jobs/{jobId}/runs/avg-duration", JOB_ID))
             .andExpect(status().isOk())
@@ -70,7 +81,7 @@ class JobRunControllerTest {
         JobRun run = new JobRun(7, "COMPLETED",
             "2026-04-27T09:00:00Z", "2026-04-27T09:01:00Z",
             60, 100, 95, "COMPLETED");
-        when(jobRunService.getLastRun(JOB_ID)).thenReturn(run);
+        when(jobRunService.getLastRun(JOB_ID, DEFAULT_WINDOW)).thenReturn(run);
 
         mockMvc.perform(get("/api/jobs/{jobId}/runs/last", JOB_ID))
             .andExpect(status().isOk())
@@ -81,7 +92,7 @@ class JobRunControllerTest {
 
     @Test
     void returnsLastRunNullWhenAbsent() throws Exception {
-        when(jobRunService.getLastRun(JOB_ID)).thenReturn(null);
+        when(jobRunService.getLastRun(JOB_ID, DEFAULT_WINDOW)).thenReturn(null);
 
         mockMvc.perform(get("/api/jobs/{jobId}/runs/last", JOB_ID))
             .andExpect(status().isOk());
@@ -92,7 +103,7 @@ class JobRunControllerTest {
         JobRun run = new JobRun(1, "COMPLETED",
             "2026-04-27T09:00:00Z", "2026-04-27T09:01:00Z",
             60, 100, 95, "COMPLETED");
-        when(jobRunService.getRuns(eq(JOB_ID), eq("executionId"), eq("desc"), eq(0), eq(20)))
+        when(jobRunService.getRuns(eq(JOB_ID), eq("executionId"), eq("desc"), eq(0), eq(20), eq(DEFAULT_WINDOW)))
             .thenReturn(new JobRunPage(List.of(run), 0, 20, 1));
 
         mockMvc.perform(get("/api/jobs/{jobId}/runs", JOB_ID))
@@ -102,12 +113,12 @@ class JobRunControllerTest {
             .andExpect(jsonPath("$.totalElements").value(1))
             .andExpect(jsonPath("$.content[0].executionId").value(1));
 
-        verify(jobRunService).getRuns(JOB_ID, "executionId", "desc", 0, 20);
+        verify(jobRunService).getRuns(JOB_ID, "executionId", "desc", 0, 20, DEFAULT_WINDOW);
     }
 
     @Test
     void clampsRunListPaging() throws Exception {
-        when(jobRunService.getRuns(eq(JOB_ID), eq("startTime"), eq("asc"), eq(0), eq(100)))
+        when(jobRunService.getRuns(eq(JOB_ID), eq("startTime"), eq("asc"), eq(0), eq(100), eq(DEFAULT_WINDOW)))
             .thenReturn(new JobRunPage(List.of(), 0, 100, 0));
 
         mockMvc.perform(get("/api/jobs/{jobId}/runs", JOB_ID)
@@ -117,17 +128,41 @@ class JobRunControllerTest {
                 .param("size", "5000"))
             .andExpect(status().isOk());
 
-        verify(jobRunService).getRuns(JOB_ID, "startTime", "asc", 0, 100);
+        verify(jobRunService).getRuns(JOB_ID, "startTime", "asc", 0, 100, DEFAULT_WINDOW);
+    }
+
+    @Test
+    void listsRunsWithExplicitWindow() throws Exception {
+        when(jobRunService.getRuns(eq(JOB_ID), eq("executionId"), eq("desc"), eq(0), eq(20), eq(60)))
+            .thenReturn(new JobRunPage(List.of(), 0, 20, 0));
+
+        mockMvc.perform(get("/api/jobs/{jobId}/runs", JOB_ID).param("window", "60"))
+            .andExpect(status().isOk());
+
+        verify(jobRunService).getRuns(JOB_ID, "executionId", "desc", 0, 20, 60);
+    }
+
+    @Test
+    void rejectsCountsWindowBelowMin() throws Exception {
+        mockMvc.perform(get("/api/jobs/{jobId}/runs/counts", JOB_ID).param("window", "0"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void rejectsCountsWindowAboveMax() throws Exception {
+        mockMvc.perform(get("/api/jobs/{jobId}/runs/counts", JOB_ID).param("window", "91"))
+            .andExpect(status().isBadRequest());
     }
 
     @Test
     void returnsTrendWithDefaultWindow() throws Exception {
-        when(jobRunService.getRunsTrend(JOB_ID, 30)).thenReturn(List.of());
+        when(jobRunService.getRunsTrend(JOB_ID, DEFAULT_WINDOW)).thenReturn(List.of());
 
         mockMvc.perform(get("/api/jobs/{jobId}/runs/trend", JOB_ID))
             .andExpect(status().isOk());
 
-        verify(jobRunService).getRunsTrend(JOB_ID, 30);
+        verify(jobRunService).getRunsTrend(JOB_ID, DEFAULT_WINDOW);
     }
 
     @Test

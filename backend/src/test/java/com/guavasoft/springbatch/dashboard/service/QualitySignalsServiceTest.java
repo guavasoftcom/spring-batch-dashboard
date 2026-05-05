@@ -1,6 +1,7 @@
 package com.guavasoft.springbatch.dashboard.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.guavasoft.springbatch.dashboard.model.LastFailedStep;
@@ -19,6 +20,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class QualitySignalsServiceTest {
 
+    private static final int WINDOW = 7;
+
     @Mock
     private JobExecutionRepository jobExecutionRepository;
 
@@ -30,20 +33,20 @@ class QualitySignalsServiceTest {
 
     @Test
     void getSignalsAggregatesProcessingTotalsFailureLabelAndLatestUpdate() {
-        when(stepExecutionRepository.sumReadCount()).thenReturn(1000L);
-        when(stepExecutionRepository.sumWriteCount()).thenReturn(950L);
-        when(stepExecutionRepository.sumCommitCount()).thenReturn(100L);
-        when(stepExecutionRepository.sumFilterCount()).thenReturn(3L);
-        when(stepExecutionRepository.sumRollbackCount()).thenReturn(1L);
-        when(stepExecutionRepository.sumSkipCount()).thenReturn(2L);
+        when(stepExecutionRepository.sumReadCount(any(LocalDateTime.class))).thenReturn(1000L);
+        when(stepExecutionRepository.sumWriteCount(any(LocalDateTime.class))).thenReturn(950L);
+        when(stepExecutionRepository.sumCommitCount(any(LocalDateTime.class))).thenReturn(100L);
+        when(stepExecutionRepository.sumFilterCount(any(LocalDateTime.class))).thenReturn(3L);
+        when(stepExecutionRepository.sumRollbackCount(any(LocalDateTime.class))).thenReturn(1L);
+        when(stepExecutionRepository.sumSkipCount(any(LocalDateTime.class))).thenReturn(2L);
 
         when(stepExecutionRepository.findMostRecentFailed())
             .thenReturn(Optional.of(new LastFailedStep("importUsersJob", "readUsersStep")));
 
-        when(jobExecutionRepository.findMaxLastUpdated())
+        when(jobExecutionRepository.findMaxLastUpdated(any(LocalDateTime.class)))
             .thenReturn(LocalDateTime.of(2026, 4, 27, 10, 15, 30));
 
-        QualitySignals signals = qualitySignalsService.getSignals();
+        QualitySignals signals = qualitySignalsService.getSignals(WINDOW);
 
         assertThat(signals.processing()).isEqualTo(new ProcessingTotals(1000, 950, 100, 3, 1, 2));
         assertThat(signals.lastFailure()).isEqualTo("importUsersJob / readUsersStep");
@@ -53,9 +56,9 @@ class QualitySignalsServiceTest {
     @Test
     void getSignalsReturnsNullLabelWhenNoFailedStep() {
         when(stepExecutionRepository.findMostRecentFailed()).thenReturn(Optional.empty());
-        when(jobExecutionRepository.findMaxLastUpdated()).thenReturn(null);
+        when(jobExecutionRepository.findMaxLastUpdated(any(LocalDateTime.class))).thenReturn(null);
 
-        QualitySignals signals = qualitySignalsService.getSignals();
+        QualitySignals signals = qualitySignalsService.getSignals(WINDOW);
 
         assertThat(signals.lastFailure()).isNull();
         assertThat(signals.latestUpdate()).isNull();
@@ -65,9 +68,9 @@ class QualitySignalsServiceTest {
     void formatFailureFallsBackToUnknownWhenJobNameIsNull() {
         when(stepExecutionRepository.findMostRecentFailed())
             .thenReturn(Optional.of(new LastFailedStep(null, "readUsersStep")));
-        when(jobExecutionRepository.findMaxLastUpdated()).thenReturn(null);
+        when(jobExecutionRepository.findMaxLastUpdated(any(LocalDateTime.class))).thenReturn(null);
 
-        QualitySignals signals = qualitySignalsService.getSignals();
+        QualitySignals signals = qualitySignalsService.getSignals(WINDOW);
 
         assertThat(signals.lastFailure()).isEqualTo("unknown / readUsersStep");
     }

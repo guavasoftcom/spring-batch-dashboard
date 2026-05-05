@@ -1,9 +1,11 @@
 import { getProcessingMetrics } from '~/api';
 import { useEnvQuery } from '~/hooks';
+import { useWindow } from '~/shell/WindowContext';
 import ProcessingMetricsTile from './ProcessingMetricsTile';
 
 const ProcessingMetricsTileContainer = () => {
-  const state = useEnvQuery(['processing-metrics'], getProcessingMetrics);
+  const { windowDays } = useWindow();
+  const state = useEnvQuery(['processing-metrics', windowDays], () => getProcessingMetrics(windowDays));
   return <ProcessingMetricsTile {...state} />;
 };
 

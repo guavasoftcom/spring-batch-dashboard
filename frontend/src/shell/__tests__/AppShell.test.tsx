@@ -58,7 +58,8 @@ describe('AppShell', () => {
     renderWithProviders(<AppShell><p>body</p></AppShell>, { initialEntries: ['/overview'] });
 
     await screen.findByText('The Octocat');
-    await user.click(screen.getByRole('button', { name: 'Logout' }));
+    await user.click(screen.getByRole('button', { name: /account menu/i }));
+    await user.click(await screen.findByRole('menuitem', { name: /logout/i }));
 
     await waitFor(() => expect(apiMocks.logout).toHaveBeenCalled());
   });

@@ -5,7 +5,11 @@ import { getEnvironments } from '~/api';
 import { useEnvironment } from '~/shell/EnvironmentContext';
 import EnvironmentSelector from './EnvironmentSelector';
 
-const EnvironmentSelectorContainer = () => {
+type Props = {
+  compact?: boolean;
+};
+
+const EnvironmentSelectorContainer = ({ compact = false }: Props) => {
   const navigate = useNavigate();
   const { environment, setEnvironment } = useEnvironment();
 
@@ -36,7 +40,7 @@ const EnvironmentSelectorContainer = () => {
     navigate('/overview');
   }, [environment, setEnvironment, navigate]);
 
-  if (!isPending && options.length <= 1) {
+  if (!isPending && options.length <= 0) {
     return null;
   }
 
@@ -47,6 +51,7 @@ const EnvironmentSelectorContainer = () => {
       options={options}
       onChange={handleChange}
       loading={isPending}
+      compact={compact}
     />
   );
 };
