@@ -14,7 +14,7 @@ type Props = { jobId: string | undefined };
 
 const JobDetailPage = ({ jobId }: Props) => (
   <Container component="main" maxWidth="xl" sx={{ py: 4, color: 'text.primary' }}>
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 2 }}>
+    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, mb: 2 }}>
       <PageBreadcrumb
         segments={[
           { label: jobId ?? 'Job', icon: <SourceIcon sx={{ fontSize: 26 }} /> },

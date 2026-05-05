@@ -5,7 +5,6 @@ import com.guavasoft.springbatch.dashboard.model.IoSummary;
 import com.guavasoft.springbatch.dashboard.model.JobExecutionStepCounts;
 import com.guavasoft.springbatch.dashboard.model.StepDetail;
 import com.guavasoft.springbatch.dashboard.model.StepDetailPage;
-import com.guavasoft.springbatch.dashboard.model.StepDuration;
 import com.guavasoft.springbatch.dashboard.repository.StepExecutionRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -29,10 +28,6 @@ public class JobExecutionStepsService {
 
     public DurationSummary getDurationSummary(long jobExecutionId) {
         return stepExecutionRepository.durationSummaryByJobExecutionId(jobExecutionId);
-    }
-
-    public List<StepDuration> getStepDurations(long jobExecutionId) {
-        return stepExecutionRepository.stepDurationsByJobExecutionId(jobExecutionId);
     }
 
     public StepDetailPage getStepDetails(long jobExecutionId, String sortBy, String sortDir, int page, int size) {

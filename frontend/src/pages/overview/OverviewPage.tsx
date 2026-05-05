@@ -13,7 +13,7 @@ import {
 
 const OverviewPage = () => (
   <Container component="main" maxWidth="xl" sx={{ py: 4, color: 'text.primary' }}>
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 2 }}>
+    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, mb: 2 }}>
       <PageBreadcrumb
         segments={[
           { label: 'Overview', icon: <HomeIcon sx={{ fontSize: 26 }} /> },

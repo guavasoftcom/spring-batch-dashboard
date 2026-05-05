@@ -8,7 +8,6 @@ import com.guavasoft.springbatch.dashboard.model.IoSummary;
 import com.guavasoft.springbatch.dashboard.model.JobExecutionStepCounts;
 import com.guavasoft.springbatch.dashboard.model.StepDetail;
 import com.guavasoft.springbatch.dashboard.model.StepDetailPage;
-import com.guavasoft.springbatch.dashboard.model.StepDuration;
 import com.guavasoft.springbatch.dashboard.repository.StepExecutionRepository;
 import java.util.List;
 import java.util.Map;
@@ -51,14 +50,6 @@ class JobExecutionStepsServiceTest {
         when(stepExecutionRepository.durationSummaryByJobExecutionId(EXEC_ID)).thenReturn(duration);
 
         assertThat(service.getDurationSummary(EXEC_ID)).isSameAs(duration);
-    }
-
-    @Test
-    void getStepDurationsDelegatesToRepository() {
-        List<StepDuration> durations = List.of(new StepDuration("step1", 30));
-        when(stepExecutionRepository.stepDurationsByJobExecutionId(EXEC_ID)).thenReturn(durations);
-
-        assertThat(service.getStepDurations(EXEC_ID)).isSameAs(durations);
     }
 
     @Test

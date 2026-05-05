@@ -12,7 +12,6 @@ import com.guavasoft.springbatch.dashboard.model.IoSummary;
 import com.guavasoft.springbatch.dashboard.model.JobExecutionStepCounts;
 import com.guavasoft.springbatch.dashboard.model.StepDetail;
 import com.guavasoft.springbatch.dashboard.model.StepDetailPage;
-import com.guavasoft.springbatch.dashboard.model.StepDuration;
 import com.guavasoft.springbatch.dashboard.service.JobExecutionStepsService;
 import java.util.List;
 import java.util.Map;
@@ -64,19 +63,6 @@ class JobExecutionStepsControllerTest {
         mockMvc.perform(get("/api/job-executions/{id}/summary/duration", EXEC_ID))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.totalDurationSeconds").value(720));
-    }
-
-    @Test
-    void returnsStepDurations() throws Exception {
-        when(service.getStepDurations(EXEC_ID)).thenReturn(List.of(
-            new StepDuration("step1", 30),
-            new StepDuration("step2", 45)));
-
-        mockMvc.perform(get("/api/job-executions/{id}/step-durations", EXEC_ID))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.length()").value(2))
-            .andExpect(jsonPath("$[0].stepName").value("step1"))
-            .andExpect(jsonPath("$[1].durationSeconds").value(45));
     }
 
     @Test

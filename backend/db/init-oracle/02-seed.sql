@@ -1,8 +1,11 @@
 -- Sample Spring Batch metadata. Runs once on first container start, after 01-schema.sql.
 -- Dates are computed relative to TRUNC(SYSDATE) so the data always looks "recent" no matter
--- when the container is provisioned. Per-step counts and durations are randomized via
--- DBMS_RANDOM so each engine's dashboard view shows distinct values; status counts stay
--- deterministic so repository tests can assert exact totals (90 COMPLETED, 1 FAILED, 1 STARTED).
+-- when the container is provisioned. Per-step counts, durations, and per-execution statuses
+-- are randomized via DBMS_RANDOM so each engine's dashboard view shows distinct values;
+-- today's anchor execution per job is pinned to a known status so repository tests can rely on:
+--   * exec 90  (today's dailyImportJob)     → COMPLETED  (anchors NEWEST_DAILY_EXEC)
+--   * exec 120 (today's reconcileLedgerJob) → FAILED     (anchors findMostRecentFailed)
+--   * exec 132 (today's sendDigestEmailJob) → STARTED    (anchors the in-flight tile)
 --
 -- Each gvenzl init script gets a fresh CDB$ROOT-as-sysdba session, so we re-target FREEPDB1 /
 -- SYSTEM here too.
@@ -10,59 +13,105 @@ ALTER SESSION SET CONTAINER = FREEPDB1;
 ALTER SESSION SET CURRENT_SCHEMA = SYSTEM;
 
 -- Layout:
---   * dailyImportJob:     90 COMPLETED runs, one per day going back 90 days (instance/execution
---                         IDs 1..90, step IDs 1..180 — read+write step pair per execution).
---   * reconcileLedgerJob: 1 FAILED run today (instance/execution ID 91, step ID 181).
---   * sendDigestEmailJob: 1 STARTED (in-flight) run today (instance/execution ID 92,
---                         step ID 182).
+--   * dailyImportJob:     90 runs (instance/exec IDs 1..90, step IDs 1..180).
+--   * reconcileLedgerJob: 30 runs (instance/exec IDs 91..120, step IDs 181..210).
+--   * sendDigestEmailJob: 12 runs (instance/exec IDs 121..132, step IDs 211..222).
 
--- 90 daily import job instances
+-- ===== Job instances =====
 INSERT INTO BATCH_JOB_INSTANCE (JOB_INSTANCE_ID, VERSION, JOB_NAME, JOB_KEY)
-SELECT LEVEL, 0, 'dailyImportJob', LOWER(STANDARD_HASH('daily-' || TO_CHAR(LEVEL), 'MD5'))
-FROM dual CONNECT BY LEVEL <= 90;
+SELECT LEVEL,        0, 'dailyImportJob',     LOWER(STANDARD_HASH('daily-' || TO_CHAR(LEVEL),     'MD5')) FROM dual CONNECT BY LEVEL <= 90;
 
-INSERT INTO BATCH_JOB_INSTANCE (JOB_INSTANCE_ID, VERSION, JOB_NAME, JOB_KEY) VALUES (91, 0, 'reconcileLedgerJob', '4d1f3e6a3c5a6f7d0e9a8b1c2d3e4f50');
-INSERT INTO BATCH_JOB_INSTANCE (JOB_INSTANCE_ID, VERSION, JOB_NAME, JOB_KEY) VALUES (92, 0, 'sendDigestEmailJob', '5e2a4f7b4d6b7a8e1f0b9c2d3e4f5061');
+INSERT INTO BATCH_JOB_INSTANCE (JOB_INSTANCE_ID, VERSION, JOB_NAME, JOB_KEY)
+SELECT 90 + LEVEL,   0, 'reconcileLedgerJob', LOWER(STANDARD_HASH('reconcile-' || TO_CHAR(LEVEL), 'MD5')) FROM dual CONNECT BY LEVEL <= 30;
 
--- 90 daily executions: execution N happened (90 - N) days ago, starting at 08:00:01.
--- End time is randomized between 60–300 seconds after start so the trend chart varies.
--- DBMS_RANDOM.VALUE(60, 301) returns a [60, 301) double; TRUNC strips the fraction so we get [60, 300].
+INSERT INTO BATCH_JOB_INSTANCE (JOB_INSTANCE_ID, VERSION, JOB_NAME, JOB_KEY)
+SELECT 120 + LEVEL,  0, 'sendDigestEmailJob', LOWER(STANDARD_HASH('digest-' || TO_CHAR(LEVEL),    'MD5')) FROM dual CONNECT BY LEVEL <= 12;
+
+-- ===== Job executions =====
+-- Daily import: today (n=90) pinned to COMPLETED; past days flip ~20% to FAILED at random.
 INSERT INTO BATCH_JOB_EXECUTION
     (JOB_EXECUTION_ID, VERSION, JOB_INSTANCE_ID, CREATE_TIME, START_TIME, END_TIME, STATUS, EXIT_CODE, EXIT_MESSAGE, LAST_UPDATED)
 SELECT
-    LEVEL, 2, LEVEL,
-    TRUNC(SYSDATE) - (90 - LEVEL) + INTERVAL '8' HOUR,
-    TRUNC(SYSDATE) - (90 - LEVEL) + INTERVAL '8' HOUR + INTERVAL '1' SECOND,
-    TRUNC(SYSDATE) - (90 - LEVEL) + INTERVAL '8' HOUR + INTERVAL '1' SECOND + NUMTODSINTERVAL(TRUNC(DBMS_RANDOM.VALUE(60, 301)), 'SECOND'),
-    'COMPLETED', 'COMPLETED', NULL,
-    TRUNC(SYSDATE) - (90 - LEVEL) + INTERVAL '8' HOUR + INTERVAL '1' SECOND + NUMTODSINTERVAL(TRUNC(DBMS_RANDOM.VALUE(60, 301)), 'SECOND')
-FROM dual CONNECT BY LEVEL <= 90;
+    n, 2, n,
+    create_ts,
+    start_ts,
+    end_ts,
+    status,
+    status,
+    CASE WHEN status = 'FAILED' THEN 'java.lang.IllegalStateException: import job aborted' ELSE NULL END,
+    end_ts
+FROM (
+    SELECT
+        LEVEL AS n,
+        TRUNC(SYSDATE) - (90 - LEVEL) + INTERVAL '8' HOUR                                                                                       AS create_ts,
+        TRUNC(SYSDATE) - (90 - LEVEL) + INTERVAL '8' HOUR + INTERVAL '1' SECOND                                                                 AS start_ts,
+        TRUNC(SYSDATE) - (90 - LEVEL) + INTERVAL '8' HOUR + INTERVAL '1' SECOND + NUMTODSINTERVAL(TRUNC(DBMS_RANDOM.VALUE(60, 301)), 'SECOND')  AS end_ts,
+        CASE WHEN LEVEL = 90 THEN 'COMPLETED'
+             WHEN DBMS_RANDOM.VALUE(0, 1) < 0.20 THEN 'FAILED'
+             ELSE 'COMPLETED' END                                                                                                               AS status
+    FROM dual CONNECT BY LEVEL <= 90
+);
 
--- Reconcile (FAILED) and digest (STARTED) tail executions. Both happened today. Fixed values.
-INSERT INTO BATCH_JOB_EXECUTION (JOB_EXECUTION_ID, VERSION, JOB_INSTANCE_ID, CREATE_TIME, START_TIME, END_TIME, STATUS, EXIT_CODE, EXIT_MESSAGE, LAST_UPDATED)
-    VALUES (91, 2, 91,
-        TRUNC(SYSDATE) + INTERVAL '2' HOUR,
-        TRUNC(SYSDATE) + INTERVAL '2' HOUR + INTERVAL '1' SECOND,
-        TRUNC(SYSDATE) + INTERVAL '2' HOUR + INTERVAL '5' MINUTE,
-        'FAILED', 'FAILED', 'java.lang.IllegalStateException: ledger out of balance',
-        TRUNC(SYSDATE) + INTERVAL '2' HOUR + INTERVAL '5' MINUTE);
-INSERT INTO BATCH_JOB_EXECUTION (JOB_EXECUTION_ID, VERSION, JOB_INSTANCE_ID, CREATE_TIME, START_TIME, END_TIME, STATUS, EXIT_CODE, EXIT_MESSAGE, LAST_UPDATED)
-    VALUES (92, 1, 92,
-        TRUNC(SYSDATE) + INTERVAL '9' HOUR + INTERVAL '30' MINUTE,
-        TRUNC(SYSDATE) + INTERVAL '9' HOUR + INTERVAL '30' MINUTE + INTERVAL '1' SECOND,
-        NULL,
-        'STARTED', 'UNKNOWN', NULL,
-        TRUNC(SYSDATE) + INTERVAL '9' HOUR + INTERVAL '30' MINUTE + INTERVAL '30' SECOND);
+-- Reconcile: today (n=30 → exec 120) pinned to FAILED; past days ~75% COMPLETED / ~25% FAILED.
+INSERT INTO BATCH_JOB_EXECUTION
+    (JOB_EXECUTION_ID, VERSION, JOB_INSTANCE_ID, CREATE_TIME, START_TIME, END_TIME, STATUS, EXIT_CODE, EXIT_MESSAGE, LAST_UPDATED)
+SELECT
+    90 + n, 2, 90 + n,
+    create_ts,
+    start_ts,
+    end_ts,
+    status,
+    status,
+    CASE WHEN status = 'FAILED' THEN 'java.lang.IllegalStateException: ledger out of balance' ELSE NULL END,
+    end_ts
+FROM (
+    SELECT
+        LEVEL AS n,
+        TRUNC(SYSDATE) - (30 - LEVEL) + INTERVAL '18' HOUR                                                                                      AS create_ts,
+        TRUNC(SYSDATE) - (30 - LEVEL) + INTERVAL '18' HOUR + INTERVAL '1' SECOND                                                                AS start_ts,
+        TRUNC(SYSDATE) - (30 - LEVEL) + INTERVAL '18' HOUR + INTERVAL '1' SECOND + NUMTODSINTERVAL(TRUNC(DBMS_RANDOM.VALUE(90, 301)), 'SECOND') AS end_ts,
+        CASE WHEN LEVEL = 30 THEN 'FAILED'
+             WHEN DBMS_RANDOM.VALUE(0, 1) < 0.25 THEN 'FAILED'
+             ELSE 'COMPLETED' END                                                                                                               AS status
+    FROM dual CONNECT BY LEVEL <= 30
+);
 
--- Daily import params (run.id stamp per execution).
+-- Digest: today (n=12 → exec 132) pinned to STARTED with NULL end_time; past weeks finished.
+INSERT INTO BATCH_JOB_EXECUTION
+    (JOB_EXECUTION_ID, VERSION, JOB_INSTANCE_ID, CREATE_TIME, START_TIME, END_TIME, STATUS, EXIT_CODE, EXIT_MESSAGE, LAST_UPDATED)
+SELECT
+    120 + n, CASE WHEN n = 12 THEN 1 ELSE 2 END, 120 + n,
+    create_ts,
+    start_ts,
+    CASE WHEN n = 12 THEN NULL ELSE end_ts END,
+    status,
+    CASE WHEN n = 12 THEN 'UNKNOWN' ELSE status END,
+    CASE WHEN status = 'FAILED' THEN 'java.lang.IllegalStateException: digest provider unavailable' ELSE NULL END,
+    CASE WHEN n = 12 THEN start_ts + INTERVAL '29' SECOND ELSE end_ts END
+FROM (
+    SELECT
+        LEVEL AS n,
+        TRUNC(SYSDATE) - (7 * (12 - LEVEL)) + INTERVAL '9' HOUR + INTERVAL '30' MINUTE                                                                                                            AS create_ts,
+        TRUNC(SYSDATE) - (7 * (12 - LEVEL)) + INTERVAL '9' HOUR + INTERVAL '30' MINUTE + INTERVAL '1' SECOND                                                                                      AS start_ts,
+        TRUNC(SYSDATE) - (7 * (12 - LEVEL)) + INTERVAL '9' HOUR + INTERVAL '30' MINUTE + INTERVAL '1' SECOND + NUMTODSINTERVAL(TRUNC(DBMS_RANDOM.VALUE(45, 166)), 'SECOND')                       AS end_ts,
+        CASE WHEN LEVEL = 12 THEN 'STARTED'
+             WHEN DBMS_RANDOM.VALUE(0, 1) < 0.20 THEN 'FAILED'
+             ELSE 'COMPLETED' END                                                                                                                                                                 AS status
+    FROM dual CONNECT BY LEVEL <= 12
+);
+
+-- ===== Job execution params =====
 INSERT INTO BATCH_JOB_EXECUTION_PARAMS (JOB_EXECUTION_ID, PARAMETER_NAME, PARAMETER_TYPE, PARAMETER_VALUE, IDENTIFYING)
-SELECT LEVEL, 'run.id', 'java.lang.Long', TO_CHAR(LEVEL), 'Y'
-FROM dual CONNECT BY LEVEL <= 90;
+SELECT LEVEL,        'run.id',   'java.lang.Long',      TO_CHAR(LEVEL),                                       'Y' FROM dual CONNECT BY LEVEL <= 90;
 
-INSERT INTO BATCH_JOB_EXECUTION_PARAMS (JOB_EXECUTION_ID, PARAMETER_NAME, PARAMETER_TYPE, PARAMETER_VALUE, IDENTIFYING) VALUES (91, 'asOfDate', 'java.time.LocalDate', TO_CHAR(TRUNC(SYSDATE), 'YYYY-MM-DD'), 'Y');
-INSERT INTO BATCH_JOB_EXECUTION_PARAMS (JOB_EXECUTION_ID, PARAMETER_NAME, PARAMETER_TYPE, PARAMETER_VALUE, IDENTIFYING) VALUES (92, 'audience', 'java.lang.String',    'weekly-digest',                                  'Y');
+INSERT INTO BATCH_JOB_EXECUTION_PARAMS (JOB_EXECUTION_ID, PARAMETER_NAME, PARAMETER_TYPE, PARAMETER_VALUE, IDENTIFYING)
+SELECT 90 + LEVEL,   'asOfDate', 'java.time.LocalDate', TO_CHAR(TRUNC(SYSDATE) - (30 - LEVEL), 'YYYY-MM-DD'), 'Y' FROM dual CONNECT BY LEVEL <= 30;
 
--- readUsersStep (id 2n-1) per daily import: 800..1200 records, 8..12 commits, 20..80s duration.
+INSERT INTO BATCH_JOB_EXECUTION_PARAMS (JOB_EXECUTION_ID, PARAMETER_NAME, PARAMETER_TYPE, PARAMETER_VALUE, IDENTIFYING)
+SELECT 120 + LEVEL,  'audience', 'java.lang.String',    'weekly-digest',                                     'Y' FROM dual CONNECT BY LEVEL <= 12;
+
+-- ===== Step executions =====
+-- readUsersStep: always COMPLETED. Random duration / counts.
 INSERT INTO BATCH_STEP_EXECUTION
     (STEP_EXECUTION_ID, VERSION, STEP_NAME, JOB_EXECUTION_ID, CREATE_TIME, START_TIME, END_TIME, STATUS,
      COMMIT_COUNT, READ_COUNT, FILTER_COUNT, WRITE_COUNT, READ_SKIP_COUNT, WRITE_SKIP_COUNT, PROCESS_SKIP_COUNT,
@@ -81,65 +130,97 @@ SELECT
     TRUNC(SYSDATE) - (90 - LEVEL) + INTERVAL '8' HOUR + INTERVAL '2' SECOND + NUMTODSINTERVAL(TRUNC(DBMS_RANDOM.VALUE(20, 81)), 'SECOND')
 FROM dual CONNECT BY LEVEL <= 90;
 
--- writeUsersStep (id 2n) per daily import: 800..1200 records, 8..12 commits, 30..120s duration.
+-- writeUsersStep: status follows its execution. FAILED writes get rollback_count = 1.
 INSERT INTO BATCH_STEP_EXECUTION
     (STEP_EXECUTION_ID, VERSION, STEP_NAME, JOB_EXECUTION_ID, CREATE_TIME, START_TIME, END_TIME, STATUS,
      COMMIT_COUNT, READ_COUNT, FILTER_COUNT, WRITE_COUNT, READ_SKIP_COUNT, WRITE_SKIP_COUNT, PROCESS_SKIP_COUNT,
      ROLLBACK_COUNT, EXIT_CODE, EXIT_MESSAGE, LAST_UPDATED)
 SELECT
-    2 * LEVEL, 3, 'writeUsersStep', LEVEL,
-    TRUNC(SYSDATE) - (90 - LEVEL) + INTERVAL '8' HOUR + INTERVAL '1' MINUTE + INTERVAL '30' SECOND,
-    TRUNC(SYSDATE) - (90 - LEVEL) + INTERVAL '8' HOUR + INTERVAL '1' MINUTE + INTERVAL '31' SECOND,
-    TRUNC(SYSDATE) - (90 - LEVEL) + INTERVAL '8' HOUR + INTERVAL '1' MINUTE + INTERVAL '31' SECOND + NUMTODSINTERVAL(TRUNC(DBMS_RANDOM.VALUE(30, 121)), 'SECOND'),
-    'COMPLETED',
+    2 * d.n, 3, 'writeUsersStep', d.n,
+    TRUNC(SYSDATE) - (90 - d.n) + INTERVAL '8' HOUR + INTERVAL '1' MINUTE + INTERVAL '30' SECOND,
+    TRUNC(SYSDATE) - (90 - d.n) + INTERVAL '8' HOUR + INTERVAL '1' MINUTE + INTERVAL '31' SECOND,
+    TRUNC(SYSDATE) - (90 - d.n) + INTERVAL '8' HOUR + INTERVAL '1' MINUTE + INTERVAL '31' SECOND + NUMTODSINTERVAL(TRUNC(DBMS_RANDOM.VALUE(30, 121)), 'SECOND'),
+    je.status,
     TRUNC(DBMS_RANDOM.VALUE(8, 13)),
     TRUNC(DBMS_RANDOM.VALUE(800, 1201)),
     0,
     TRUNC(DBMS_RANDOM.VALUE(800, 1201)),
-    0, 0, 0, 0, 'COMPLETED', NULL,
-    TRUNC(SYSDATE) - (90 - LEVEL) + INTERVAL '8' HOUR + INTERVAL '1' MINUTE + INTERVAL '31' SECOND + NUMTODSINTERVAL(TRUNC(DBMS_RANDOM.VALUE(30, 121)), 'SECOND')
-FROM dual CONNECT BY LEVEL <= 90;
+    0, 0, 0,
+    CASE WHEN je.status = 'FAILED' THEN 1 ELSE 0 END,
+    je.status,
+    CASE WHEN je.status = 'FAILED' THEN 'java.lang.IllegalStateException: import job aborted' ELSE NULL END,
+    TRUNC(SYSDATE) - (90 - d.n) + INTERVAL '8' HOUR + INTERVAL '1' MINUTE + INTERVAL '31' SECOND + NUMTODSINTERVAL(TRUNC(DBMS_RANDOM.VALUE(30, 121)), 'SECOND')
+FROM (SELECT LEVEL AS n FROM dual CONNECT BY LEVEL <= 90) d
+JOIN BATCH_JOB_EXECUTION je ON je.job_execution_id = d.n;
 
--- Tail steps: reconcile (FAILED) + digest (STARTED). Fixed values.
-INSERT INTO BATCH_STEP_EXECUTION (STEP_EXECUTION_ID, VERSION, STEP_NAME, JOB_EXECUTION_ID, CREATE_TIME, START_TIME, END_TIME, STATUS, COMMIT_COUNT, READ_COUNT, FILTER_COUNT, WRITE_COUNT, READ_SKIP_COUNT, WRITE_SKIP_COUNT, PROCESS_SKIP_COUNT, ROLLBACK_COUNT, EXIT_CODE, EXIT_MESSAGE, LAST_UPDATED)
-    VALUES (181, 3, 'reconcileStep', 91,
-        TRUNC(SYSDATE) + INTERVAL '2' HOUR + INTERVAL '1' SECOND,
-        TRUNC(SYSDATE) + INTERVAL '2' HOUR + INTERVAL '2' SECOND,
-        TRUNC(SYSDATE) + INTERVAL '2' HOUR + INTERVAL '5' MINUTE,
-        'FAILED', 4, 500, 0, 400, 0, 0, 0, 1, 'FAILED', 'java.lang.IllegalStateException: ledger out of balance',
-        TRUNC(SYSDATE) + INTERVAL '2' HOUR + INTERVAL '5' MINUTE);
+-- reconcileStep: status matches its execution.
+INSERT INTO BATCH_STEP_EXECUTION
+    (STEP_EXECUTION_ID, VERSION, STEP_NAME, JOB_EXECUTION_ID, CREATE_TIME, START_TIME, END_TIME, STATUS,
+     COMMIT_COUNT, READ_COUNT, FILTER_COUNT, WRITE_COUNT, READ_SKIP_COUNT, WRITE_SKIP_COUNT, PROCESS_SKIP_COUNT,
+     ROLLBACK_COUNT, EXIT_CODE, EXIT_MESSAGE, LAST_UPDATED)
+SELECT
+    180 + d.n, 3, 'reconcileStep', 90 + d.n,
+    TRUNC(SYSDATE) - (30 - d.n) + INTERVAL '18' HOUR + INTERVAL '1' SECOND,
+    TRUNC(SYSDATE) - (30 - d.n) + INTERVAL '18' HOUR + INTERVAL '2' SECOND,
+    TRUNC(SYSDATE) - (30 - d.n) + INTERVAL '18' HOUR + INTERVAL '2' SECOND + NUMTODSINTERVAL(TRUNC(DBMS_RANDOM.VALUE(60, 241)), 'SECOND'),
+    je.status,
+    CASE WHEN je.status = 'FAILED' THEN 4 ELSE 5 END,
+    500,
+    0,
+    CASE WHEN je.status = 'FAILED' THEN 400 ELSE 500 END,
+    0, 0, 0,
+    CASE WHEN je.status = 'FAILED' THEN 1 ELSE 0 END,
+    je.status,
+    CASE WHEN je.status = 'FAILED' THEN 'java.lang.IllegalStateException: ledger out of balance' ELSE NULL END,
+    TRUNC(SYSDATE) - (30 - d.n) + INTERVAL '18' HOUR + INTERVAL '2' SECOND + NUMTODSINTERVAL(TRUNC(DBMS_RANDOM.VALUE(60, 241)), 'SECOND')
+FROM (SELECT LEVEL AS n FROM dual CONNECT BY LEVEL <= 30) d
+JOIN BATCH_JOB_EXECUTION je ON je.job_execution_id = 90 + d.n;
 
-INSERT INTO BATCH_STEP_EXECUTION (STEP_EXECUTION_ID, VERSION, STEP_NAME, JOB_EXECUTION_ID, CREATE_TIME, START_TIME, END_TIME, STATUS, COMMIT_COUNT, READ_COUNT, FILTER_COUNT, WRITE_COUNT, READ_SKIP_COUNT, WRITE_SKIP_COUNT, PROCESS_SKIP_COUNT, ROLLBACK_COUNT, EXIT_CODE, EXIT_MESSAGE, LAST_UPDATED)
-    VALUES (182, 1, 'composeDigestStep', 92,
-        TRUNC(SYSDATE) + INTERVAL '9' HOUR + INTERVAL '30' MINUTE + INTERVAL '1' SECOND,
-        TRUNC(SYSDATE) + INTERVAL '9' HOUR + INTERVAL '30' MINUTE + INTERVAL '2' SECOND,
-        NULL,
-        'STARTED', 0, 20, 0, 15, 0, 0, 0, 0, 'EXECUTING', NULL,
-        TRUNC(SYSDATE) + INTERVAL '9' HOUR + INTERVAL '30' MINUTE + INTERVAL '30' SECOND);
+-- composeDigestStep: today's run is in-flight (STARTED, NULL end_time); past weeks finished.
+INSERT INTO BATCH_STEP_EXECUTION
+    (STEP_EXECUTION_ID, VERSION, STEP_NAME, JOB_EXECUTION_ID, CREATE_TIME, START_TIME, END_TIME, STATUS,
+     COMMIT_COUNT, READ_COUNT, FILTER_COUNT, WRITE_COUNT, READ_SKIP_COUNT, WRITE_SKIP_COUNT, PROCESS_SKIP_COUNT,
+     ROLLBACK_COUNT, EXIT_CODE, EXIT_MESSAGE, LAST_UPDATED)
+SELECT
+    210 + d.n,
+    CASE WHEN d.n = 12 THEN 1 ELSE 3 END,
+    'composeDigestStep',
+    120 + d.n,
+    TRUNC(SYSDATE) - (7 * (12 - d.n)) + INTERVAL '9' HOUR + INTERVAL '30' MINUTE + INTERVAL '1' SECOND,
+    TRUNC(SYSDATE) - (7 * (12 - d.n)) + INTERVAL '9' HOUR + INTERVAL '30' MINUTE + INTERVAL '2' SECOND,
+    CASE WHEN d.n = 12 THEN NULL
+         ELSE TRUNC(SYSDATE) - (7 * (12 - d.n)) + INTERVAL '9' HOUR + INTERVAL '30' MINUTE + INTERVAL '2' SECOND + NUMTODSINTERVAL(TRUNC(DBMS_RANDOM.VALUE(45, 166)), 'SECOND') END,
+    je.status,
+    CASE WHEN d.n = 12 THEN 0 ELSE 2 END,
+    CASE WHEN d.n = 12 THEN 20 ELSE 80 END,
+    0,
+    CASE WHEN d.n = 12 THEN 15 WHEN je.status = 'FAILED' THEN 60 ELSE 80 END,
+    0, 0, 0,
+    0,
+    CASE WHEN d.n = 12 THEN 'EXECUTING' ELSE je.status END,
+    CASE WHEN je.status = 'FAILED' THEN 'java.lang.IllegalStateException: digest provider unavailable' ELSE NULL END,
+    TRUNC(SYSDATE) - (7 * (12 - d.n)) + INTERVAL '9' HOUR + INTERVAL '30' MINUTE + INTERVAL '30' SECOND
+FROM (SELECT LEVEL AS n FROM dual CONNECT BY LEVEL <= 12) d
+JOIN BATCH_JOB_EXECUTION je ON je.job_execution_id = 120 + d.n;
 
--- Job-execution context (one per execution, required by the FK in 01-schema.sql).
+-- ===== Contexts =====
 INSERT INTO BATCH_JOB_EXECUTION_CONTEXT (JOB_EXECUTION_ID, SHORT_CONTEXT, SERIALIZED_CONTEXT)
-SELECT LEVEL, '{"@class":"java.util.HashMap","batch.taskletType":"chunk"}', NULL
-FROM dual CONNECT BY LEVEL <= 90;
-
-INSERT INTO BATCH_JOB_EXECUTION_CONTEXT (JOB_EXECUTION_ID, SHORT_CONTEXT, SERIALIZED_CONTEXT) VALUES (91, '{"@class":"java.util.HashMap","batch.taskletType":"chunk","lastError":"ledger out of balance"}', NULL);
-INSERT INTO BATCH_JOB_EXECUTION_CONTEXT (JOB_EXECUTION_ID, SHORT_CONTEXT, SERIALIZED_CONTEXT) VALUES (92, '{"@class":"java.util.HashMap","batch.taskletType":"chunk"}', NULL);
-
--- Step-execution context (one per step).
-INSERT INTO BATCH_STEP_EXECUTION_CONTEXT (STEP_EXECUTION_ID, SHORT_CONTEXT, SERIALIZED_CONTEXT)
-SELECT 2 * LEVEL - 1, '{"@class":"java.util.HashMap","FlatFileItemReader.read.count":1000}', NULL
-FROM dual CONNECT BY LEVEL <= 90;
+SELECT je.job_execution_id,
+       CASE WHEN je.status = 'FAILED'
+            THEN '{"@class":"java.util.HashMap","batch.taskletType":"chunk","lastError":"see exit message"}'
+            ELSE '{"@class":"java.util.HashMap","batch.taskletType":"chunk"}' END,
+       NULL
+FROM BATCH_JOB_EXECUTION je;
 
 INSERT INTO BATCH_STEP_EXECUTION_CONTEXT (STEP_EXECUTION_ID, SHORT_CONTEXT, SERIALIZED_CONTEXT)
-SELECT 2 * LEVEL, '{"@class":"java.util.HashMap","JdbcBatchItemWriter.write.count":1000}', NULL
-FROM dual CONNECT BY LEVEL <= 90;
-
-INSERT INTO BATCH_STEP_EXECUTION_CONTEXT (STEP_EXECUTION_ID, SHORT_CONTEXT, SERIALIZED_CONTEXT) VALUES (181, '{"@class":"java.util.HashMap","reconcile.lastAccountId":"ACC-000410"}', NULL);
-INSERT INTO BATCH_STEP_EXECUTION_CONTEXT (STEP_EXECUTION_ID, SHORT_CONTEXT, SERIALIZED_CONTEXT) VALUES (182, '{"@class":"java.util.HashMap","digest.batchOffset":15}', NULL);
+SELECT step_execution_id,
+       '{"@class":"java.util.HashMap","step.bookmark":"' || step_execution_id || '"}',
+       NULL
+FROM BATCH_STEP_EXECUTION;
 
 COMMIT;
 
--- Bump sequences past seeded IDs so live Spring Batch runs don't collide.
-ALTER SEQUENCE BATCH_JOB_INSTANCE_SEQ   RESTART START WITH 93;
-ALTER SEQUENCE BATCH_JOB_EXECUTION_SEQ  RESTART START WITH 93;
-ALTER SEQUENCE BATCH_STEP_EXECUTION_SEQ RESTART START WITH 183;
+-- ===== Bump sequences past seeded IDs so live Spring Batch runs don't collide. =====
+ALTER SEQUENCE BATCH_JOB_INSTANCE_SEQ   RESTART START WITH 133;
+ALTER SEQUENCE BATCH_JOB_EXECUTION_SEQ  RESTART START WITH 133;
+ALTER SEQUENCE BATCH_STEP_EXECUTION_SEQ RESTART START WITH 223;

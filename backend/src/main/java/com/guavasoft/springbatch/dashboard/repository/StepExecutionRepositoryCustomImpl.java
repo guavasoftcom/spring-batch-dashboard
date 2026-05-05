@@ -6,7 +6,6 @@ import com.guavasoft.springbatch.dashboard.model.IoSummary;
 import com.guavasoft.springbatch.dashboard.model.JobExecutionStepCounts;
 import com.guavasoft.springbatch.dashboard.model.LastFailedStep;
 import com.guavasoft.springbatch.dashboard.model.StepDetail;
-import com.guavasoft.springbatch.dashboard.model.StepDuration;
 import com.guavasoft.springbatch.dashboard.repository.rowmapper.StepDetailRowMapper;
 import java.util.List;
 import java.util.Map;
@@ -44,8 +43,6 @@ public class StepExecutionRepositoryCustomImpl implements StepExecutionRepositor
     private static final String COL_READ_TOTAL = "read_total";
     private static final String COL_WRITE_TOTAL = "write_total";
     private static final String COL_TOTAL_DURATION = "total_duration";
-    private static final String COL_STEP_NAME = "step_name";
-    private static final String COL_DURATION_SECONDS = "duration_seconds";
 
     // Named parameter keys.
     private static final String PARAM_ID = "id";
@@ -115,21 +112,6 @@ public class StepExecutionRepositoryCustomImpl implements StepExecutionRepositor
             """.formatted(dialect.sumDurationSeconds("start_time", "end_time"));
         return jdbc.queryForObject(sql, params(jobExecutionId), (rs, i) ->
                 new DurationSummary(rs.getLong(COL_TOTAL_DURATION)));
-    }
-
-    @Override
-    public List<StepDuration> stepDurationsByJobExecutionId(long jobExecutionId) {
-        String sql = """
-            SELECT step_name,
-                   %s AS duration_seconds
-            FROM BATCH_STEP_EXECUTION
-            WHERE job_execution_id = :id
-            ORDER BY %s, step_execution_id ASC
-            """.formatted(
-                dialect.durationSeconds("start_time", "end_time"),
-                dialect.orderByNullsLast("start_time", DIR_ASC));
-        return jdbc.query(sql, params(jobExecutionId), (rs, i) ->
-                new StepDuration(rs.getString(COL_STEP_NAME), rs.getLong(COL_DURATION_SECONDS)));
     }
 
     @Override

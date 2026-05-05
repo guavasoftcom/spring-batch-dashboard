@@ -13,8 +13,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @Import(TestcontainersConfiguration.class)
 class DashboardApplicationTests {
 
-    // 90 daily import + 1 reconcile + 1 digest = 92 instances. See db/init-*/02-seed.sql.
-    private static final int EXPECTED_SEED_INSTANCES = 92;
+    // 90 daily import + 30 reconcile + 12 digest = 132 instances. See the db seed scripts.
+    private static final int EXPECTED_SEED_INSTANCES = 132;
 
     @Autowired
     private DataSource dataSource;

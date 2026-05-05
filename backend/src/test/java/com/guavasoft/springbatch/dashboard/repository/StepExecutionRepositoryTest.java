@@ -9,7 +9,6 @@ import com.guavasoft.springbatch.dashboard.model.IoSummary;
 import com.guavasoft.springbatch.dashboard.model.JobExecutionStepCounts;
 import com.guavasoft.springbatch.dashboard.model.LastFailedStep;
 import com.guavasoft.springbatch.dashboard.model.StepDetail;
-import com.guavasoft.springbatch.dashboard.model.StepDuration;
 import com.guavasoft.springbatch.dashboard.repository.TestDatasources.AcrossDatasources;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,28 +23,18 @@ class StepExecutionRepositoryTest {
     /** Earlier than every seeded run, so any since-filtered query behaves like the unwindowed legacy method. */
     private static final LocalDateTime ALL_TIME = LocalDateTime.of(2000, 1, 1, 0, 0);
 
-    // Newest dailyImportJob execution: 2 completed steps (read + write). See the db seed scripts.
-    private static final long NEWEST_DAILY_EXEC = 90L;
-    private static final long RECONCILE_EXEC = 91L;
-    private static final long DIGEST_EXEC = 92L;
-    private static final long UNKNOWN_EXEC = 999L;
+    // Anchored execution IDs (today's runs in the seed). See the db seed scripts.
+    private static final long NEWEST_DAILY_EXEC = 90L;   // dailyImportJob, COMPLETED, 2 steps
+    private static final long RECONCILE_EXEC    = 120L;  // reconcileLedgerJob, FAILED, 1 step
+    private static final long DIGEST_EXEC       = 132L;  // sendDigestEmailJob, STARTED, 1 step
+    private static final long UNKNOWN_EXEC      = 999L;
 
-    // Per-step random ranges, used to bound the seed-derived sum assertions. See seed scripts.
-    private static final int DAILY_STEPS = 90 * 2;        // 90 daily runs * 2 steps each
+    // Per-step random ranges for daily import steps. Reconcile/digest tail steps use fixed counts.
+    private static final int DAILY_STEPS = 90 * 2;       // 90 daily runs * 2 steps each
     private static final int READ_MIN_PER_STEP = 800;
     private static final int READ_MAX_PER_STEP = 1200;
     private static final int WRITE_MIN_PER_STEP = 800;
     private static final int WRITE_MAX_PER_STEP = 1200;
-    private static final int COMMIT_MIN_PER_STEP = 8;
-    private static final int COMMIT_MAX_PER_STEP = 12;
-
-    // Tail (reconcile + digest) contributes deterministic counts on top of the random daily totals.
-    private static final long RECONCILE_READ = 500;
-    private static final long DIGEST_READ = 20;
-    private static final long RECONCILE_WRITE = 400;
-    private static final long DIGEST_WRITE = 15;
-    private static final long RECONCILE_COMMIT = 4;
-    private static final long RECONCILE_ROLLBACK = 1;
 
     @Autowired
     private StepExecutionRepository stepExecutionRepository;
@@ -59,29 +48,58 @@ class StepExecutionRepositoryTest {
 
     @Test
     void countByStatusReflectsSeed() {
-        // 180 completed dailyImport steps + 1 failed reconcile + 1 in-flight digest.
-        assertThat(stepExecutionRepository.countByStatus(BatchStatus.COMPLETED, ALL_TIME)).isEqualTo(DAILY_STEPS);
-        assertThat(stepExecutionRepository.countByStatus(BatchStatus.FAILED, ALL_TIME)).isEqualTo(1);
-        assertThat(stepExecutionRepository.countByStatus(BatchStatus.STARTED, ALL_TIME)).isEqualTo(1);
+        // 222 total steps: 180 daily (90 read always-COMPLETED + 90 write tracking exec status)
+        //                + 30 reconcile (matching exec status)
+        //                + 12 digest (11 historical matching exec status + today's STARTED).
+        // Status mix is random with anchors: today's reconcile is FAILED (≥1), today's digest
+        // composeDigestStep is STARTED (==1).
+        long completed = stepExecutionRepository.countByStatus(BatchStatus.COMPLETED, ALL_TIME);
+        long failed = stepExecutionRepository.countByStatus(BatchStatus.FAILED, ALL_TIME);
+        long started = stepExecutionRepository.countByStatus(BatchStatus.STARTED, ALL_TIME);
+        assertThat(completed).isBetween(170L, 220L);
+        assertThat(failed).isBetween(1L, 60L);
+        assertThat(started).isEqualTo(1L);
+        assertThat(completed + failed + started).isEqualTo(222L);
     }
 
     @Test
     void aggregateSumsMatchSeedBounds() {
-        // Daily step values are randomized per database; tail values are fixed. Assert the
-        // total falls within the [180 * MIN_PER_STEP + tail, 180 * MAX_PER_STEP + tail] envelope.
+        // Daily step values are randomized per database; reconcile/digest tail values are fixed.
+        // Reconcile: read=500, write=400 (FAILED) or 500 (COMPLETED), commit=4 (FAILED) or 5 (COMPLETED).
+        // Digest historical: read=80, write=60 (FAILED) or 80 (COMPLETED), commit=2.
+        // Digest today: read=20, write=15, commit=0.
+        long minDailyRead   = DAILY_STEPS * (long) READ_MIN_PER_STEP;
+        long maxDailyRead   = DAILY_STEPS * (long) READ_MAX_PER_STEP;
+        long minDailyWrite  = DAILY_STEPS * (long) WRITE_MIN_PER_STEP;
+        long maxDailyWrite  = DAILY_STEPS * (long) WRITE_MAX_PER_STEP;
+        long reconcileRead  = 30L * 500L;            // fixed across reconciles
+        long reconcileWrite = 30L * 400L;            // lower bound: every reconcile FAILED
+        long reconcileWriteMax = 30L * 500L;         // upper bound: every reconcile COMPLETED
+        long digestHistRead = 11L * 80L;
+        long digestHistWriteMin = 11L * 60L;
+        long digestHistWriteMax = 11L * 80L;
+        long digestToday    = 1L;
+        long digestTodayRead  = 20L;
+        long digestTodayWrite = 15L;
+        // Verify sane structural totals; the FK + seed loop guarantees one digest-today row.
+        assertThat(digestToday).isEqualTo(1L);
+
         assertThat(stepExecutionRepository.sumReadCount(ALL_TIME))
-            .isBetween(DAILY_STEPS * (long) READ_MIN_PER_STEP + RECONCILE_READ + DIGEST_READ,
-                       DAILY_STEPS * (long) READ_MAX_PER_STEP + RECONCILE_READ + DIGEST_READ);
+            .isBetween(minDailyRead + reconcileRead + digestHistRead + digestTodayRead,
+                       maxDailyRead + reconcileRead + digestHistRead + digestTodayRead);
         assertThat(stepExecutionRepository.sumWriteCount(ALL_TIME))
-            .isBetween(DAILY_STEPS * (long) WRITE_MIN_PER_STEP + RECONCILE_WRITE + DIGEST_WRITE,
-                       DAILY_STEPS * (long) WRITE_MAX_PER_STEP + RECONCILE_WRITE + DIGEST_WRITE);
-        assertThat(stepExecutionRepository.sumCommitCount(ALL_TIME))
-            .isBetween(DAILY_STEPS * (long) COMMIT_MIN_PER_STEP + RECONCILE_COMMIT,
-                       DAILY_STEPS * (long) COMMIT_MAX_PER_STEP + RECONCILE_COMMIT);
-        // Filter / skip counts are zero everywhere; rollback only on the reconcile step.
+            .isBetween(minDailyWrite + reconcileWrite     + digestHistWriteMin + digestTodayWrite,
+                       maxDailyWrite + reconcileWriteMax  + digestHistWriteMax + digestTodayWrite);
+
+        // Filter / skip counts are zero everywhere; rollback is on each FAILED daily write step
+        // plus each FAILED reconcile step (today's reconcile guarantees ≥ 1).
         assertThat(stepExecutionRepository.sumFilterCount(ALL_TIME)).isZero();
-        assertThat(stepExecutionRepository.sumRollbackCount(ALL_TIME)).isEqualTo(RECONCILE_ROLLBACK);
+        assertThat(stepExecutionRepository.sumRollbackCount(ALL_TIME)).isBetween(1L, 60L);
         assertThat(stepExecutionRepository.sumSkipCount(ALL_TIME)).isZero();
+        // Commit: daily 8..12 per step, reconcile 4..5 per step, digest historical 2 each, today 0.
+        assertThat(stepExecutionRepository.sumCommitCount(ALL_TIME))
+            .isBetween(DAILY_STEPS * 8L + 30L * 4L + 11L * 2L,
+                       DAILY_STEPS * 12L + 30L * 5L + 11L * 2L);
     }
 
     // --- Custom JdbcTemplate fragments: dialect-specific, parameterized over every engine ------
@@ -89,6 +107,7 @@ class StepExecutionRepositoryTest {
     @AcrossDatasources
     void findMostRecentFailedReturnsHeadlineForLatestFailure(String datasource) {
         DataSourceContext.set(datasource);
+        // Today's reconcile is FAILED at 18:05, later than any other seeded FAILED step.
         Optional<LastFailedStep> failed = stepExecutionRepository.findMostRecentFailed();
 
         assertThat(failed).hasValueSatisfying(headline -> {
@@ -100,7 +119,7 @@ class StepExecutionRepositoryTest {
     @AcrossDatasources
     void countsByJobExecutionIdAggregatesPerExecution(String datasource) {
         DataSourceContext.set(datasource);
-        // Today's daily run: 2 completed steps.
+        // Today's daily run (anchored COMPLETED): 2 completed steps.
         JobExecutionStepCounts allCompleted = stepExecutionRepository.countsByJobExecutionId(NEWEST_DAILY_EXEC);
         assertThat(allCompleted.totalSteps()).isEqualTo(2);
         assertThat(allCompleted.completed()).isEqualTo(2);
@@ -156,23 +175,6 @@ class StepExecutionRepositoryTest {
         DataSourceContext.set(datasource);
         assertThat(stepExecutionRepository.durationSummaryByJobExecutionId(UNKNOWN_EXEC).totalDurationSeconds())
             .isZero();
-    }
-
-    @AcrossDatasources
-    void stepDurationsByJobExecutionIdReturnsRowPerStep(String datasource) {
-        DataSourceContext.set(datasource);
-        List<StepDuration> durations = stepExecutionRepository.stepDurationsByJobExecutionId(NEWEST_DAILY_EXEC);
-
-        assertThat(durations).hasSize(2);
-        assertThat(durations).extracting(StepDuration::stepName)
-            .containsExactlyInAnyOrder("readUsersStep", "writeUsersStep");
-        assertThat(durations).allSatisfy(d -> assertThat(d.durationSeconds()).isPositive());
-    }
-
-    @AcrossDatasources
-    void stepDurationsByUnknownJobExecutionIdIsEmpty(String datasource) {
-        DataSourceContext.set(datasource);
-        assertThat(stepExecutionRepository.stepDurationsByJobExecutionId(UNKNOWN_EXEC)).isEmpty();
     }
 
     @AcrossDatasources

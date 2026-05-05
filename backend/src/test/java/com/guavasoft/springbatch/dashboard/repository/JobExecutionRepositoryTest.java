@@ -42,19 +42,30 @@ class JobExecutionRepositoryTest {
 
     @Test
     void countByStatusReflectsSeed() {
-        // 90 dailyImportJob runs are COMPLETED, 1 reconcile is FAILED, 1 digest is STARTED.
-        assertThat(jobExecutionRepository.countByStatus(BatchStatus.COMPLETED, ALL_TIME)).isEqualTo(90);
-        assertThat(jobExecutionRepository.countByStatus(BatchStatus.FAILED, ALL_TIME)).isEqualTo(1);
-        assertThat(jobExecutionRepository.countByStatus(BatchStatus.STARTED, ALL_TIME)).isEqualTo(1);
+        // Seed mixes random per-execution status. Bounds chosen to easily contain a 99% CI of the
+        // probabilistic outcomes (90 daily ~80% COMPLETED, 30 reconcile ~75% COMPLETED, 11 digest
+        // ~80% COMPLETED + 1 STARTED today). FAILED is at least 1 since today's reconcile is
+        // pinned to FAILED; STARTED is exactly 1 (today's digest).
+        long completed = jobExecutionRepository.countByStatus(BatchStatus.COMPLETED, ALL_TIME);
+        long failed = jobExecutionRepository.countByStatus(BatchStatus.FAILED, ALL_TIME);
+        long started = jobExecutionRepository.countByStatus(BatchStatus.STARTED, ALL_TIME);
+        assertThat(completed).isBetween(80L, 130L);
+        assertThat(failed).isBetween(1L, 50L);
+        assertThat(started).isEqualTo(1L);
+        assertThat(completed + failed + started).isEqualTo(132L);
     }
 
     @Test
     void findMaxLastUpdatedReturnsTodaysDigestRun() {
-        // The in-flight digest run's last_updated is today at 09:30:30 — newer than every other row.
+        // The in-flight digest run's last_updated is the seed's "today" at 09:30:30, newer than
+        // every other row. The seed evaluates "today" in the container's time zone (typically
+        // UTC), while the test JVM uses local TZ — assert within ±1 day to tolerate runs near
+        // the day boundary.
         LocalDateTime maxLastUpdated = jobExecutionRepository.findMaxLastUpdated(ALL_TIME);
 
         assertThat(maxLastUpdated).isNotNull();
-        assertThat(maxLastUpdated.toLocalDate()).isEqualTo(LocalDate.now());
+        assertThat(maxLastUpdated.toLocalDate())
+            .isBetween(LocalDate.now().minusDays(1), LocalDate.now().plusDays(1));
     }
 
     // --- Custom JdbcTemplate fragments: dialect-specific, parameterized over every engine ------
@@ -99,8 +110,9 @@ class JobExecutionRepositoryTest {
     @AcrossDatasources
     void countRunsByJobNameReflectsSeed(String datasource) {
         DataSourceContext.set(datasource);
+        // 90 dailyImport + 30 reconcile + 12 digest. See the db seed scripts.
         assertThat(jobExecutionRepository.countRunsByJobName(DAILY_IMPORT, ALL_TIME)).isEqualTo(90);
-        assertThat(jobExecutionRepository.countRunsByJobName(RECONCILE_LEDGER, ALL_TIME)).isEqualTo(1);
+        assertThat(jobExecutionRepository.countRunsByJobName(RECONCILE_LEDGER, ALL_TIME)).isEqualTo(30);
         assertThat(jobExecutionRepository.countRunsByJobName(UNKNOWN_JOB, ALL_TIME)).isZero();
     }
 
@@ -145,17 +157,21 @@ class JobExecutionRepositoryTest {
     @AcrossDatasources
     void findRunCountsByJobNameAggregatesPerJob(String datasource) {
         DataSourceContext.set(datasource);
+        // Daily: 90 runs total, all finished (no STARTED), random ~80% COMPLETED / ~20% FAILED.
         JobRunCounts dailyCounts = jobExecutionRepository.findRunCountsByJobName(DAILY_IMPORT, ALL_TIME);
         assertThat(dailyCounts.getTotal()).isEqualTo(90);
-        assertThat(dailyCounts.getCompleted()).isEqualTo(90);
-        assertThat(dailyCounts.getFailed()).isZero();
         assertThat(dailyCounts.getFinished()).isEqualTo(90);
+        assertThat(dailyCounts.getCompleted()).isBetween(60L, 90L);
+        assertThat(dailyCounts.getFailed()).isBetween(0L, 30L);
+        assertThat(dailyCounts.getCompleted() + dailyCounts.getFailed()).isEqualTo(90L);
 
+        // Reconcile: 30 runs total, all finished, today is FAILED so failed ≥ 1.
         JobRunCounts reconcileCounts = jobExecutionRepository.findRunCountsByJobName(RECONCILE_LEDGER, ALL_TIME);
-        assertThat(reconcileCounts.getTotal()).isEqualTo(1);
-        assertThat(reconcileCounts.getCompleted()).isZero();
-        assertThat(reconcileCounts.getFailed()).isEqualTo(1);
-        assertThat(reconcileCounts.getFinished()).isEqualTo(1);
+        assertThat(reconcileCounts.getTotal()).isEqualTo(30);
+        assertThat(reconcileCounts.getFinished()).isEqualTo(30);
+        assertThat(reconcileCounts.getCompleted()).isBetween(15L, 29L);
+        assertThat(reconcileCounts.getFailed()).isBetween(1L, 15L);
+        assertThat(reconcileCounts.getCompleted() + reconcileCounts.getFailed()).isEqualTo(30L);
     }
 
     @AcrossDatasources
@@ -171,14 +187,17 @@ class JobExecutionRepositoryTest {
     @AcrossDatasources
     void findRunsByJobNameSinceFiltersByStartTime(String datasource) {
         DataSourceContext.set(datasource);
-        // Cutoff at the start of today: only today's daily run (exec id 90) qualifies.
-        LocalDateTime cutoff = LocalDate.now().atStartOfDay();
+        // 7-day cutoff: must include the newest exec and must exclude old ones. Using a window
+        // (instead of "today only") avoids spurious failures when the testcontainer's time zone
+        // is a day ahead of the test JVM and a 24-hour cutoff straddles two daily runs.
+        LocalDateTime cutoff = LocalDate.now().minusDays(7).atStartOfDay();
 
         List<JobRunRow> recentRuns = jobExecutionRepository.findRunsByJobNameSince(DAILY_IMPORT, cutoff);
 
-        assertThat(recentRuns)
-            .extracting(JobRunRow::getExecutionId)
-            .containsExactly(NEWEST_DAILY_EXEC);
+        assertThat(recentRuns).extracting(JobRunRow::getExecutionId)
+            .contains(NEWEST_DAILY_EXEC)
+            .doesNotContain(1L);
+        assertThat(recentRuns).hasSizeBetween(1, 10);
     }
 
     @AcrossDatasources

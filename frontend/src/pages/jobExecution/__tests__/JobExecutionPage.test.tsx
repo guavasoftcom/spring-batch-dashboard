@@ -8,7 +8,6 @@ const apiMocks = vi.hoisted(() => ({
   getJobExecutionStepCounts: vi.fn(),
   getIoSummary: vi.fn(),
   getDurationSummary: vi.fn(),
-  getStepDurations: vi.fn(),
   getStepDetails: vi.fn(),
 }));
 
@@ -38,10 +37,6 @@ describe('JobExecutionPage', () => {
     apiMocks.getJobExecutionStepCounts.mockResolvedValue({ totalSteps: 2, completed: 2, failed: 0, active: 0 });
     apiMocks.getIoSummary.mockResolvedValue({ totalRead: 200, totalWrite: 190 });
     apiMocks.getDurationSummary.mockResolvedValue({ totalDurationSeconds: 60 });
-    apiMocks.getStepDurations.mockResolvedValue([
-      { stepName: 'readUsersStep', durationSeconds: 30 },
-      { stepName: 'writeUsersStep', durationSeconds: 30 },
-    ]);
     apiMocks.getStepDetails.mockResolvedValue({
       content: [sampleStep(1, 'readUsersStep', 'COMPLETED'), sampleStep(2, 'writeUsersStep', 'COMPLETED')],
       page: 0,
@@ -68,7 +63,6 @@ describe('JobExecutionPage', () => {
     expect(await screen.findByText('Read / Write')).toBeInTheDocument();
     expect((await screen.findAllByText('Duration')).length).toBeGreaterThan(0);
     expect((await screen.findAllByText('Status')).length).toBeGreaterThan(0);
-    expect(await screen.findByText('Step Durations')).toBeInTheDocument();
   });
 
   it('navigates back to the parent job page when the back link is clicked', async () => {

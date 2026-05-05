@@ -4,7 +4,6 @@ import {
   computeDurationSummary,
   computeIoSummary,
   computeStepCounts,
-  computeStepDurations,
   sampleSteps,
 } from '~/pages/jobExecution/seedData';
 import type {
@@ -12,7 +11,6 @@ import type {
   IoSummary,
   JobExecutionStepCounts,
   StepDetailPage,
-  StepDuration,
 } from '~/pages/jobExecution/types';
 
 export type StepSortField =
@@ -54,14 +52,6 @@ export const getDurationSummary = async (executionId: string | number): Promise<
     return computeDurationSummary(sampleSteps);
   }
   const response = await apiClient.get<DurationSummary>(`${base(executionId)}/summary/duration`);
-  return response.data;
-};
-
-export const getStepDurations = async (executionId: string | number): Promise<StepDuration[]> => {
-  if (USE_MOCK_DATA) {
-    return computeStepDurations(sampleSteps);
-  }
-  const response = await apiClient.get<StepDuration[]>(`${base(executionId)}/step-durations`);
   return response.data;
 };
 

@@ -32,11 +32,6 @@ export type DurationSummary = {
   totalDurationSeconds: number;
 };
 
-export type StepDuration = {
-  stepName: string;
-  durationSeconds: number;
-};
-
 export type StepDetailPage = {
   content: StepRow[];
   page: number;

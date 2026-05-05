@@ -2,7 +2,6 @@ import type {
   DurationSummary,
   IoSummary,
   JobExecutionStepCounts,
-  StepDuration,
   StepRow,
 } from './types';
 
@@ -53,6 +52,3 @@ export const computeIoSummary = (steps: StepRow[]): IoSummary => ({
 export const computeDurationSummary = (steps: StepRow[]): DurationSummary => ({
   totalDurationSeconds: steps.reduce((acc, s) => acc + s.durationSeconds, 0),
 });
-
-export const computeStepDurations = (steps: StepRow[]): StepDuration[] =>
-  steps.map((s) => ({ stepName: s.stepName, durationSeconds: s.durationSeconds }));

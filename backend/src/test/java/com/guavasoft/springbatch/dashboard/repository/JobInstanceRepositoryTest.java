@@ -21,7 +21,7 @@ class JobInstanceRepositoryTest {
 
     @Test
     void countMatchesSeededInstances() {
-        // 90 dailyImportJob + 1 reconcileLedgerJob + 1 sendDigestEmailJob = 92
-        assertThat(jobInstanceRepository.count()).isEqualTo(92);
+        // 90 dailyImportJob + 30 reconcileLedgerJob + 12 sendDigestEmailJob = 132
+        assertThat(jobInstanceRepository.count()).isEqualTo(132);
     }
 }

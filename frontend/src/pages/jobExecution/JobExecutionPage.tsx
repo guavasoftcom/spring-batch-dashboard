@@ -7,7 +7,6 @@ import {
   DurationTile,
   ExecutionStatusTile,
   ReadWriteTile,
-  StepDurationsTile,
   StepsTableTile,
   StepsTile,
 } from './components';
@@ -52,10 +51,6 @@ const JobExecutionPage = ({
       </Grid>
       <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
         <ExecutionStatusTile executionId={executionId} />
-      </Grid>
-
-      <Grid size={{ xs: 12 }}>
-        <StepDurationsTile executionId={executionId} />
       </Grid>
 
       <Grid size={{ xs: 12 }}>
