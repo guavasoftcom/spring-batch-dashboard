@@ -19,6 +19,16 @@ describe('createAppTheme', () => {
     const dark = createAppTheme('dark').palette.background.paper;
     expect(light).not.toBe(dark);
   });
+
+  // Status chips (`<Chip color="success|error|info">`) rely on the semantic palette's
+  // contrastText for their label color. MUI's auto-derivation produced dark text against
+  // the light-mode mains, which made the badges unreadable; pin to white in both modes.
+  it.each(['light', 'dark'] as const)('locks success/error/info contrastText to white in %s mode', (mode) => {
+    const theme = createAppTheme(mode);
+    expect(theme.palette.success.contrastText).toBe('#FFFFFF');
+    expect(theme.palette.error.contrastText).toBe('#FFFFFF');
+    expect(theme.palette.info.contrastText).toBe('#FFFFFF');
+  });
 });
 
 describe('pageGradient', () => {

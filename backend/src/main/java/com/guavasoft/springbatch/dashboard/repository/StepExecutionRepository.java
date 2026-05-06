@@ -26,9 +26,6 @@ public interface StepExecutionRepository extends JpaRepository<StepExecutionEnti
     @Query("SELECT COALESCE(SUM(s.commitCount), 0) FROM StepExecutionEntity s WHERE s.startTime >= :since")
     long sumCommitCount(@Param("since") LocalDateTime since);
 
-    @Query("SELECT COALESCE(SUM(s.filterCount), 0) FROM StepExecutionEntity s WHERE s.startTime >= :since")
-    long sumFilterCount(@Param("since") LocalDateTime since);
-
     @Query("SELECT COALESCE(SUM(s.rollbackCount), 0) FROM StepExecutionEntity s WHERE s.startTime >= :since")
     long sumRollbackCount(@Param("since") LocalDateTime since);
 

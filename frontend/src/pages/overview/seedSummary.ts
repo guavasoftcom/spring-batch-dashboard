@@ -1,8 +1,8 @@
 import type {
   Durations,
   ExecutionCounts,
+  JobLastRun,
   JobStatusSlice,
-  QualitySignals,
   ThroughputBar,
   ThroughputSummary,
 } from '~/types';
@@ -26,8 +26,32 @@ export const processingMetricsMock: ThroughputBar[] = [
   { metric: 'Rollbacks', value: 1 },
 ];
 
-export const qualitySignalsMock: QualitySignals = {
-  lastFailure: 'reconcileLedgerJob / reconcileStep',
-  processing: { readCount: 5042, writeCount: 4998, commitCount: 50, filterCount: 3, rollbackCount: 1, skipCount: 3 },
-  latestUpdate: '2026-04-24 09:30:30',
-};
+export const jobLastRunsMock: JobLastRun[] = [
+  {
+    jobName: 'reconcileLedgerJob',
+    run: {
+      executionId: 4321,
+      status: 'FAILED',
+      startTime: '2026-04-30 09:15:30',
+      endTime: '2026-04-30 09:16:30',
+      durationSeconds: 60,
+      readCount: 1042,
+      writeCount: 0,
+      exitCode: 'FAILED',
+    },
+  },
+  {
+    jobName: 'importCustomersJob',
+    run: {
+      executionId: 4318,
+      status: 'COMPLETED',
+      startTime: '2026-04-30 06:00:00',
+      endTime: '2026-04-30 06:03:21',
+      durationSeconds: 201,
+      readCount: 5042,
+      writeCount: 4998,
+      exitCode: 'COMPLETED',
+    },
+  },
+  { jobName: 'archiveOrdersJob', run: null },
+];

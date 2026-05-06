@@ -2,9 +2,9 @@ import { apiClient } from '~/config/client';
 import { USE_MOCK_DATA } from '~/config/env';
 import {
   jobCountsMock,
+  jobLastRunsMock,
   jobStatusChartMock,
   processingMetricsMock,
-  qualitySignalsMock,
   runtimeMock,
   stepCountsMock,
   throughputMock,
@@ -12,8 +12,8 @@ import {
 import type {
   Durations,
   ExecutionCounts,
+  JobLastRun,
   JobStatusSlice,
-  QualitySignals,
   ThroughputBar,
   ThroughputSummary,
 } from '~/types';
@@ -44,5 +44,5 @@ export const getJobStatusChart = (windowDays: number): Promise<JobStatusSlice[]>
 export const getProcessingMetrics = (windowDays: number): Promise<ThroughputBar[]> =>
   get('/api/overview/processing-metrics', windowDays, processingMetricsMock);
 
-export const getQualitySignals = (windowDays: number): Promise<QualitySignals> =>
-  get('/api/overview/quality-signals', windowDays, qualitySignalsMock);
+export const getJobLastRuns = (windowDays: number): Promise<JobLastRun[]> =>
+  get('/api/overview/job-last-runs', windowDays, jobLastRunsMock);

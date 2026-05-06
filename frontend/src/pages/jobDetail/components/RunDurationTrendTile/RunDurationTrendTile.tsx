@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import type { Theme } from '@mui/material/styles';
 import { LineChart } from '@mui/x-charts';
 import { LargeTile } from '~/components';
 import { appColors } from '~/theme';
@@ -63,8 +62,6 @@ const RunDurationTrendTile = ({ data, loading, error, onRunClick }: Props) => {
             }
           })}
           sx={{
-            '& .MuiChartsAxis-tickLabel': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
-            '& .MuiChartsAxis-label': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
             '& .execution-tick-label:hover text': { textDecoration: 'underline' },
           }}
         />

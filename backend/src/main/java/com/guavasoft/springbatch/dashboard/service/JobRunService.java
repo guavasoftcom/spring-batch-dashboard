@@ -42,12 +42,11 @@ public class JobRunService {
                 .orElse(null);
     }
 
-    public JobRunPage getRuns(String jobName, String sortBy, String sortDir, int page, int size, int windowDays) {
-        LocalDateTime since = sinceFor(windowDays);
-        List<JobRun> content = jobExecutionRepository.findRunsByJobName(jobName, sortBy, sortDir, page, size, since).stream()
+    public JobRunPage getRuns(String jobName, String sortBy, String sortDir, int page, int size) {
+        List<JobRun> content = jobExecutionRepository.findRunsByJobName(jobName, sortBy, sortDir, page, size).stream()
                 .map(jobRunMapper::toDto)
                 .toList();
-        long total = jobExecutionRepository.countRunsByJobName(jobName, since);
+        long total = jobExecutionRepository.countRunsByJobName(jobName);
         return new JobRunPage(content, page, size, total);
     }
 

@@ -10,7 +10,7 @@ const apiMocks = vi.hoisted(() => ({
   getRuntime: vi.fn(),
   getJobStatusChart: vi.fn(),
   getProcessingMetrics: vi.fn(),
-  getQualitySignals: vi.fn(),
+  getJobLastRuns: vi.fn(),
 }));
 
 vi.mock('~/api', async () => {
@@ -32,14 +32,22 @@ describe('OverviewPage', () => {
       { metric: 'Read', value: 1000 },
       { metric: 'Write', value: 950 },
     ]);
-    apiMocks.getQualitySignals.mockResolvedValue({
-      lastFailure: 'importUsersJob / readUsersStep',
-      latestUpdate: '2026-04-27 10:00:00',
-      processing: {
-        readCount: 1000, writeCount: 950, commitCount: 100,
-        filterCount: 3, rollbackCount: 1, skipCount: 2,
+    apiMocks.getJobLastRuns.mockResolvedValue([
+      {
+        jobName: 'importUsersJob',
+        run: {
+          executionId: 4321,
+          status: 'COMPLETED',
+          startTime: '2026-04-30 09:15:30',
+          endTime: '2026-04-30 09:16:30',
+          durationSeconds: 60,
+          readCount: 1000,
+          writeCount: 950,
+          exitCode: 'COMPLETED',
+        },
       },
-    });
+      { jobName: 'reconcileLedgerJob', run: null },
+    ]);
   });
 
   afterEach(() => {
@@ -62,14 +70,23 @@ describe('OverviewPage', () => {
     expect(await screen.findByText('Runtime')).toBeInTheDocument();
     expect(await screen.findByText('Job Status Distribution')).toBeInTheDocument();
     expect(await screen.findByText('Processing Metrics')).toBeInTheDocument();
-    expect(await screen.findByText('Exception & Quality Signals')).toBeInTheDocument();
+    expect(await screen.findByText('Last Run by Job')).toBeInTheDocument();
 
     expect(await screen.findByText(/40 completed, 5 failed, 5 active/)).toBeInTheDocument();
     expect(await screen.findByText(/180 completed, 10 failed, 10 active/)).toBeInTheDocument();
     expect(await screen.findByText('120s')).toBeInTheDocument();
     expect(await screen.findByText(/Avg duration .* Longest 600s/)).toBeInTheDocument();
-    expect(await screen.findByText(/Last failure: Import Users Job/)).toBeInTheDocument();
-    expect(await screen.findByText(/Rollbacks: 1.*Skips: 2.*Filters: 3/)).toBeInTheDocument();
+    expect(await screen.findByText('Import Users Job')).toBeInTheDocument();
+    expect(await screen.findByText('No runs in this window')).toBeInTheDocument();
+  });
+
+  // Regression guard for the JobLastRunsTile hand-rolled header: Duration (s) must stay
+  // on one line. JobLastRunsTile doesn't share JobRunsTableTile's column-config helper.
+  it('keeps the Duration (s) column header on a single line', async () => {
+    renderWithProviders(<OverviewPage />, { environment: 'prod' });
+
+    const header = (await screen.findByText('Duration (s)')).closest('th');
+    expect(header).toHaveStyle({ whiteSpace: 'nowrap' });
   });
 
   it('skips the queries when no environment is set', () => {
