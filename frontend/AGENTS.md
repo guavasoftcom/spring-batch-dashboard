@@ -38,7 +38,10 @@ src/
     PageBreadcrumb/         themed breadcrumb; auto-prepends env (with DatabaseIcon) when nav is hidden
     TilePaper/              base styled Paper for tiles
     StatTile/               title + big value + subtitle (loading/error/empty)
-    LargeTile/               title + optional headerAction + content (loading/error overrides)
+    LargeTile/              title + optional headerAction + content (loading/error overrides)
+    StatGrid/               compact "label above value" CSS-grid card for read-only detail panes;
+                            ships `recordToStatEntries` for adapting Record<string, unknown> (e.g. parsed execution context)
+    WindowSelect/           lookback-window dropdown bound to WindowContext
   config/
     env.ts                  BACKEND_BASE_URL, LOGIN_URL, USE_MOCK_DATA
     client.ts               axios instance with X-Environment interceptor
@@ -119,15 +122,7 @@ The current environment is **not** part of page-level segments — when the side
 
 ## Charts
 
-`@mui/x-charts` for everything. Axis/legend `fill` values must respond to color mode — pass a theme callback so labels switch to white in dark mode:
-
-```ts
-'& .MuiChartsAxis-tickLabel': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
-'& .MuiChartsAxis-label': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
-'& .MuiChartsLegend-label': { fill: (theme: Theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F' },
-'& .MuiChartsTooltip-root *': { color: '#1A2733 !important' },
-'& .MuiChartsTooltip-paper': { backgroundColor: appColors.white, border: '1px solid #D5DBE3' },
-```
+`@mui/x-charts` for everything. Axis/legend tick-label fills, the default tooltip background, and tooltip cell text are wired up centrally through `theme.components.MuiChartsAxis | MuiChartsLegend | MuiChartsTooltip` overrides in [appTheme.ts](src/theme/appTheme.ts) — chart tiles don't need per-tile `sx` rules for those slots. Add new chart-class overrides to the theme rather than copying them into each tile. Custom tooltips (e.g. `RunDurationTrendTile`'s `<RunStatusTooltip>` rendered via `slots.tooltip`) bypass the default cell styling, so any text color inside them is rendered by the custom JSX.
 
 To get **distinct colors per bar** in a `BarChart`, MUI colors per *series*, not per data point — make each metric its own series with the value at its own band index (zeros elsewhere) and `stack: 'total'`.
 
@@ -176,9 +171,20 @@ Coverage gate is **80%** on lines / statements / branches / functions, enforced 
 
 - `appColors` (in [src/theme/appTheme.ts](src/theme/appTheme.ts)) holds brand-only constants (orange, blue, green, white). Don't hardcode hex values for those.
 - `createAppTheme(mode)` returns the MUI theme for `'light'` or `'dark'`. `palette.primary.dark` is `#003C8F` in light mode and `#006bff` in dark mode; `background.default`, `background.paper`, and `divider` swap per mode. Reach for the sx tokens (`'primary.dark'`, `'background.paper'`, `'divider'`) instead of hardcoded values so chrome flips automatically.
+- `palette.surface.inset` — extension token for "subtly inset card" surfaces (e.g. the `StatGrid` cards inside the step-detail modal). Light `#F7F9FC`, dark `#2A3440`. Reach for `theme.palette.surface.inset` instead of hardcoded greys when rendering data cards on top of dialog/page Paper.
+- `palette.success | error | info` have their `contrastText` pinned to `#FFFFFF` so status `<Chip color="...">` labels are always readable. Don't hand-style chip text colors at the call site.
 - `pageGradient.light` / `pageGradient.dark` are the full-page vertical gradients used by `AppShell` and `LoginPage`.
 - `ColorModeProvider` ([src/theme/ColorModeContext.tsx](src/theme/ColorModeContext.tsx)) wraps `ThemeProvider` + `CssBaseline`, holds the mode in state, and persists it to `localStorage` under `spring-batch-dashboard.colorMode`. `useColorMode()` returns `{ mode, toggleMode }`; outside the provider it returns a no-op `light` default so unwrapped tests don't blow up.
 - The toggle UI lives in [`ColorModeToggle`](src/components/ColorModeToggle/) — drop it anywhere and pass `sx` for positioning.
+
+### Shared utils
+
+`src/utils/` exports a few cross-page helpers — prefer these over reimplementing:
+
+- `formatDuration(seconds)` — compact human-readable duration (`"45s"`, `"1m 30s"`, `"2h 5m"`; `"—"` for null/undefined). Used by every tile/cell that displays a runtime.
+- `formatTimestamp(raw)` — formats a backend `'yyyy-MM-dd HH:mm:ss'` LocalDateTime as `"May 5, 2026 6:00 PM"` (parsed as local time to match JVM semantics); `"—"` for null/undefined, raw string back on parse failure.
+- `STATUS_COLOR` — `Record<'COMPLETED' | 'FAILED' | 'STARTED', 'success' | 'error' | 'info'>` for `<Chip color="...">`. Keeps every list/tile/modal painting status badges with the same palette slot.
+- `humanize(camelOrSnake)` — title-cases a job/step name for display.
 
 ## Conventions
 

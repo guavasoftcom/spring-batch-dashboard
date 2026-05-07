@@ -1,13 +1,7 @@
 import { Box, Chip, Paper, Typography } from '@mui/material';
 import { ChartsTooltipContainer, useAxesTooltip } from '@mui/x-charts';
 import type { JobRun } from '~/types';
-
-// Same status palette the JobRunsTableTile / StepTableRow use; keeps the visual vocabulary consistent.
-const STATUS_COLOR: Record<JobRun['status'], 'success' | 'error' | 'info'> = {
-  COMPLETED: 'success',
-  FAILED: 'error',
-  STARTED: 'info',
-};
+import { STATUS_COLOR } from '~/utils';
 
 /**
  * Custom tooltip slot that draws each run's status as a colored Chip in the header, then lists

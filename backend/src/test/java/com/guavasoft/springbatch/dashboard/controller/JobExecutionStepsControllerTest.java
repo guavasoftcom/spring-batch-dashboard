@@ -10,11 +10,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.guavasoft.springbatch.dashboard.model.DurationSummary;
 import com.guavasoft.springbatch.dashboard.model.IoSummary;
 import com.guavasoft.springbatch.dashboard.model.JobExecutionStepCounts;
+import com.guavasoft.springbatch.dashboard.model.JobExecutionTiming;
+import com.guavasoft.springbatch.dashboard.model.StepCountsSummary;
 import com.guavasoft.springbatch.dashboard.model.StepDetail;
 import com.guavasoft.springbatch.dashboard.model.StepDetailPage;
+import com.guavasoft.springbatch.dashboard.model.StepExecutionDetail;
 import com.guavasoft.springbatch.dashboard.service.JobExecutionStepsService;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -57,6 +59,35 @@ class JobExecutionStepsControllerTest {
     }
 
     @Test
+    void returnsExecutionTiming() throws Exception {
+        when(service.getExecutionTiming(EXEC_ID)).thenReturn(
+                new JobExecutionTiming("2026-04-30 09:15:29", "2026-04-30 09:15:30", "2026-04-30 09:16:00"));
+
+        mockMvc.perform(get("/api/job-executions/{id}/timing", EXEC_ID))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.createTime").value("2026-04-30 09:15:29"))
+            .andExpect(jsonPath("$.startTime").value("2026-04-30 09:15:30"))
+            .andExpect(jsonPath("$.endTime").value("2026-04-30 09:16:00"));
+    }
+
+    @Test
+    void returnsStepCountsSummary() throws Exception {
+        when(service.getStepCountsSummary(EXEC_ID))
+            .thenReturn(new StepCountsSummary(500, 450, 50, 5, 1, 2, 3, 1));
+
+        mockMvc.perform(get("/api/job-executions/{id}/summary/counts", EXEC_ID))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.readCount").value(500))
+            .andExpect(jsonPath("$.writeCount").value(450))
+            .andExpect(jsonPath("$.commitCount").value(50))
+            .andExpect(jsonPath("$.filterCount").value(5))
+            .andExpect(jsonPath("$.readSkipCount").value(1))
+            .andExpect(jsonPath("$.writeSkipCount").value(2))
+            .andExpect(jsonPath("$.processSkipCount").value(3))
+            .andExpect(jsonPath("$.rollbackCount").value(1));
+    }
+
+    @Test
     void returnsDurationSummary() throws Exception {
         when(service.getDurationSummary(EXEC_ID)).thenReturn(new DurationSummary(720L));
 
@@ -68,7 +99,7 @@ class JobExecutionStepsControllerTest {
     @Test
     void returnsStepDetailsWithDefaultPaging() throws Exception {
         StepDetail detail = new StepDetail(1, "step1", "COMPLETED", 100, 95, 1, 0,
-            30, "2026-04-27T10:00:00Z", "2026-04-27T10:00:30Z", "COMPLETED", null, Map.of());
+            30, "2026-04-27T10:00:00Z", "2026-04-27T10:00:30Z");
         when(service.getStepDetails(eq(EXEC_ID), eq("startTime"), eq("desc"), eq(0), eq(10)))
             .thenReturn(new StepDetailPage(List.of(detail), 0, 10, 1));
 
@@ -95,5 +126,27 @@ class JobExecutionStepsControllerTest {
             .andExpect(status().isOk());
 
         verify(service).getStepDetails(EXEC_ID, "status", "asc", 0, 100);
+    }
+
+    @Test
+    void returnsStepExecutionDetail() throws Exception {
+        StepExecutionDetail detail = new StepExecutionDetail(
+                7L, EXEC_ID, "readUsersStep", "COMPLETED",
+                1000, 950, 100, 0, 1, 2, 3, 0, 30,
+                "2026-04-30 09:15:29", "2026-04-30 09:15:30", "2026-04-30 09:16:00", "2026-04-30 09:16:00",
+                "COMPLETED", null, java.util.Map.of("checkpoint", 100));
+        when(service.getStepExecutionDetail(7L)).thenReturn(detail);
+
+        mockMvc.perform(get("/api/job-executions/{id}/steps/{stepId}/detail", EXEC_ID, 7L))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(7))
+            .andExpect(jsonPath("$.jobExecutionId").value(EXEC_ID))
+            .andExpect(jsonPath("$.stepName").value("readUsersStep"))
+            .andExpect(jsonPath("$.commitCount").value(100))
+            .andExpect(jsonPath("$.readSkipCount").value(1))
+            .andExpect(jsonPath("$.writeSkipCount").value(2))
+            .andExpect(jsonPath("$.processSkipCount").value(3))
+            .andExpect(jsonPath("$.lastUpdated").value("2026-04-30 09:16:00"))
+            .andExpect(jsonPath("$.executionContext.checkpoint").value(100));
     }
 }

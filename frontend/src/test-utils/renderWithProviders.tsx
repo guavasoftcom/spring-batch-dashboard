@@ -1,8 +1,12 @@
+import { ThemeProvider } from '@mui/material/styles';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, RenderOptions } from '@testing-library/react';
 import { ReactElement, ReactNode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { EnvironmentContext } from '~/shell/EnvironmentContext';
+import { createAppTheme } from '~/theme';
+
+const testTheme = createAppTheme('light');
 
 type Options = Omit<RenderOptions, 'wrapper'> & {
   initialEntries?: string[];
@@ -33,18 +37,20 @@ export const renderWithProviders = (
 
   const Wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <EnvironmentContext.Provider value={{ environment, setEnvironment }}>
-        <MemoryRouter initialEntries={initialEntries}>
-          {routePath ? (
-            <Routes>
-              <Route path={routePath} element={<>{children}</>} />
-              <Route path="*" element={<>{children}</>} />
-            </Routes>
-          ) : (
-            children
-          )}
-        </MemoryRouter>
-      </EnvironmentContext.Provider>
+      <ThemeProvider theme={testTheme}>
+        <EnvironmentContext.Provider value={{ environment, setEnvironment }}>
+          <MemoryRouter initialEntries={initialEntries}>
+            {routePath ? (
+              <Routes>
+                <Route path={routePath} element={<>{children}</>} />
+                <Route path="*" element={<>{children}</>} />
+              </Routes>
+            ) : (
+              children
+            )}
+          </MemoryRouter>
+        </EnvironmentContext.Provider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 

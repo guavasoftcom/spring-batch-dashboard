@@ -1,6 +1,15 @@
 import { createTheme, type Theme } from '@mui/material/styles';
 import '@mui/x-charts/themeAugmentation';
 
+declare module '@mui/material/styles' {
+  interface Palette {
+    surface: { inset: string };
+  }
+  interface PaletteOptions {
+    surface?: { inset?: string };
+  }
+}
+
 export type ColorMode = 'light' | 'dark';
 
 export const appColors = {
@@ -51,6 +60,9 @@ export const createAppTheme = (mode: ColorMode): Theme =>
           ? { default: '#F7F9FC', paper: appColors.white }
           : { default: '#0F141A', paper: '#1B2230' },
       divider: mode === 'light' ? '#D5DBE3' : '#2A3440',
+      // Subtly inset card background — used by the StepDetailModal StatGrid to render
+      // data cards on top of the dialog Paper.
+      surface: { inset: mode === 'light' ? '#F7F9FC' : '#2A3440' },
     },
     shape: { borderRadius: 12 },
     typography: {

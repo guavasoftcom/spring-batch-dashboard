@@ -6,7 +6,8 @@ import { humanize } from '~/utils';
 import {
   DurationTile,
   ExecutionStatusTile,
-  ReadWriteTile,
+  ExecutionTimingTile,
+  StepCountsTotalsTile,
   StepsTableTile,
   StepsTile,
 } from './components';
@@ -44,13 +45,17 @@ const JobExecutionPage = ({
         <StepsTile executionId={executionId} />
       </Grid>
       <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-        <ReadWriteTile executionId={executionId} />
+        <ExecutionTimingTile executionId={executionId} />
       </Grid>
       <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
         <DurationTile executionId={executionId} />
       </Grid>
       <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
         <ExecutionStatusTile executionId={executionId} />
+      </Grid>
+
+      <Grid size={{ xs: 12 }}>
+        <StepCountsTotalsTile executionId={executionId} />
       </Grid>
 
       <Grid size={{ xs: 12 }}>

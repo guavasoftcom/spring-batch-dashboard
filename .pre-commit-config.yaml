@@ -1,0 +1,11 @@
+# Local git hooks managed by https://pre-commit.com.
+# One-time setup per clone: `pre-commit install` (after `brew install pre-commit`
+# or `pipx install pre-commit`). Hooks then run on every `git commit`.
+
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+        name: detect-secrets (gitleaks)
+        description: Scan staged content for hard-coded secrets (API keys, tokens, JWTs, etc.).

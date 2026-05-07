@@ -11,13 +11,8 @@ import {
 } from '@mui/material';
 import type { RunSortField, SortDir } from '~/api/jobRunsApi';
 import { ExecutionLink, LargeTile } from '~/components';
-import type { JobRun, RunStatus } from '~/types';
-
-const statusColor: Record<RunStatus, 'success' | 'error' | 'info'> = {
-  COMPLETED: 'success',
-  FAILED: 'error',
-  STARTED: 'info',
-};
+import type { JobRun } from '~/types';
+import { STATUS_COLOR, formatDuration, formatTimestamp } from '~/utils';
 
 type Column = {
   field: RunSortField;
@@ -31,7 +26,7 @@ const columns: Column[] = [
   { field: 'status', label: 'Status' },
   { field: 'startTime', label: 'Started' },
   { field: 'endTime', label: 'Completed' },
-  { field: 'durationSeconds', label: 'Duration (s)', align: 'right', noWrap: true },
+  { field: 'durationSeconds', label: 'Duration', align: 'right' },
   { field: 'readCount', label: 'Read', align: 'right' },
   { field: 'writeCount', label: 'Write', align: 'right' },
   { field: 'exitCode', label: 'Exit Code' },
@@ -95,11 +90,11 @@ const JobRunsTableTile = ({
                   <ExecutionLink executionId={run.executionId} onClick={onRunClick} />
                 </TableCell>
                 <TableCell>
-                  <Chip label={run.status} color={statusColor[run.status]} size="small" />
+                  <Chip label={run.status} color={STATUS_COLOR[run.status]} size="small" />
                 </TableCell>
-                <TableCell>{run.startTime}</TableCell>
-                <TableCell>{run.endTime ?? '—'}</TableCell>
-                <TableCell align="right">{run.durationSeconds}</TableCell>
+                <TableCell>{formatTimestamp(run.startTime)}</TableCell>
+                <TableCell>{formatTimestamp(run.endTime)}</TableCell>
+                <TableCell align="right">{formatDuration(run.durationSeconds)}</TableCell>
                 <TableCell align="right">{run.readCount.toLocaleString()}</TableCell>
                 <TableCell align="right">{run.writeCount.toLocaleString()}</TableCell>
                 <TableCell>{run.exitCode}</TableCell>

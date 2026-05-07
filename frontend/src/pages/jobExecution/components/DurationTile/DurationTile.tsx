@@ -1,5 +1,6 @@
 import { StatTile } from '~/components';
 import type { DurationSummary } from '~/pages/jobExecution/types';
+import { formatDuration } from '~/utils';
 
 type Props = {
   data: DurationSummary | null;
@@ -10,7 +11,7 @@ type Props = {
 const DurationTile = ({ data, loading, error }: Props) => (
   <StatTile
     title="Duration"
-    value={data && `${data.totalDurationSeconds}s`}
+    value={data && formatDuration(data.totalDurationSeconds)}
     subtitle={data && 'Total step runtime'}
     loading={loading}
     error={error}

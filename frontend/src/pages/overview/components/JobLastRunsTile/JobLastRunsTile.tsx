@@ -10,14 +10,8 @@ import {
   Typography,
 } from '@mui/material';
 import { ExecutionLink, LargeTile } from '~/components';
-import type { JobLastRun, RunStatus } from '~/types';
-import { humanize } from '~/utils';
-
-const statusColor: Record<RunStatus, 'success' | 'error' | 'info'> = {
-  COMPLETED: 'success',
-  FAILED: 'error',
-  STARTED: 'info',
-};
+import type { JobLastRun } from '~/types';
+import { STATUS_COLOR, formatDuration, formatTimestamp, humanize } from '~/utils';
 
 type Props = {
   data: JobLastRun[] | null;
@@ -38,7 +32,7 @@ const JobLastRunsTile = ({ data, loading, error, onJobClick, onRunClick }: Props
               <TableCell>Execution</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Started</TableCell>
-              <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>Duration (s)</TableCell>
+              <TableCell align="right">Duration</TableCell>
               <TableCell align="right">Read</TableCell>
               <TableCell align="right">Write</TableCell>
             </TableRow>
@@ -82,10 +76,10 @@ const JobLastRunsTile = ({ data, loading, error, onJobClick, onRunClick }: Props
                       />
                     </TableCell>
                     <TableCell>
-                      <Chip label={run.status} color={statusColor[run.status]} size="small" />
+                      <Chip label={run.status} color={STATUS_COLOR[run.status]} size="small" />
                     </TableCell>
-                    <TableCell>{run.startTime}</TableCell>
-                    <TableCell align="right">{run.durationSeconds}</TableCell>
+                    <TableCell>{formatTimestamp(run.startTime)}</TableCell>
+                    <TableCell align="right">{formatDuration(run.durationSeconds)}</TableCell>
                     <TableCell align="right">{run.readCount.toLocaleString()}</TableCell>
                     <TableCell align="right">{run.writeCount.toLocaleString()}</TableCell>
                   </>

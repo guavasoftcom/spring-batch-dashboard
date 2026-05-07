@@ -1,14 +1,10 @@
 package com.guavasoft.springbatch.dashboard.repository.rowmapper;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.guavasoft.springbatch.dashboard.model.StepDetail;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
@@ -25,16 +21,8 @@ public class StepDetailRowMapper implements RowMapper<StepDetail> {
     private static final String COL_DURATION_SECONDS = "duration_seconds";
     private static final String COL_START_TIME = "start_time";
     private static final String COL_END_TIME = "end_time";
-    private static final String COL_EXIT_CODE = "exit_code";
-    private static final String COL_EXIT_MESSAGE = "exit_message";
-    private static final String COL_SHORT_CONTEXT = "short_context";
 
-    private static final String TIMESTAMP_PATTERN = "yyyy-MM-dd HH:mm:ss";
-    private static final String UNPARSEABLE_CONTEXT_KEY = "raw";
-
-    private static final DateTimeFormatter TS_FORMAT = DateTimeFormatter.ofPattern(TIMESTAMP_PATTERN);
-    private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() { };
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final DateTimeFormatter TS_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
     public StepDetail mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -48,25 +36,10 @@ public class StepDetailRowMapper implements RowMapper<StepDetail> {
                 rs.getLong(COL_ROLLBACK_COUNT),
                 rs.getLong(COL_DURATION_SECONDS),
                 formatTimestamp(rs.getObject(COL_START_TIME, LocalDateTime.class)),
-                formatTimestamp(rs.getObject(COL_END_TIME, LocalDateTime.class)),
-                rs.getString(COL_EXIT_CODE),
-                rs.getString(COL_EXIT_MESSAGE),
-                parseContext(rs.getString(COL_SHORT_CONTEXT)));
+                formatTimestamp(rs.getObject(COL_END_TIME, LocalDateTime.class)));
     }
 
     private static String formatTimestamp(LocalDateTime timestamp) {
         return timestamp == null ? null : timestamp.format(TS_FORMAT);
-    }
-
-    private static Map<String, Object> parseContext(String shortContext) {
-        if (StringUtils.isBlank(shortContext)) {
-            return Map.of();
-        }
-        try {
-            Map<String, Object> parsed = OBJECT_MAPPER.readValue(shortContext, MAP_TYPE);
-            return parsed == null ? Map.of() : parsed;
-        } catch (Exception ex) {
-            return Map.of(UNPARSEABLE_CONTEXT_KEY, shortContext);
-        }
     }
 }

@@ -65,22 +65,19 @@ describe('JobDetailPage', () => {
 
     expect(await screen.findByText(/18 completed, 1 failed/)).toBeInTheDocument();
     expect(await screen.findByText('95%')).toBeInTheDocument();
-    expect(await screen.findByText('120s')).toBeInTheDocument();
+    expect(await screen.findByText('2m')).toBeInTheDocument();
     expect((await screen.findAllByText('#7')).length).toBeGreaterThan(0);
   });
 
-  // Regression guard: the durationSeconds column header was wrapping "(s)" onto a second
-  // line in narrow viewports. The column config carries `noWrap: true` which adds
-  // whiteSpace: 'nowrap' to the header cell.
-  it('keeps the Duration (s) column header on a single line', async () => {
+  // Smoke check that the runs table renders its Duration column header.
+  it('renders the Duration column header in the runs table', async () => {
     renderWithProviders(<JobDetailPage />, {
       environment: 'prod',
       initialEntries: ['/jobs/importUsersJob'],
       routePath: '/jobs/:jobId',
     });
 
-    const header = (await screen.findByText('Duration (s)')).closest('th');
-    expect(header).toHaveStyle({ whiteSpace: 'nowrap' });
+    expect((await screen.findAllByText('Duration')).length).toBeGreaterThan(0);
   });
 
   it('skips the queries when no environment is set', () => {

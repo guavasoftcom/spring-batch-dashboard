@@ -4,13 +4,18 @@ import {
   computeDurationSummary,
   computeIoSummary,
   computeStepCounts,
+  computeStepCountsSummary,
+  sampleExecutionTiming,
   sampleSteps,
 } from '~/pages/jobExecution/seedData';
 import type {
   DurationSummary,
   IoSummary,
   JobExecutionStepCounts,
+  JobExecutionTiming,
+  StepCountsSummary,
   StepDetailPage,
+  StepExecutionDetail,
 } from '~/pages/jobExecution/types';
 
 export type StepSortField =
@@ -44,6 +49,26 @@ export const getIoSummary = async (executionId: string | number): Promise<IoSumm
     return computeIoSummary(sampleSteps);
   }
   const response = await apiClient.get<IoSummary>(`${base(executionId)}/summary/io`);
+  return response.data;
+};
+
+export const getStepCountsSummary = async (
+  executionId: string | number,
+): Promise<StepCountsSummary> => {
+  if (USE_MOCK_DATA) {
+    return computeStepCountsSummary(sampleSteps);
+  }
+  const response = await apiClient.get<StepCountsSummary>(`${base(executionId)}/summary/counts`);
+  return response.data;
+};
+
+export const getExecutionTiming = async (
+  executionId: string | number,
+): Promise<JobExecutionTiming> => {
+  if (USE_MOCK_DATA) {
+    return sampleExecutionTiming;
+  }
+  const response = await apiClient.get<JobExecutionTiming>(`${base(executionId)}/timing`);
   return response.data;
 };
 
@@ -83,5 +108,40 @@ export const getStepDetails = async (
   const response = await apiClient.get<StepDetailPage>(`${base(executionId)}/steps`, {
     params: { sortBy, sortDir, page, size },
   });
+  return response.data;
+};
+
+export const getStepExecutionDetail = async (
+  executionId: string | number,
+  stepExecutionId: number,
+): Promise<StepExecutionDetail> => {
+  if (USE_MOCK_DATA) {
+    const step = sampleSteps.find((s) => s.id === stepExecutionId) ?? sampleSteps[0];
+    return {
+      id: step.id,
+      jobExecutionId: Number(executionId),
+      stepName: step.stepName,
+      status: step.status,
+      readCount: step.readCount,
+      writeCount: step.writeCount,
+      commitCount: Math.round(step.readCount / 100),
+      filterCount: 0,
+      readSkipCount: 0,
+      writeSkipCount: step.skipCount,
+      processSkipCount: 0,
+      rollbackCount: step.rollbackCount,
+      durationSeconds: step.durationSeconds,
+      createTime: step.startTime,
+      startTime: step.startTime,
+      endTime: step.endTime,
+      lastUpdated: step.endTime ?? step.startTime,
+      exitCode: step.status === 'FAILED' ? 'FAILED' : 'COMPLETED',
+      exitMessage: step.status === 'FAILED' ? 'Mock failure cause goes here.' : null,
+      executionContext: { checkpoint: 100, lastProcessedId: step.id * 7 },
+    };
+  }
+  const response = await apiClient.get<StepExecutionDetail>(
+    `${base(executionId)}/steps/${stepExecutionId}/detail`,
+  );
   return response.data;
 };

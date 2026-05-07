@@ -8,6 +8,7 @@ import java.util.Optional;
 
 public interface JobExecutionRepositoryCustom {
 
+
     List<JobRunRow> findRunsByJobName(String jobName, String sortBy, String sortDir, int page, int size);
 
     long countRunsByJobName(String jobName);

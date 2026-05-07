@@ -3,7 +3,10 @@ package com.guavasoft.springbatch.dashboard.controller;
 import com.guavasoft.springbatch.dashboard.model.DurationSummary;
 import com.guavasoft.springbatch.dashboard.model.IoSummary;
 import com.guavasoft.springbatch.dashboard.model.JobExecutionStepCounts;
+import com.guavasoft.springbatch.dashboard.model.JobExecutionTiming;
+import com.guavasoft.springbatch.dashboard.model.StepCountsSummary;
 import com.guavasoft.springbatch.dashboard.model.StepDetailPage;
+import com.guavasoft.springbatch.dashboard.model.StepExecutionDetail;
 import com.guavasoft.springbatch.dashboard.service.JobExecutionStepsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -36,6 +39,20 @@ public class JobExecutionStepsController {
         return service.getIoSummary(executionId);
     }
 
+    @GetMapping("/summary/counts")
+    @Operation(summary = "All step counts for a job execution",
+            description = "Aggregate read/write/commit/filter/skip/rollback totals across the job's step executions.")
+    public StepCountsSummary getStepCountsSummary(@PathVariable long executionId) {
+        return service.getStepCountsSummary(executionId);
+    }
+
+    @GetMapping("/timing")
+    @Operation(summary = "Lifecycle timestamps for a job execution",
+            description = "Create / start / end timestamps from BATCH_JOB_EXECUTION; start and end may be null.")
+    public JobExecutionTiming getExecutionTiming(@PathVariable long executionId) {
+        return service.getExecutionTiming(executionId);
+    }
+
     @GetMapping("/summary/duration")
     @Operation(summary = "Total step runtime for a job execution",
             description = "Sum of finished step durations in seconds.")
@@ -55,5 +72,15 @@ public class JobExecutionStepsController {
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), 100);
         return service.getStepDetails(executionId, sortBy, sortDir, safePage, safeSize);
+    }
+
+    @GetMapping("/steps/{stepExecutionId}/detail")
+    @Operation(summary = "Step execution detail",
+            description = "Full details for a single step execution: header, exit info, IO/skip/rollback "
+                    + "counts, and the parsed short execution context.")
+    public StepExecutionDetail getStepExecutionDetail(
+            @PathVariable long executionId,
+            @PathVariable long stepExecutionId) {
+        return service.getStepExecutionDetail(stepExecutionId);
     }
 }
