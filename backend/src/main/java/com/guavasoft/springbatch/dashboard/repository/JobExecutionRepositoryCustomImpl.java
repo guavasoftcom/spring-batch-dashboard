@@ -34,6 +34,7 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
     private static final String PARAM_SINCE = "since";
     private static final String PARAM_SIZE = "size";
     private static final String PARAM_OFFSET = "offset";
+    private static final String PARAM_ID = "id";
 
     private static final String DEFAULT_SORT_FIELD = COL_EXECUTION_ID;
     private static final String DIR_ASC = "ASC";

@@ -1,7 +1,6 @@
 package com.guavasoft.springbatch.dashboard.model;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.Map;
 
 @Schema(description = "One row in the steps table for a single job execution.")
 public record StepDetail(
@@ -38,17 +37,5 @@ public record StepDetail(
     @Schema(description = "Step end timestamp formatted 'yyyy-MM-dd HH:mm:ss'; null when still running.",
         example = "2026-04-30 09:16:00",
         nullable = true)
-    String endTime,
-
-    @Schema(description = "Spring Batch exit code.", example = "COMPLETED", nullable = true)
-    String exitCode,
-
-    @Schema(description = "Spring Batch exit message; usually empty unless the step failed.",
-        example = "",
-        nullable = true)
-    String exitMessage,
-
-    @Schema(description = "Parsed BATCH_STEP_EXECUTION_CONTEXT.short_context as a JSON object; "
-        + "empty when absent and a single 'raw' entry when not parseable.")
-    Map<String, Object> context
+    String endTime
 ) {}

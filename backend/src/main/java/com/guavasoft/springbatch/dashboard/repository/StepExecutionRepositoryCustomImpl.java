@@ -1,14 +1,23 @@
 package com.guavasoft.springbatch.dashboard.repository;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.guavasoft.springbatch.dashboard.dialect.SqlDialect;
 import com.guavasoft.springbatch.dashboard.model.DurationSummary;
 import com.guavasoft.springbatch.dashboard.model.IoSummary;
 import com.guavasoft.springbatch.dashboard.model.JobExecutionStepCounts;
+import com.guavasoft.springbatch.dashboard.model.StepCountsSummary;
 import com.guavasoft.springbatch.dashboard.model.StepDetail;
+import com.guavasoft.springbatch.dashboard.model.StepExecutionDetail;
 import com.guavasoft.springbatch.dashboard.repository.rowmapper.StepDetailRowMapper;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -39,6 +48,12 @@ public class StepExecutionRepositoryCustomImpl implements StepExecutionRepositor
     private static final String COL_ACTIVE = "active";
     private static final String COL_READ_TOTAL = "read_total";
     private static final String COL_WRITE_TOTAL = "write_total";
+    private static final String COL_COMMIT_TOTAL = "commit_total";
+    private static final String COL_FILTER_TOTAL = "filter_total";
+    private static final String COL_READ_SKIP_TOTAL = "read_skip_total";
+    private static final String COL_WRITE_SKIP_TOTAL = "write_skip_total";
+    private static final String COL_PROCESS_SKIP_TOTAL = "process_skip_total";
+    private static final String COL_ROLLBACK_TOTAL = "rollback_total";
     private static final String COL_TOTAL_DURATION = "total_duration";
 
     // Named parameter keys.
@@ -48,6 +63,11 @@ public class StepExecutionRepositoryCustomImpl implements StepExecutionRepositor
 
     private static final String START_COL = "se.start_time";
     private static final String END_COL = "se.end_time";
+
+    private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final TypeReference<Map<String, Object>> CONTEXT_MAP_TYPE = new TypeReference<>() { };
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final String UNPARSEABLE_CONTEXT_KEY = "raw";
 
     // Whitelist keyed by the public sort-field name; values are *raw column expressions*.
     // The duration entry is rewritten to dialect-specific SQL at query-build time.
@@ -99,6 +119,31 @@ public class StepExecutionRepositoryCustomImpl implements StepExecutionRepositor
     }
 
     @Override
+    public StepCountsSummary stepCountsSummaryByJobExecutionId(long jobExecutionId) {
+        String sql = """
+            SELECT COALESCE(SUM(read_count), 0)         AS read_total,
+                   COALESCE(SUM(write_count), 0)        AS write_total,
+                   COALESCE(SUM(commit_count), 0)       AS commit_total,
+                   COALESCE(SUM(filter_count), 0)       AS filter_total,
+                   COALESCE(SUM(read_skip_count), 0)    AS read_skip_total,
+                   COALESCE(SUM(write_skip_count), 0)   AS write_skip_total,
+                   COALESCE(SUM(process_skip_count), 0) AS process_skip_total,
+                   COALESCE(SUM(rollback_count), 0)     AS rollback_total
+            FROM BATCH_STEP_EXECUTION
+            WHERE job_execution_id = :id
+            """;
+        return jdbc.queryForObject(sql, params(jobExecutionId), (rs, i) -> new StepCountsSummary(
+                rs.getLong(COL_READ_TOTAL),
+                rs.getLong(COL_WRITE_TOTAL),
+                rs.getLong(COL_COMMIT_TOTAL),
+                rs.getLong(COL_FILTER_TOTAL),
+                rs.getLong(COL_READ_SKIP_TOTAL),
+                rs.getLong(COL_WRITE_SKIP_TOTAL),
+                rs.getLong(COL_PROCESS_SKIP_TOTAL),
+                rs.getLong(COL_ROLLBACK_TOTAL)));
+    }
+
+    @Override
     public DurationSummary durationSummaryByJobExecutionId(long jobExecutionId) {
         String sql = """
             SELECT %s AS total_duration
@@ -132,12 +177,8 @@ public class StepExecutionRepositoryCustomImpl implements StepExecutionRepositor
                 COALESCE(se.rollback_count, 0)                                                AS rollback_count,
                 %s                                                                            AS duration_seconds,
                 se.start_time                                                                 AS start_time,
-                se.end_time                                                                   AS end_time,
-                se.exit_code                                                                  AS exit_code,
-                se.exit_message                                                               AS exit_message,
-                ctx.short_context                                                             AS short_context
+                se.end_time                                                                   AS end_time
             FROM BATCH_STEP_EXECUTION se
-            LEFT JOIN BATCH_STEP_EXECUTION_CONTEXT ctx ON ctx.step_execution_id = se.step_execution_id
             WHERE se.job_execution_id = :id
             ORDER BY %s, se.step_execution_id ASC
             %s
@@ -160,6 +201,79 @@ public class StepExecutionRepositoryCustomImpl implements StepExecutionRepositor
                 "SELECT COUNT(*) FROM BATCH_STEP_EXECUTION WHERE job_execution_id = :id",
                 params(jobExecutionId), Long.class);
         return count == null ? 0L : count;
+    }
+
+    @Override
+    public Optional<StepExecutionDetail> findStepExecutionDetail(long stepExecutionId) {
+        String sql = """
+            SELECT
+                se.step_execution_id              AS id,
+                se.job_execution_id               AS jobExecutionId,
+                se.step_name                      AS stepName,
+                se.status                         AS status,
+                COALESCE(se.read_count, 0)        AS readCount,
+                COALESCE(se.write_count, 0)       AS writeCount,
+                COALESCE(se.commit_count, 0)      AS commitCount,
+                COALESCE(se.filter_count, 0)      AS filterCount,
+                COALESCE(se.read_skip_count, 0)   AS readSkipCount,
+                COALESCE(se.write_skip_count, 0)  AS writeSkipCount,
+                COALESCE(se.process_skip_count, 0) AS processSkipCount,
+                COALESCE(se.rollback_count, 0)    AS rollbackCount,
+                %s                                AS durationSeconds,
+                se.create_time                    AS createTime,
+                se.start_time                     AS startTime,
+                se.end_time                       AS endTime,
+                se.last_updated                   AS lastUpdated,
+                se.exit_code                      AS exitCode,
+                se.exit_message                   AS exitMessage,
+                ctx.short_context                 AS shortContext
+            FROM BATCH_STEP_EXECUTION se
+            LEFT JOIN BATCH_STEP_EXECUTION_CONTEXT ctx ON ctx.step_execution_id = se.step_execution_id
+            WHERE se.step_execution_id = :id
+            """.formatted(dialect.durationSeconds(START_COL, END_COL));
+
+        try {
+            StepExecutionDetail detail = jdbc.queryForObject(sql, params(stepExecutionId), (rs, i) -> new StepExecutionDetail(
+                    rs.getLong("id"),
+                    rs.getLong("jobExecutionId"),
+                    rs.getString("stepName"),
+                    rs.getString("status"),
+                    rs.getLong("readCount"),
+                    rs.getLong("writeCount"),
+                    rs.getLong("commitCount"),
+                    rs.getLong("filterCount"),
+                    rs.getLong("readSkipCount"),
+                    rs.getLong("writeSkipCount"),
+                    rs.getLong("processSkipCount"),
+                    rs.getLong("rollbackCount"),
+                    rs.getLong("durationSeconds"),
+                    formatTimestamp(rs.getObject("createTime", LocalDateTime.class)),
+                    formatTimestamp(rs.getObject("startTime", LocalDateTime.class)),
+                    formatTimestamp(rs.getObject("endTime", LocalDateTime.class)),
+                    formatTimestamp(rs.getObject("lastUpdated", LocalDateTime.class)),
+                    rs.getString("exitCode"),
+                    rs.getString("exitMessage"),
+                    parseExecutionContext(rs.getString("shortContext"))));
+            return Optional.ofNullable(detail);
+        } catch (EmptyResultDataAccessException ex) {
+            return Optional.empty();
+        }
+    }
+
+    private static Map<String, Object> parseExecutionContext(String shortContext) {
+        if (StringUtils.isBlank(shortContext)) {
+            return Map.of();
+        }
+        try {
+            Map<String, Object> parsed = OBJECT_MAPPER.readValue(shortContext, CONTEXT_MAP_TYPE);
+            return parsed == null ? Map.of() : parsed;
+        } catch (Exception ex) {
+            return Map.of(UNPARSEABLE_CONTEXT_KEY, shortContext);
+        }
+    }
+
+    private static String formatTimestamp(LocalDateTime timestamp) {
+        return timestamp == null ? null : timestamp.format(TIMESTAMP_FORMAT);
     }
 
     private MapSqlParameterSource params(long jobExecutionId) {

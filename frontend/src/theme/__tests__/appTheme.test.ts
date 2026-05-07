@@ -29,6 +29,16 @@ describe('createAppTheme', () => {
     expect(theme.palette.error.contrastText).toBe('#FFFFFF');
     expect(theme.palette.info.contrastText).toBe('#FFFFFF');
   });
+
+  // The StepDetailModal StatGrid reads palette.surface.inset; missing values regress
+  // the modal's card backgrounds to undefined.
+  it('exposes a non-empty palette.surface.inset in both modes', () => {
+    expect(createAppTheme('light').palette.surface.inset).toBeTruthy();
+    expect(createAppTheme('dark').palette.surface.inset).toBeTruthy();
+    expect(createAppTheme('light').palette.surface.inset).not.toBe(
+      createAppTheme('dark').palette.surface.inset,
+    );
+  });
 });
 
 describe('pageGradient', () => {

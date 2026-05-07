@@ -7,10 +7,13 @@ import com.guavasoft.springbatch.dashboard.entity.BatchStatus;
 import com.guavasoft.springbatch.dashboard.model.DurationSummary;
 import com.guavasoft.springbatch.dashboard.model.IoSummary;
 import com.guavasoft.springbatch.dashboard.model.JobExecutionStepCounts;
+import com.guavasoft.springbatch.dashboard.model.StepCountsSummary;
 import com.guavasoft.springbatch.dashboard.model.StepDetail;
+import com.guavasoft.springbatch.dashboard.model.StepExecutionDetail;
 import com.guavasoft.springbatch.dashboard.repository.TestDatasources.AcrossDatasources;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -149,6 +152,38 @@ class StepExecutionRepositoryTest {
     }
 
     @AcrossDatasources
+    void stepCountsSummaryByJobExecutionIdSumsAllCountColumns(String datasource) {
+        DataSourceContext.set(datasource);
+        StepCountsSummary summary = stepExecutionRepository.stepCountsSummaryByJobExecutionId(NEWEST_DAILY_EXEC);
+
+        // Same per-step random read/write bounds as ioSummary; commit per step is 8..12 across the
+        // 2 daily steps. Skip and filter columns are zero in the seed.
+        assertThat(summary.readCount()).isBetween(2L * READ_MIN_PER_STEP, 2L * READ_MAX_PER_STEP);
+        assertThat(summary.writeCount()).isBetween(2L * WRITE_MIN_PER_STEP, 2L * WRITE_MAX_PER_STEP);
+        assertThat(summary.commitCount()).isBetween(2L * 8L, 2L * 12L);
+        assertThat(summary.filterCount()).isZero();
+        assertThat(summary.readSkipCount()).isZero();
+        assertThat(summary.writeSkipCount()).isZero();
+        assertThat(summary.processSkipCount()).isZero();
+        // Today's daily run is anchored COMPLETED, so no rollbacks for its 2 steps.
+        assertThat(summary.rollbackCount()).isZero();
+    }
+
+    @AcrossDatasources
+    void stepCountsSummaryByUnknownJobExecutionIdIsAllZero(String datasource) {
+        DataSourceContext.set(datasource);
+        StepCountsSummary summary = stepExecutionRepository.stepCountsSummaryByJobExecutionId(UNKNOWN_EXEC);
+        assertThat(summary.readCount()).isZero();
+        assertThat(summary.writeCount()).isZero();
+        assertThat(summary.commitCount()).isZero();
+        assertThat(summary.filterCount()).isZero();
+        assertThat(summary.readSkipCount()).isZero();
+        assertThat(summary.writeSkipCount()).isZero();
+        assertThat(summary.processSkipCount()).isZero();
+        assertThat(summary.rollbackCount()).isZero();
+    }
+
+    @AcrossDatasources
     void durationSummaryByJobExecutionIdIsPositive(String datasource) {
         DataSourceContext.set(datasource);
         DurationSummary summary = stepExecutionRepository.durationSummaryByJobExecutionId(NEWEST_DAILY_EXEC);
@@ -203,5 +238,29 @@ class StepExecutionRepositoryTest {
         assertThat(stepExecutionRepository.countStepsByJobExecutionId(NEWEST_DAILY_EXEC)).isEqualTo(2);
         assertThat(stepExecutionRepository.countStepsByJobExecutionId(RECONCILE_EXEC)).isEqualTo(1);
         assertThat(stepExecutionRepository.countStepsByJobExecutionId(UNKNOWN_EXEC)).isZero();
+    }
+
+    @AcrossDatasources
+    void findStepExecutionDetailReturnsRowForKnownStep(String datasource) {
+        DataSourceContext.set(datasource);
+        // Pick the first step of today's daily run (anchored COMPLETED).
+        List<StepDetail> firstPage = stepExecutionRepository.stepDetailsByJobExecutionId(
+            NEWEST_DAILY_EXEC, "startTime", "asc", 0, 1);
+        long stepId = firstPage.get(0).id();
+
+        Optional<StepExecutionDetail> detail = stepExecutionRepository.findStepExecutionDetail(stepId);
+
+        assertThat(detail).hasValueSatisfying(d -> {
+            assertThat(d.id()).isEqualTo(stepId);
+            assertThat(d.jobExecutionId()).isEqualTo(NEWEST_DAILY_EXEC);
+            assertThat(d.stepName()).isEqualTo("readUsersStep");
+            assertThat(d.executionContext()).isNotNull();
+        });
+    }
+
+    @AcrossDatasources
+    void findStepExecutionDetailReturnsEmptyForUnknownStep(String datasource) {
+        DataSourceContext.set(datasource);
+        assertThat(stepExecutionRepository.findStepExecutionDetail(999_999L)).isEmpty();
     }
 }

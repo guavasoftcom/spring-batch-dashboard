@@ -1,13 +1,14 @@
 import { StatTile } from '~/components';
 import type { Durations } from '~/types';
+import { formatDuration } from '~/utils';
 
 type Props = { data: Durations | null; loading: boolean; error: string | null };
 
 const RuntimeTile = ({ data, loading, error }: Props) => (
   <StatTile
     title="Runtime"
-    value={data && `${data.averageSeconds}s`}
-    subtitle={data && `Avg duration • Longest ${data.longestSeconds}s`}
+    value={data && formatDuration(data.averageSeconds)}
+    subtitle={data && `Avg duration • Longest ${formatDuration(data.longestSeconds)}`}
     loading={loading}
     error={error}
     loadingSubtitleWidth="70%"

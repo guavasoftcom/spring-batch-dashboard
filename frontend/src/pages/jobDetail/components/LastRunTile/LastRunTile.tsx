@@ -2,6 +2,7 @@ import { Skeleton, Typography } from '@mui/material';
 import { appColors } from '~/theme';
 import type { JobRun } from '~/types';
 import { ExecutionLink, TilePaper } from '~/components';
+import { formatTimestamp } from '~/utils';
 
 type Props = {
   data: JobRun | null;
@@ -32,7 +33,7 @@ const LastRunTile = ({ data, loading, error, onClick }: Props) => (
           </Typography>
         )}
         <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-          {data.status} • {data.startTime}
+          {data.status} • {formatTimestamp(data.startTime)}
         </Typography>
       </>
     )}

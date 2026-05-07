@@ -146,6 +146,7 @@ Each component has its own conventions doc:
 
 - Backend uses Maven via the wrapper (`./mvnw`); never `mvn` directly.
 - Frontend uses Yarn 4 (Berry) with the `node-modules` linker. `package-lock.json` is gitignored — don't run `npm install`.
+- Pre-commit secret scan via [pre-commit](https://pre-commit.com) + [gitleaks](https://github.com/gitleaks/gitleaks). One-time setup per clone: `brew install pre-commit` (or `pipx install pre-commit`) then `pre-commit install`. Every `git commit` then scans staged content for API keys, tokens, JWTs, etc., and blocks the commit on a hit. The hook config is [`.pre-commit-config.yaml`](.pre-commit-config.yaml). For deeper, contextual review (auth flows, accidental debug logs, etc.) run the `/security-review` skill on demand before opening a PR.
 - Tests: `./mvnw test` boots one Testcontainer per engine (Postgres + MySQL + Oracle) and parameterizes repository tests across all three; `yarn test` / `yarn test:coverage` on the frontend.
 - Coverage gate is **80%** on both sides. Backend uses JaCoCo (gated by [`PavanMudigonda/jacoco-reporter`](.github/workflows/pull-request.yml)); frontend uses vitest's `coverage.thresholds` ([`frontend/vite.config.ts`](frontend/vite.config.ts)). Both post sticky PR comments.
 - Imports in the frontend use the `~/` alias to `src/`; siblings stay relative.

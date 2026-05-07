@@ -27,7 +27,7 @@ const columns: Column[] = [
   { field: 'writeCount', label: 'Write', align: 'right' },
   { field: 'skipCount', label: 'Skips', align: 'right' },
   { field: 'rollbackCount', label: 'Rollbacks', align: 'right' },
-  { field: 'durationSeconds', label: 'Duration (s)', align: 'right', noWrap: true },
+  { field: 'durationSeconds', label: 'Duration', align: 'right' },
   { field: 'startTime', label: 'Started' },
   { field: 'endTime', label: 'Completed' },
 ];
@@ -39,6 +39,7 @@ type Props = {
   sortBy: StepSortField;
   sortDir: StepSortDir;
   onSortChange: (field: StepSortField) => void;
+  onStepClick: (stepExecutionId: number) => void;
   totalElements: number;
   page: number;
   pageSize: number;
@@ -52,6 +53,7 @@ const StepsTableTile = ({
   sortBy,
   sortDir,
   onSortChange,
+  onStepClick,
   totalElements,
   page,
   pageSize,
@@ -63,7 +65,6 @@ const StepsTableTile = ({
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell />
               {columns.map((col) => (
                 <TableCell
                   key={col.field}
@@ -84,7 +85,7 @@ const StepsTableTile = ({
           </TableHead>
           <TableBody>
             {data.map((step) => (
-              <StepTableRow key={step.id} step={step} />
+              <StepTableRow key={step.id} step={step} onClick={onStepClick} />
             ))}
           </TableBody>
         </Table>
