@@ -1,0 +1,7 @@
+# The simplified Dockerfile only consumes a pre-built backend/target/*.jar,
+# so we deny everything by default and re-include exactly what's needed.
+
+**
+
+!Dockerfile
+!backend/target/*.jar

@@ -17,6 +17,11 @@
 #   5. Create an Environment named "Release" (Settings → Environments).
 #      Under "Deployment branches", choose "Selected branches" and add `main`.
 #      GitHub itself will reject runs dispatched from any other branch.
+#
+# After cutting the release this workflow also builds a Docker image bundling
+# the SPA into the Spring Boot JAR (frontend/dist → src/main/resources/static)
+# and pushes it to ghcr.io/<owner>/<repo>:<tag> + :latest. Auth uses the
+# job-scoped GITHUB_TOKEN with `packages: write` — no new secrets required.
 name: Release
 
 on:
@@ -43,6 +48,7 @@ jobs:
     environment: Release
     permissions:
       contents: write
+      packages: write
     steps:
       - name: Refuse to run outside main
         run: |
@@ -65,11 +71,20 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
 
-      - name: Set up JDK
-        uses: ./.github/actions/setup-java
+      # Same gates as pull-request.yml — refuse to cut a release that wouldn't
+      # pass PR review. If either composite fails, the workflow stops before
+      # any version-bump commit, tag, or release is created. The composites
+      # also pull in setup-java / setup-node, so no separate setup steps.
 
-      - name: Set up Node
-        uses: ./.github/actions/setup-node
+      - name: Verify backend (Checkstyle + tests + package + JaCoCo)
+        uses: ./.github/actions/verify-backend
+
+      - name: Verify frontend (lint + typecheck + build + tests + coverage)
+        uses: ./.github/actions/verify-frontend
+
+      # JDK and Node are already provisioned by the verify composites above;
+      # the remaining steps (version bump via `npm version` and Maven
+      # `versions:set`) reuse those toolchains.
 
       - name: Compute next version
         id: bump
@@ -126,6 +141,34 @@ jobs:
         run: |
           git tag -a "${{ steps.bump.outputs.tag }}" -m "Release ${{ steps.bump.outputs.tag }}"
           git push origin "${{ steps.bump.outputs.tag }}"
+
+      # Bake the SPA the verify-frontend composite already built into Spring Boot's
+      # static resources, then repackage with the bumped version so the JAR's
+      # internal version matches the just-pushed git tag.
+      - name: Bundle SPA into Spring Boot static resources
+        run: |
+          mkdir -p backend/src/main/resources/static
+          cp -R frontend/dist/. backend/src/main/resources/static/
+
+      - name: Repackage JAR with bumped version
+        working-directory: backend
+        run: ./mvnw --batch-mode --no-transfer-progress -DskipTests package
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image to GHCR
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ steps.bump.outputs.tag }}
+            ghcr.io/${{ github.repository }}:latest
 
       - name: Create GitHub Release
         env:

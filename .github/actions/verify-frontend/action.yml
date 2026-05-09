@@ -1,0 +1,26 @@
+name: Verify frontend
+description: >-
+  Provisions Node 20 (corepack/Yarn 4) and runs the full frontend gate —
+  immutable install, ESLint, `tsc -b && vite build`, and Vitest with the 80%
+  coverage threshold. Fails the calling step on any ESLint error, type error,
+  test failure, or coverage breach.
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/setup-node
+    - name: yarn install
+      shell: bash
+      working-directory: frontend
+      run: yarn install --immutable
+    - name: yarn lint
+      shell: bash
+      working-directory: frontend
+      run: yarn lint
+    - name: yarn build (typecheck + bundle)
+      shell: bash
+      working-directory: frontend
+      run: yarn build
+    - name: yarn test:coverage
+      shell: bash
+      working-directory: frontend
+      run: yarn test:coverage

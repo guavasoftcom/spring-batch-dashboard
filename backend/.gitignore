@@ -36,3 +36,7 @@ build/
 ### Local env ###
 .env
 !.env.example
+
+### Frontend SPA bundle ###
+# Dropped here at release time by the Docker build / release workflow; never commit.
+src/main/resources/static/

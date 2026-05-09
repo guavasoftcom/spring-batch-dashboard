@@ -85,6 +85,8 @@ Open `http://localhost:5173` and log in. The backend's interactive API docs are 
 
 To run the dashboard without configuring OAuth or a database, set `VITE_USE_MOCK_DATA=true` in `frontend/.env` — every API endpoint serves canned data instead.
 
+To smoke-test the combined Docker image locally (same artifact CI publishes to GHCR), run [`scripts/build-image.sh`](scripts/build-image.sh) then [`scripts/run-image-local.sh`](scripts/run-image-local.sh) — the first wraps the SPA-into-JAR repackage and `docker build`, the second runs the resulting image with the `local` Spring profile and your host's `docker compose` databases.
+
 ## Datasources
 
 A single deployment can serve any combination of POSTGRESQL / MYSQL / ORACLE entries. Each `app.datasources` entry declares its own engine via `type`, and a routing `SqlDialect` picks the matching per-engine SQL (epoch math, `NULLS LAST`, pagination clause, schema-init SQL) on every call. All three JDBC drivers are bundled in the same artifact — no build flag picks one.
@@ -181,15 +183,20 @@ The PR workflow ([`.github/workflows/pull-request.yml`](.github/workflows/pull-r
 1. **Backend** — Checkstyle, Surefire, JaCoCo agent, Maven package. Boots all three Testcontainers in one run so repository tests exercise every dialect; uploads Surefire + JaCoCo reports, posts a JUnit check + comment, and gates coverage at 80% via [`PavanMudigonda/jacoco-reporter`](.github/workflows/pull-request.yml) against `target/site/jacoco/jacoco.xml`.
 2. **Frontend** — lint (with ESLint annotations), `tsc -b` + Vite build, vitest with coverage, JUnit + coverage PR comments.
 
-JDK and Node setup are extracted into composite actions at [`.github/actions/setup-java`](.github/actions/setup-java/action.yml) and [`.github/actions/setup-node`](.github/actions/setup-node/action.yml) so the toolchain version lives in one place.
+JDK and Node setup are extracted into composite actions at [`.github/actions/setup-java`](.github/actions/setup-java/action.yml) and [`.github/actions/setup-node`](.github/actions/setup-node/action.yml) so the toolchain version lives in one place. The full per-side gate (Checkstyle + tests + package + JaCoCo, and lint + typecheck + build + coverage) lives in [`.github/actions/verify-backend`](.github/actions/verify-backend/action.yml) and [`.github/actions/verify-frontend`](.github/actions/verify-frontend/action.yml) so the release workflow runs the same checks PR review does.
 
 ## Releases
 
 Releases are cut by manually dispatching [`.github/workflows/release.yml`](.github/workflows/release.yml) ("Run workflow" → pick `patch` / `minor` / `major`). The workflow:
 
-1. Reads the current version from [`frontend/package.json`](frontend/package.json) and computes the next semver per the chosen bump.
-2. Updates `frontend/package.json` (numeric) and `backend/pom.xml` (with the `-SNAPSHOT` qualifier) in lockstep.
-3. Commits the bump to `main`, tags `vX.Y.Z`, and creates a GitHub Release with auto-generated notes.
+1. Runs the same gates as PR review (`verify-backend` + `verify-frontend`); a failure aborts before any commit, tag, or image is created.
+2. Reads the current version from [`frontend/package.json`](frontend/package.json) and computes the next semver per the chosen bump.
+3. Updates `frontend/package.json` (numeric) and `backend/pom.xml` (with the `-SNAPSHOT` qualifier) in lockstep.
+4. Commits the bump to `main` and tags `vX.Y.Z`.
+5. Bundles the freshly-built SPA into Spring Boot's `classpath:/static/`, repackages the JAR, then builds and pushes a Docker image to `ghcr.io/<owner>/<repo>:vX.Y.Z` and `:latest` via the root [`Dockerfile`](Dockerfile) — auth uses the workflow's `GITHUB_TOKEN` with `packages: write`, no extra secrets.
+6. Creates a GitHub Release with auto-generated notes.
+
+Pull the published image with `docker pull ghcr.io/<owner>/<repo>:<tag>` and run with `docker run --rm -p 8080:8080 …` — Spring Boot serves both the API and the SPA from the same origin.
 
 The push and tag run as a dedicated GitHub App (not `github-actions[bot]`), so the App can be added to the bypass list of any Ruleset / branch-protection rule. Required repo secrets: `RELEASE_APP_ID`, `RELEASE_APP_PRIVATE_KEY`. The job is gated by the `Release` GitHub Environment (configure its **Deployment branches** to `main`-only) and additionally guards against `github.ref != refs/heads/main`.
 

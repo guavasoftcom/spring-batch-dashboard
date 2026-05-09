@@ -1,0 +1,14 @@
+name: Verify backend
+description: >-
+  Provisions JDK 21 (with Maven cache) and runs the full backend gate —
+  Checkstyle, unit + slice + repository tests across all three engines, the
+  Spring Boot package phase, and the JaCoCo report. Fails the calling step on
+  any Checkstyle violation, test failure, or `mvnw verify` non-zero exit.
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/setup-java
+    - name: mvnw verify
+      shell: bash
+      working-directory: backend
+      run: ./mvnw --batch-mode --no-transfer-progress verify
