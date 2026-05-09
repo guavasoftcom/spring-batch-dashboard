@@ -42,8 +42,12 @@ public class SecurityConfig {
                 })
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/login", "/login/", "/logout", "/logout/").denyAll()
-                        .requestMatchers("/", "/error", "/oauth2/**", "/login/oauth2/code/**", "/api/auth/me", "/api/auth/providers", "/api/logout").permitAll()
-                        .anyRequest().authenticated())
+                        .requestMatchers("/api/auth/me", "/api/auth/providers", "/api/logout").permitAll()
+                        .requestMatchers("/api/**").authenticated()
+                        // SPA shell, OAuth2 callback paths, and static assets bundled with the JAR
+                        // (when the frontend is served from Spring Boot's classpath:/static/)
+                        // are all open; the SPA enforces auth via /api/auth/me at runtime.
+                        .anyRequest().permitAll())
                 .exceptionHandling(ex -> ex
                         .defaultAuthenticationEntryPointFor(
                                 new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),

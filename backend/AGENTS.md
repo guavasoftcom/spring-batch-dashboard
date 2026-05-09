@@ -22,7 +22,7 @@ src/main/java/com/guavasoft/springbatch/
   dashboard/
     DashboardApplication.java   @SpringBootApplication entry point
     config/
-      SecurityConfig.java                  SecurityFilterChain (OAuth2 login + permitAll on /api/auth/me + allow-list)
+      SecurityConfig.java                  SecurityFilterChain (OAuth2 login, /api/** authenticated, SPA shell + static permitAll, optional allow-list)
       AuthProperties.java                  binds app.auth.* (allowed-logins + provider attribute mapping)
       OAuth2Properties.java                binds app.oauth2.* (success-url + per-registration button label/color/icon)
       DatasourcesProperties.java           binds app.datasources (each entry: name, type, url, username, password, schema)
@@ -39,7 +39,7 @@ src/main/java/com/guavasoft/springbatch/
       MysqlDialect.java                    @Component, stateless
       OracleDialect.java                   @Component, stateless
       RoutingSqlDialect.java               @Primary facade — delegates per DataSourceContext
-    controller/                            REST endpoints — AuthController (/api/auth/me) + dashboard endpoints
+    controller/                            REST endpoints — AuthController (/api/auth/me, /api/auth/providers) + dashboard endpoints; SpaController forwards SPA routes to /index.html
     service/                               business logic
     repository/                            Spring Data JPA + custom JdbcTemplate fragments
     entity/                                JPA entities mapped onto BATCH_* tables (read-only)
@@ -153,11 +153,11 @@ The body shape is `{ timestamp, status, error, message, path }` — never includ
 
 [SecurityConfig](src/main/java/com/guavasoft/springbatch/dashboard/config/SecurityConfig.java) — OAuth2 login (defaults to GitHub), success URL `${app.oauth2.success-url}`. CORS allows `${app.cors.allowed-origins}` with credentials. CSRF is disabled only for `/api/logout` (the frontend hits it as a plain POST).
 
-`/api/auth/me`, `/api/auth/providers`, `/api/logout`, `/`, `/error`, and the OAuth2 callback paths are `permitAll`. Everything else requires authentication.
+`/api/**` requires authentication, with `/api/auth/me`, `/api/auth/providers`, and `/api/logout` open. Everything else — the SPA shell, static assets bundled at `classpath:/static/`, OAuth2 callback paths, and `/error` — is `permitAll`, since the SPA enforces auth at runtime via `/api/auth/me`. SPA deep links (`/overview`, `/jobs/...`) are forwarded to `/index.html` by [`SpaController`](src/main/java/com/guavasoft/springbatch/dashboard/controller/SpaController.java) so React Router resolves them on hard refresh.
 
 [`/api/auth/providers`](src/main/java/com/guavasoft/springbatch/dashboard/controller/AuthController.java) iterates the `ClientRegistrationRepository` and returns one [`OAuth2Provider`](src/main/java/com/guavasoft/springbatch/dashboard/model/OAuth2Provider.java) per registered provider so the frontend's login page can render a button per provider. Per-button display is sourced from [OAuth2Properties](src/main/java/com/guavasoft/springbatch/dashboard/config/OAuth2Properties.java) (`app.oauth2.buttons.<registrationId>.{label,color,iconUrl}`); missing entries fall back to a capitalized registration id with no color/icon.
 
-Unauthenticated `/api/**` requests get a clean **401** via a scoped `HttpStatusEntryPoint` (instead of being redirected through the OAuth2 entry-point chain, which produced a 404). This matches the contract the frontend's axios interceptor expects — see [`frontend/src/config/client.ts`](../frontend/src/config/client.ts), which redirects to `/` on a 401. Browser navigation outside `/api/**` still flows through the normal OAuth2 redirect.
+Unauthenticated `/api/**` requests get a clean **401** via a scoped `HttpStatusEntryPoint` (instead of being redirected through the OAuth2 entry-point chain, which produced a 404). This matches the contract the frontend's axios interceptor expects — see [`frontend/src/config/client.ts`](../frontend/src/config/client.ts), which redirects to `/` on a 401.
 
 [AuthProperties](src/main/java/com/guavasoft/springbatch/dashboard/config/AuthProperties.java) (`app.auth.*`) controls two things:
 
