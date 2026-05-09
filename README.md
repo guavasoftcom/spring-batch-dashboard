@@ -1,12 +1,24 @@
 # Spring Batch Dashboard
 
+<!-- Project status -->
 [![PR Checks](https://github.com/guavasoftcom/spring-batch-dashboard/actions/workflows/pull-request.yml/badge.svg?branch=main)](https://github.com/guavasoftcom/spring-batch-dashboard/actions/workflows/pull-request.yml)
+[![Latest release](https://img.shields.io/github/v/release/guavasoftcom/spring-batch-dashboard?logo=github&logoColor=white)](https://github.com/guavasoftcom/spring-batch-dashboard/releases)
+[![GHCR image](https://img.shields.io/badge/ghcr.io-image-2496ED.svg?logo=docker&logoColor=white)](https://github.com/guavasoftcom/spring-batch-dashboard/pkgs/container/spring-batch-dashboard)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Coverage ≥ 80%](https://img.shields.io/badge/Coverage-%E2%89%A580%25-brightgreen.svg)](#ci)
+
+<!-- Tech stack -->
 [![Java 21](https://img.shields.io/badge/Java-21-007396.svg?logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/21/)
 [![Spring Boot 4](https://img.shields.io/badge/Spring%20Boot-4.0-6DB33F.svg?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![React 19](https://img.shields.io/badge/React-19-61DAFB.svg?logo=react&logoColor=white)](https://react.dev/)
+[![TypeScript 5](https://img.shields.io/badge/TypeScript-5-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite 6](https://img.shields.io/badge/Vite-6-646CFF.svg?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Yarn 4](https://img.shields.io/badge/Yarn-4-2C8EBB.svg?logo=yarn&logoColor=white)](https://yarnpkg.com/)
-[![Coverage ≥ 80%](https://img.shields.io/badge/Coverage-%E2%89%A580%25-brightgreen.svg)](#ci)
+
+<!-- Database support -->
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-supported-4169E1.svg?logo=postgresql&logoColor=white)](#datasources)
+[![MySQL](https://img.shields.io/badge/MySQL-supported-4479A1.svg?logo=mysql&logoColor=white)](#datasources)
+[![Oracle](https://img.shields.io/badge/Oracle-supported-F80000.svg?logo=oracle&logoColor=white)](#datasources)
 
 A web dashboard for inspecting Spring Batch metadata (job runs, step executions, throughput, status distributions) across any mix of PostgreSQL, MySQL, and Oracle environments — all from a single deployment.
 
@@ -84,6 +96,18 @@ yarn dev
 Open `http://localhost:5173` and log in. The backend's interactive API docs are at [`http://localhost:8080/swagger-ui/index.html`](http://localhost:8080/swagger-ui/index.html).
 
 To run the dashboard without configuring OAuth or a database, set `VITE_USE_MOCK_DATA=true` in `frontend/.env` — every API endpoint serves canned data instead.
+
+## Running the published image
+
+Each release publishes a single image to GHCR — Spring Boot serves the API and the SPA from the same origin on `:8080`. Pull a tag:
+
+```bash
+docker pull ghcr.io/guavasoftcom/spring-batch-dashboard:latest
+```
+
+Configuration is via environment variables; Spring Boot's relaxed binding maps env vars onto the same `app.*` / `spring.*` properties used in [`application-local.yml`](backend/src/main/resources/application-local.yml). The mapping rule is: lowercase becomes uppercase, `.` and `-` both become `_`, and list indices are surrounded by `_` (so `app.datasources[0].name` → `APP_DATASOURCES_0_NAME`). The minimum env-var set covers one OAuth2 client registration, one `app.datasources[*]` entry, and `APP_OAUTH2_SUCCESS_URL`; both lists scale by adding more indexed (`APP_DATASOURCES_1_*`, …) or keyed (`SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_<id>_*`) entries — see [Datasources](#datasources) and [Authentication](#authentication) for the property reference.
+
+A complete, runnable example for **AKS** lives in [`deploy/aks/`](deploy/aks/) — Namespace + ConfigMap + Secret + Deployment + Service + AGIC Ingress, plus a [`deploy/aks/README.md`](deploy/aks/README.md) that walks through prerequisites, how to add more datasources/providers, and the upgrade path from a plain `Secret` to Azure Key Vault via the Secrets Store CSI driver. Apply with `kubectl apply -k deploy/aks/` after editing the placeholder values.
 
 To smoke-test the combined Docker image locally (same artifact CI publishes to GHCR), run [`scripts/build-image.sh`](scripts/build-image.sh) then [`scripts/run-image-local.sh`](scripts/run-image-local.sh) — the first wraps the SPA-into-JAR repackage and `docker build`, the second runs the resulting image with the `local` Spring profile and your host's `docker compose` databases.
 
@@ -196,9 +220,62 @@ Releases are cut by manually dispatching [`.github/workflows/release.yml`](.gith
 5. Bundles the freshly-built SPA into Spring Boot's `classpath:/static/`, repackages the JAR, then builds and pushes a Docker image to `ghcr.io/<owner>/<repo>:vX.Y.Z` and `:latest` via the root [`Dockerfile`](Dockerfile) — auth uses the workflow's `GITHUB_TOKEN` with `packages: write`, no extra secrets.
 6. Creates a GitHub Release with auto-generated notes.
 
-Pull the published image with `docker pull ghcr.io/<owner>/<repo>:<tag>` and run with `docker run --rm -p 8080:8080 …` — Spring Boot serves both the API and the SPA from the same origin.
+See [Running the published image](#running-the-published-image) for how to pull and configure the resulting image, and [`deploy/aks/`](deploy/aks/) for a runnable AKS bundle.
 
 The push and tag run as a dedicated GitHub App (not `github-actions[bot]`), so the App can be added to the bypass list of any Ruleset / branch-protection rule. Required repo secrets: `RELEASE_APP_ID`, `RELEASE_APP_PRIVATE_KEY`. The job is gated by the `Release` GitHub Environment (configure its **Deployment branches** to `main`-only) and additionally guards against `github.ref != refs/heads/main`.
+
+## Useful resources
+
+### Backend
+
+- [Spring Boot reference](https://docs.spring.io/spring-boot/reference/index.html) — auto-configuration, externalized configuration, profiles. The whole [`backend/`](backend/) module is conventional Spring Boot 4.
+- [Spring Framework reference](https://docs.spring.io/spring-framework/reference/index.html) — Spring MVC and DI under Spring Boot; relevant when stepping outside Spring Boot's autoconfiguration.
+- [Spring Data JPA reference](https://docs.spring.io/spring-data/jpa/reference/index.html) — repository derivation, paging/sorting, JPQL. The dashboard uses entity-based reads against `BATCH_*` tables (see [`backend/AGENTS.md`](backend/AGENTS.md)).
+- [Hibernate User Guide](https://docs.jboss.org/hibernate/orm/6.6/userguide/html_single/Hibernate_User_Guide.html) — JPA provider; relevant for the [Hibernate dialect caveat](#datasources) that affects mixed-engine deployments.
+- [Spring Security OAuth2 client](https://docs.spring.io/spring-security/reference/servlet/oauth2/login/index.html) — registration vs. provider properties, attribute mapping, common-provider defaults (GitHub, Google, Facebook, Okta).
+- [Spring Boot Actuator](https://docs.spring.io/spring-boot/reference/actuator/endpoints.html) — only the `health` endpoint is exposed; Kubernetes probe groups (`/actuator/health/{readiness,liveness}`) are wired up for the GHCR image.
+- [SpringDoc OpenAPI](https://springdoc.org/) — generates the OpenAPI 3 spec and serves the Swagger UI at `/swagger-ui/index.html`.
+- [MapStruct](https://mapstruct.org/documentation/stable/reference/html/) — compile-time entity → DTO mapping; mappers live under [`backend/src/main/java/.../mapper`](backend/src/main/java/com/guavasoft/springbatch/dashboard/mapper/).
+- [Project Lombok](https://projectlombok.org/features/) — `@Getter`/`@Setter`/`@RequiredArgsConstructor` etc. used throughout `config/` and `model/`.
+- [Testcontainers (Java)](https://java.testcontainers.org/) — boots real Postgres / MySQL / Oracle in Docker for repository tests so every dialect is exercised in CI.
+
+### Frontend
+
+- [React 19](https://react.dev/learn) — function components + hooks; the SPA's component model.
+- [Vite](https://vitejs.dev/guide/) — dev server (`yarn dev`) and production bundler (`vite build`); config in [`frontend/vite.config.ts`](frontend/vite.config.ts).
+- [TypeScript](https://www.typescriptlang.org/docs/) — strict mode, `tsc -b` typecheck gate in CI.
+- [TanStack Query](https://tanstack.com/query/latest/docs/framework/react/overview) — server-state cache that powers every data-fetching tile; query hooks under [`frontend/src/api`](frontend/src/api/).
+- [MUI (Material UI)](https://mui.com/material-ui/getting-started/) — component library and theming.
+- [`@mui/x-charts`](https://mui.com/x/react-charts/) — charts on the Overview / Job Detail tiles; styling is centralized (see [`frontend/AGENTS.md`](frontend/AGENTS.md)).
+- [`@mui/x-data-grid`](https://mui.com/x/react-data-grid/) — sortable / paginated tables for jobs and runs.
+- [Formik](https://formik.org/docs/overview) — form state for the (small set of) input forms.
+- [React Router](https://reactrouter.com/) — SPA routing; deep links are forwarded to `index.html` by the backend's `SpaController`.
+- [Vitest](https://vitest.dev/guide/) + [Testing Library](https://testing-library.com/docs/react-testing-library/intro/) — unit / component tests; coverage gate at 80% via vitest's `coverage.thresholds`.
+- [Yarn 4 (Berry)](https://yarnpkg.com/getting-started) — package manager; `node-modules` linker, no `npm install` (see [Tooling notes](#tooling-notes)).
+
+### Database & Spring Batch
+
+- [Spring Batch reference](https://docs.spring.io/spring-batch/reference/index.html) — the framework whose `BATCH_*` metadata schema this dashboard reads.
+- [`BATCH_*` schema reference](https://docs.spring.io/spring-batch/reference/schema-appendix.html) — exact column definitions per engine, plus the table-creation DDL.
+- [PostgreSQL JDBC driver](https://jdbc.postgresql.org/documentation/) — connection URL syntax, connection properties.
+- [MySQL Connector/J](https://dev.mysql.com/doc/connector-j/en/) — JDBC driver; case-sensitivity caveats relevant to `BATCH_*` table names.
+- [Oracle JDBC](https://docs.oracle.com/en/database/oracle/oracle-database/21/jjdbc/index.html) — `ojdbc11` driver; thin-client URL syntax.
+
+### Build, CI, and release
+
+- [Maven (with the wrapper)](https://maven.apache.org/guides/index.html) — `./mvnw` is the canonical entry point; never `mvn` directly.
+- [JaCoCo](https://www.jacoco.org/jacoco/trunk/doc/) — backend code-coverage agent; 80% gate enforced via [`PavanMudigonda/jacoco-reporter`](https://github.com/PavanMudigonda/jacoco-reporter) in CI.
+- [Checkstyle](https://checkstyle.sourceforge.io/) — backend style gate; configuration in [`backend/checkstyle.xml`](backend/checkstyle.xml).
+- [GitHub Actions reference](https://docs.github.com/actions) — used for PR checks ([`.github/workflows/pull-request.yml`](.github/workflows/pull-request.yml)) and releases ([`.github/workflows/release.yml`](.github/workflows/release.yml)); composite actions live under [`.github/actions/`](.github/actions/).
+- [GitHub Container Registry (GHCR)](https://docs.github.com/packages/working-with-a-github-packages-registry/working-with-the-container-registry) — release destination (`ghcr.io/guavasoftcom/spring-batch-dashboard`).
+- [pre-commit](https://pre-commit.com/) + [gitleaks](https://github.com/gitleaks/gitleaks) — local secret-scan gate before each commit; config in [`.pre-commit-config.yaml`](.pre-commit-config.yaml).
+- [Mermaid](https://mermaid.js.org/intro/) — the [Architecture](#architecture) diagram is a Mermaid `flowchart`.
+
+### Deployment
+
+- [`deploy/aks/`](deploy/aks/) — runnable Kubernetes manifests for AKS; the [`deploy/aks/README.md`](deploy/aks/README.md) has its own resources section with AKS-specific links (AGIC, Workload Identity, Key Vault CSI, cert-manager).
+- [Spring Boot externalized configuration](https://docs.spring.io/spring-boot/reference/features/external-config.html) — the relaxed-binding rules that map env vars onto `app.*` / `spring.*` properties (see [Running the published image](#running-the-published-image)).
+- [Docker reference](https://docs.docker.com/reference/) — the root [`Dockerfile`](Dockerfile) uses the layered-jar pattern (`-Djarmode=layertools extract`) for better cache hits across releases.
 
 ## License
 

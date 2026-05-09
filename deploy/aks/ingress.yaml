@@ -1,0 +1,31 @@
+# AGIC (Application Gateway Ingress Controller) ingress. Replace
+# dashboard.example.com with your hostname and update the TLS secret to the one
+# holding your certificate (cert-manager, App Gateway, or a manually-loaded TLS
+# secret all work — only the Secret reference name needs to match).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dashboard
+  namespace: spring-batch-dashboard
+  annotations:
+    kubernetes.io/ingress.class: azure/application-gateway
+    appgw.ingress.kubernetes.io/ssl-redirect: "true"
+    appgw.ingress.kubernetes.io/backend-protocol: "http"
+    # Stick the OAuth2 session cookie to one pod for the duration of a login.
+    appgw.ingress.kubernetes.io/cookie-based-affinity: "true"
+spec:
+  tls:
+    - hosts:
+        - dashboard.example.com
+      secretName: dashboard-tls
+  rules:
+    - host: dashboard.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: dashboard
+                port:
+                  name: http

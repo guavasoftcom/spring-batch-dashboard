@@ -10,6 +10,7 @@ Spring Boot 4 service that exposes the Spring Batch metadata as a REST API for t
 - `NamedParameterJdbcTemplate` for any read where dynamic `ORDER BY` / aggregates are needed (Spring Data's `Sort` rewrites property paths in unsafe ways for native queries — see [Repository conventions](#repository-conventions))
 - MapStruct for DTO mapping (Lombok + MapStruct annotation processors wired in `pom.xml`)
 - Spring Security OAuth2 client (GitHub login by default, any provider configurable) — session-cookie auth, frontend gets a `JSESSIONID`
+- Spring Boot Actuator — only the `health` endpoint is exposed; Kubernetes probe groups (`/actuator/health/{readiness,liveness}`) are enabled and the auto DataSource indicator is disabled (the primary bean is a routing DataSource that needs a per-request ThreadLocal). See [`application.yml`](src/main/resources/application.yml).
 - SpringDoc OpenAPI — interactive UI at [`http://localhost:8080/swagger-ui/index.html`](http://localhost:8080/swagger-ui/index.html), raw spec at `/v3/api-docs`
 - Apache Commons Lang3 for null-safe string helpers (`StringUtils.isBlank`, `EqualsBuilder`, etc.)
 - Testcontainers + Spring Boot Testcontainers for integration tests
