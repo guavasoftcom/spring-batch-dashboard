@@ -53,4 +53,10 @@ class OracleDialectTest {
         assertThat(dialect.setSchemaSql("BATCH_PROD"))
             .isEqualTo("ALTER SESSION SET CURRENT_SCHEMA = BATCH_PROD");
     }
+
+    @Test
+    void truncateToDayUsesTruncFunction() {
+        assertThat(dialect.truncateToDay("je.start_time"))
+            .isEqualTo("TRUNC(je.start_time)");
+    }
 }

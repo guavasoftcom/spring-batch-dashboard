@@ -30,12 +30,12 @@ public record StepDetail(
     @Schema(description = "Step duration in seconds.", example = "30")
     long durationSeconds,
 
-    @Schema(description = "Step start timestamp formatted 'yyyy-MM-dd HH:mm:ss'.",
-        example = "2026-04-30 09:15:30")
+    @Schema(description = "Step start timestamp as an ISO-8601 UTC instant.",
+        example = "2026-04-30T14:30:00Z")
     String startTime,
 
-    @Schema(description = "Step end timestamp formatted 'yyyy-MM-dd HH:mm:ss'; null when still running.",
-        example = "2026-04-30 09:16:00",
+    @Schema(description = "Step end timestamp as an ISO-8601 UTC instant; null when still running.",
+        example = "2026-04-30T14:31:00Z",
         nullable = true)
     String endTime
 ) {}

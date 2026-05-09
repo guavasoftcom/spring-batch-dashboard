@@ -1,6 +1,6 @@
 import { Box, Container, Grid, Link as MuiLink } from '@mui/material';
-import SourceIcon from '@mui/icons-material/Source';
-import DataThresholdingIcon from '@mui/icons-material/DataThresholding';
+import DisplaySettingsIcon from '@mui/icons-material/DisplaySettings';
+import DynamicFormOutlinedIcon from '@mui/icons-material/DynamicFormOutlined';
 import { PageBreadcrumb } from '~/components';
 import { humanize } from '~/utils';
 import {
@@ -20,22 +20,18 @@ type Props = {
   onJobClick: () => void;
 };
 
-const JobExecutionPage = ({
-  jobId,
-  executionId,
-  onJobClick,
-}: Props) => (
-  <Container
-    component="main"
-    maxWidth="xl"
-    sx={{ py: 4, color: 'text.primary' }}
-  >
+const JobExecutionPage = ({ jobId, executionId, onJobClick }: Props) => (
+  <Container component="main" maxWidth="xl" sx={{ py: 4, color: 'text.primary' }}>
     <PageBreadcrumb
       segments={[
-        { label: jobId ?? 'Job', onClick: onJobClick, icon: <SourceIcon sx={{ fontSize: 26 }} /> },
+        {
+          label: jobId ?? 'Job',
+          onClick: onJobClick,
+          icon: <DisplaySettingsIcon sx={{ fontSize: 26 }} />,
+        },
         {
           label: `Execution #${executionId ?? '—'}`,
-          icon: <DataThresholdingIcon sx={{ fontSize: 26 }} />,
+          icon: <DynamicFormOutlinedIcon sx={{ fontSize: 26 }} />,
         },
       ]}
     />

@@ -8,12 +8,12 @@ import {
   sampleExecutionTiming,
   sampleSteps,
 } from '~/pages/jobExecution/seedData';
+import type { StepCountsSummary } from '~/types';
 import type {
   DurationSummary,
   IoSummary,
   JobExecutionStepCounts,
   JobExecutionTiming,
-  StepCountsSummary,
   StepDetailPage,
   StepExecutionDetail,
 } from '~/pages/jobExecution/types';

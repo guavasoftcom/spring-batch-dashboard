@@ -7,10 +7,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.guavasoft.springbatch.dashboard.model.ExecutionCounts;
-import com.guavasoft.springbatch.dashboard.model.ThroughputBar;
 import com.guavasoft.springbatch.dashboard.model.ThroughputSummary;
 import com.guavasoft.springbatch.dashboard.service.StepExecutionService;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -68,18 +66,4 @@ class StepExecutionControllerTest {
             .andExpect(jsonPath("$.writeCount").value(950));
     }
 
-    @Test
-    void returnsProcessingMetrics() throws Exception {
-        when(stepExecutionService.getProcessingMetrics(DEFAULT_WINDOW)).thenReturn(List.of(
-            new ThroughputBar("read", 1000),
-            new ThroughputBar("write", 950),
-            new ThroughputBar("commit", 100)));
-
-        mockMvc.perform(get("/api/overview/processing-metrics"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.length()").value(3))
-            .andExpect(jsonPath("$[0].metric").value("read"))
-            .andExpect(jsonPath("$[0].value").value(1000))
-            .andExpect(jsonPath("$[2].metric").value("commit"));
-    }
 }

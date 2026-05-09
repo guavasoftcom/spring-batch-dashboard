@@ -43,7 +43,7 @@ class JobLastRunsServiceTest {
                 .thenReturn(List.of("importUsersJob", "reconcileLedgerJob"));
 
         JobRunRow importRow = stubRow();
-        JobRun importDto = new JobRun(101L, "COMPLETED", "2026-04-30 09:15:30", "2026-04-30 09:16:30",
+        JobRun importDto = new JobRun(101L, "COMPLETED", "2026-04-30T09:15:30Z", "2026-04-30T09:16:30Z",
                 60L, 1000L, 950L, "COMPLETED");
 
         when(jobExecutionRepository.findLatestRunByJobName(eq("importUsersJob"), any(LocalDateTime.class)))

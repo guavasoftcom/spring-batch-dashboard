@@ -42,7 +42,7 @@ public class SecurityConfig {
                 })
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/login", "/login/", "/logout", "/logout/").denyAll()
-                        .requestMatchers("/", "/error", "/oauth2/**", "/login/oauth2/code/**", "/api/auth/me", "/api/logout").permitAll()
+                        .requestMatchers("/", "/error", "/oauth2/**", "/login/oauth2/code/**", "/api/auth/me", "/api/auth/providers", "/api/logout").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .defaultAuthenticationEntryPointFor(

@@ -61,13 +61,13 @@ class JobExecutionStepsControllerTest {
     @Test
     void returnsExecutionTiming() throws Exception {
         when(service.getExecutionTiming(EXEC_ID)).thenReturn(
-                new JobExecutionTiming("2026-04-30 09:15:29", "2026-04-30 09:15:30", "2026-04-30 09:16:00"));
+                new JobExecutionTiming("2026-04-30T09:15:29Z", "2026-04-30T09:15:30Z", "2026-04-30T09:16:00Z"));
 
         mockMvc.perform(get("/api/job-executions/{id}/timing", EXEC_ID))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.createTime").value("2026-04-30 09:15:29"))
-            .andExpect(jsonPath("$.startTime").value("2026-04-30 09:15:30"))
-            .andExpect(jsonPath("$.endTime").value("2026-04-30 09:16:00"));
+            .andExpect(jsonPath("$.createTime").value("2026-04-30T09:15:29Z"))
+            .andExpect(jsonPath("$.startTime").value("2026-04-30T09:15:30Z"))
+            .andExpect(jsonPath("$.endTime").value("2026-04-30T09:16:00Z"));
     }
 
     @Test
@@ -133,7 +133,7 @@ class JobExecutionStepsControllerTest {
         StepExecutionDetail detail = new StepExecutionDetail(
                 7L, EXEC_ID, "readUsersStep", "COMPLETED",
                 1000, 950, 100, 0, 1, 2, 3, 0, 30,
-                "2026-04-30 09:15:29", "2026-04-30 09:15:30", "2026-04-30 09:16:00", "2026-04-30 09:16:00",
+                "2026-04-30T09:15:29Z", "2026-04-30T09:15:30Z", "2026-04-30T09:16:00Z", "2026-04-30T09:16:00Z",
                 "COMPLETED", null, java.util.Map.of("checkpoint", 100));
         when(service.getStepExecutionDetail(7L)).thenReturn(detail);
 
@@ -146,7 +146,7 @@ class JobExecutionStepsControllerTest {
             .andExpect(jsonPath("$.readSkipCount").value(1))
             .andExpect(jsonPath("$.writeSkipCount").value(2))
             .andExpect(jsonPath("$.processSkipCount").value(3))
-            .andExpect(jsonPath("$.lastUpdated").value("2026-04-30 09:16:00"))
+            .andExpect(jsonPath("$.lastUpdated").value("2026-04-30T09:16:00Z"))
             .andExpect(jsonPath("$.executionContext.checkpoint").value(100));
     }
 }

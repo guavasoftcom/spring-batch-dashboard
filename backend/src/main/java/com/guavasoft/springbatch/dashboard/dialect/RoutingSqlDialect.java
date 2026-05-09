@@ -47,6 +47,11 @@ public class RoutingSqlDialect implements SqlDialect {
     }
 
     @Override
+    public String truncateToDay(String expr) {
+        return current().truncateToDay(expr);
+    }
+
+    @Override
     public String orderByNullsLast(String expression, String direction) {
         return current().orderByNullsLast(expression, direction);
     }

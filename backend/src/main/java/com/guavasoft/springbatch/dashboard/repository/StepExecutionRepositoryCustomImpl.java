@@ -2,6 +2,7 @@ package com.guavasoft.springbatch.dashboard.repository;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.guavasoft.springbatch.dashboard.config.TimestampFormatter;
 import com.guavasoft.springbatch.dashboard.dialect.SqlDialect;
 import com.guavasoft.springbatch.dashboard.model.DurationSummary;
 import com.guavasoft.springbatch.dashboard.model.IoSummary;
@@ -11,7 +12,6 @@ import com.guavasoft.springbatch.dashboard.model.StepDetail;
 import com.guavasoft.springbatch.dashboard.model.StepExecutionDetail;
 import com.guavasoft.springbatch.dashboard.repository.rowmapper.StepDetailRowMapper;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -64,7 +64,6 @@ public class StepExecutionRepositoryCustomImpl implements StepExecutionRepositor
     private static final String START_COL = "se.start_time";
     private static final String END_COL = "se.end_time";
 
-    private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final TypeReference<Map<String, Object>> CONTEXT_MAP_TYPE = new TypeReference<>() { };
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final String UNPARSEABLE_CONTEXT_KEY = "raw";
@@ -86,6 +85,7 @@ public class StepExecutionRepositoryCustomImpl implements StepExecutionRepositor
     private final NamedParameterJdbcTemplate jdbc;
     private final SqlDialect dialect;
     private final StepDetailRowMapper stepDetailRowMapper;
+    private final TimestampFormatter timestampFormatter;
 
     @Override
     public JobExecutionStepCounts countsByJobExecutionId(long jobExecutionId) {
@@ -247,10 +247,10 @@ public class StepExecutionRepositoryCustomImpl implements StepExecutionRepositor
                     rs.getLong("processSkipCount"),
                     rs.getLong("rollbackCount"),
                     rs.getLong("durationSeconds"),
-                    formatTimestamp(rs.getObject("createTime", LocalDateTime.class)),
-                    formatTimestamp(rs.getObject("startTime", LocalDateTime.class)),
-                    formatTimestamp(rs.getObject("endTime", LocalDateTime.class)),
-                    formatTimestamp(rs.getObject("lastUpdated", LocalDateTime.class)),
+                    timestampFormatter.format(rs.getObject("createTime", LocalDateTime.class)),
+                    timestampFormatter.format(rs.getObject("startTime", LocalDateTime.class)),
+                    timestampFormatter.format(rs.getObject("endTime", LocalDateTime.class)),
+                    timestampFormatter.format(rs.getObject("lastUpdated", LocalDateTime.class)),
                     rs.getString("exitCode"),
                     rs.getString("exitMessage"),
                     parseExecutionContext(rs.getString("shortContext"))));
@@ -270,10 +270,6 @@ public class StepExecutionRepositoryCustomImpl implements StepExecutionRepositor
         } catch (Exception ex) {
             return Map.of(UNPARSEABLE_CONTEXT_KEY, shortContext);
         }
-    }
-
-    private static String formatTimestamp(LocalDateTime timestamp) {
-        return timestamp == null ? null : timestamp.format(TIMESTAMP_FORMAT);
     }
 
     private MapSqlParameterSource params(long jobExecutionId) {

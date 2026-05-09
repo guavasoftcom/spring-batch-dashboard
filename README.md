@@ -12,10 +12,10 @@ A web dashboard for inspecting Spring Batch metadata (job runs, step executions,
 
 ## What's in here
 
-| Component | Stack | Purpose |
-|---|---|---|
-| [`backend/`](backend/) | Spring Boot 4, Java 21, Spring Data JPA, OAuth2 | REST API that reads `BATCH_*` metadata and serves it to the frontend. Multi-environment via per-request datasource routing; each `app.datasources` entry declares its own engine (POSTGRESQL / MYSQL / ORACLE) and a routing `SqlDialect` picks the right per-engine SQL on every call. All three JDBC drivers are bundled in one artifact. |
-| [`frontend/`](frontend/) | React 19, Vite, MUI, TanStack Query, Vitest | The dashboard SPA. Browses jobs, runs, and per-execution step details. |
+| Component                | Stack                                           | Purpose                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`backend/`](backend/)   | Spring Boot 4, Java 21, Spring Data JPA, OAuth2 | REST API that reads `BATCH_*` metadata and serves it to the frontend. Multi-environment via per-request datasource routing; each `app.datasources` entry declares its own engine (POSTGRESQL / MYSQL / ORACLE) and a routing `SqlDialect` picks the right per-engine SQL on every call. All three JDBC drivers are bundled in one artifact. |
+| [`frontend/`](frontend/) | React 19, Vite, MUI, TanStack Query, Vitest     | The dashboard SPA. Browses jobs, runs, and per-execution step details.                                                                                                                                                                                                                                                                      |
 
 The components don't share code — they're independent apps that meet at the database.
 
@@ -24,30 +24,46 @@ The components don't share code — they're independent apps that meet at the da
 ### Light mode
 
 #### Login
+
 ![Login (light)](docs/login-light.png)
 
 #### Overview
+
 ![Overview (light)](docs/overview-light.png)
 
 #### Job Details
+
 ![Job Details (light)](docs/job-details-light.png)
 
 #### Job Execution
+
 ![Job Execution (light)](docs/job-execution-light.png)
+
+#### Job Execution Step Modal
+
+![Job Execution Step Modal (light)](docs/job-execution-step-light.png)
 
 ### Dark mode
 
 #### Login
+
 ![Login (dark)](docs/login-dark.png)
 
 #### Overview
+
 ![Overview (dark)](docs/overview-dark.png)
 
 #### Job Details
+
 ![Job Details (dark)](docs/job-details-dark.png)
 
 #### Job Execution
+
 ![Job Execution (dark)](docs/job-execution-dark.png)
+
+#### Job Execution Step Modal
+
+![Job Execution Step Modal (dark)](docs/job-execution-step-dark.png)
 
 ## Quick start
 
@@ -91,12 +107,15 @@ app:
       url: jdbc:oracle:thin:@//…
       username: …
       password: …
-      schema: BATCH_PROD          # optional; applied as connection-init SQL per-dialect
+      schema: BATCH_PROD # optional; applied as connection-init SQL per-dialect
+      timezone: America/New_York # optional; defaults to UTC
 ```
 
 The local dev profile ([`application-local.yml`](backend/src/main/resources/application-local.yml)) ships one entry per engine pointing at the matching `docker compose` container, so a fresh `./mvnw spring-boot:run` already exposes Postgres + MySQL + Oracle to the UI.
 
-> **Hibernate caveat.** Hibernate detects its dialect once on the first JDBC connection and caches it for the SessionFactory, so `Pageable`-driven JPA queries use whichever pagination syntax the *first* datasource implies (PG/MySQL share `LIMIT … OFFSET …`, Oracle differs). Anything cross-engine belongs in a JdbcTemplate fragment that goes through `SqlDialect`. Details in [backend/AGENTS.md](backend/AGENTS.md#hibernate-caveat).
+Timestamp fields in API responses are emitted as ISO-8601 UTC instants (`2026-04-30T14:30:00Z`), computed from each datasource's configured `timezone` (default `UTC`); the frontend renders them in the browser's local zone.
+
+> **Hibernate caveat.** Hibernate detects its dialect once on the first JDBC connection and caches it for the SessionFactory, so `Pageable`-driven JPA queries use whichever pagination syntax the _first_ datasource implies (PG/MySQL share `LIMIT … OFFSET …`, Oracle differs). Anything cross-engine belongs in a JdbcTemplate fragment that goes through `SqlDialect`. Details in [backend/AGENTS.md](backend/AGENTS.md#hibernate-caveat).
 
 ## Multi-environment selector
 
@@ -107,6 +126,8 @@ To add a new environment, append an entry to `app.datasources` (any engine; just
 ## Authentication
 
 OAuth2 via Spring Security; defaults wire up GitHub but any provider works by remapping attribute names under `app.auth.attributes.*` (e.g. for Google: `login=email`, `avatar-url=picture`). An optional comma-delimited `app.auth.allowed-logins` allow-list rejects logins outside the list at OAuth2 user-loading time.
+
+The login page renders one button per configured Spring Security registration by reading `GET /api/auth/providers`. Per-button display (label, background color, icon URL — `http(s)` or `data:` URI) is configured under `app.oauth2.buttons.<registrationId>`; missing keys fall back to a capitalized registration id and unstyled defaults.
 
 ## Architecture
 
@@ -129,7 +150,7 @@ flowchart LR
     Backend -->|"JPA / JdbcTemplate"| Oracle
 ```
 
-- **Backend** never writes to the BATCH_* schema — read-only.
+- **Backend** never writes to the BATCH\_\* schema — read-only.
 - **Frontend** persists the chosen environment to `localStorage` and forwards it on every request as `X-Environment`.
 - **Routing** — `AbstractRoutingDataSource` uses a `ThreadLocal` populated from `X-Environment` to pick the pool; `RoutingSqlDialect` reads the same key to pick the matching per-engine SQL. A single boot serves any mix of POSTGRESQL / MYSQL / ORACLE entries.
 - **OAuth2** flow: the frontend opens the provider login; the provider posts back to the backend's callback; the backend establishes a session (`JSESSIONID`) and redirects to `app.oauth2.success-url`. Subsequent API calls authenticate via the cookie. The provider is configurable via Spring Security; attribute-name mapping and an optional `app.auth.allowed-logins` allow-list make it provider-agnostic (see [Authentication](#authentication)).

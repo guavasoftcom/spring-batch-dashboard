@@ -2,8 +2,10 @@ package com.guavasoft.springbatch.dashboard.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.guavasoft.springbatch.dashboard.config.TimestampFormatter;
 import com.guavasoft.springbatch.dashboard.entity.JobExecutionEntity;
 import com.guavasoft.springbatch.dashboard.model.DurationSummary;
 import com.guavasoft.springbatch.dashboard.model.IoSummary;
@@ -20,25 +22,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
-@ExtendWith(MockitoExtension.class)
 class JobExecutionStepsServiceTest {
 
     private static final long EXEC_ID = 42L;
 
-    @Mock
-    private StepExecutionRepository stepExecutionRepository;
+    // Real TimestampFormatter with empty zone map; DataSourceContext is not set so it
+    // falls back to UTC for all conversions in this test class.
+    private static final TimestampFormatter TIMESTAMP_FORMATTER = new TimestampFormatter(Map.of());
 
-    @Mock
-    private JobExecutionRepository jobExecutionRepository;
-
-    @InjectMocks
-    private JobExecutionStepsService service;
+    private final StepExecutionRepository stepExecutionRepository = mock(StepExecutionRepository.class);
+    private final JobExecutionRepository jobExecutionRepository = mock(JobExecutionRepository.class);
+    private final JobExecutionStepsService service =
+            new JobExecutionStepsService(stepExecutionRepository, jobExecutionRepository, TIMESTAMP_FORMATTER);
 
     @Test
     void getStepCountsDelegatesToRepository() {
@@ -74,9 +71,9 @@ class JobExecutionStepsServiceTest {
 
         JobExecutionTiming timing = service.getExecutionTiming(EXEC_ID);
 
-        assertThat(timing.createTime()).isEqualTo("2026-04-30 09:15:29");
-        assertThat(timing.startTime()).isEqualTo("2026-04-30 09:15:30");
-        assertThat(timing.endTime()).isEqualTo("2026-04-30 09:16:00");
+        assertThat(timing.createTime()).isEqualTo("2026-04-30T09:15:29Z");
+        assertThat(timing.startTime()).isEqualTo("2026-04-30T09:15:30Z");
+        assertThat(timing.endTime()).isEqualTo("2026-04-30T09:16:00Z");
     }
 
     @Test
@@ -87,7 +84,7 @@ class JobExecutionStepsServiceTest {
 
         JobExecutionTiming timing = service.getExecutionTiming(EXEC_ID);
 
-        assertThat(timing.createTime()).isEqualTo("2026-04-30 09:15:29");
+        assertThat(timing.createTime()).isEqualTo("2026-04-30T09:15:29Z");
         assertThat(timing.startTime()).isNull();
         assertThat(timing.endTime()).isNull();
     }
@@ -114,7 +111,7 @@ class JobExecutionStepsServiceTest {
         StepExecutionDetail detail = new StepExecutionDetail(
                 1L, EXEC_ID, "step1", "COMPLETED",
                 100, 95, 10, 0, 0, 0, 0, 0, 30,
-                "2026-04-27 09:59:59", "2026-04-27 10:00:00", "2026-04-27 10:00:30", "2026-04-27 10:00:30",
+                "2026-04-27T09:59:59Z", "2026-04-27T10:00:00Z", "2026-04-27T10:00:30Z", "2026-04-27T10:00:30Z",
                 "COMPLETED", null, Map.of("checkpoint", 50));
         when(stepExecutionRepository.findStepExecutionDetail(1L)).thenReturn(Optional.of(detail));
 

@@ -26,6 +26,11 @@ public class OracleDialect implements SqlDialect {
     }
 
     @Override
+    public String truncateToDay(String expr) {
+        return "TRUNC(" + expr + ")";
+    }
+
+    @Override
     public String orderByNullsLast(String expression, String direction) {
         return expression + " " + direction + " NULLS LAST";
     }

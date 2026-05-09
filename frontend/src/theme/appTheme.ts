@@ -23,6 +23,30 @@ export const appColors = {
   leafGreen: '#7FD36E',
 };
 
+/**
+ * Categorical palette used for "one color per item" UIs — multi-series chart lines, the
+ * job icons in the side nav, etc. Colors are chosen to stay clear of the blue / green
+ * (#66BB6A) / orange (#FFA726) hues that the run-duration trend chart already uses for
+ * its Duration / Read / Write series, so two side-by-side trend tiles don't compete.
+ *
+ * Order alternates warm ↔ cool and bright ↔ muted so adjacent indexes give strong
+ * line-to-line contrast in a stacked chart, while the sequence as a whole still flows
+ * visually (no two same-family colors land next to each other). Consumers cycle by
+ * index: `categoricalPalette[i % categoricalPalette.length]`.
+ */
+export const categoricalPalette: readonly string[] = [
+  '#EF5350', // red          — warm, bright
+  '#5E35B1', // deep purple  — cool, dark
+  '#FFCA28', // amber/gold   — warm, light
+  '#78909C', // blue grey    — cool, muted
+  '#D81B60', // magenta      — warm, vivid
+  '#9E9D24', // olive        — yellow-green, muted
+  '#AB47BC', // purple       — cool, bright
+  '#8D6E63', // brown        — neutral warm, muted
+  '#EC407A', // pink         — warm, bright
+  '#5D4037', // dark brown   — neutral, dark
+];
+
 export const pageGradientBottom: Record<ColorMode, string> = {
   light: '#003C8F',
   dark: '#02080F',
@@ -33,8 +57,7 @@ export const pageGradient: Record<ColorMode, string> = {
   dark: `linear-gradient(180deg, #0E2238 0%, #06192C 55%, ${pageGradientBottom.dark} 100%)`,
 };
 
-const chartTextFill = (theme: Theme) =>
-  theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F';
+const chartTextFill = (theme: Theme) => (theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F');
 
 export const createAppTheme = (mode: ColorMode): Theme =>
   createTheme({

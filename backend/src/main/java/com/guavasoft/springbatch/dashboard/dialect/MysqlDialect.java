@@ -26,6 +26,11 @@ public class MysqlDialect implements SqlDialect {
     }
 
     @Override
+    public String truncateToDay(String expr) {
+        return "DATE(" + expr + ")";
+    }
+
+    @Override
     public String orderByNullsLast(String expression, String direction) {
         // MySQL has no NULLS LAST; emulate with a leading IS NULL ordering term.
         return "(" + expression + " IS NULL), " + expression + " " + direction;

@@ -10,6 +10,21 @@ public interface SqlDialect {
 
     String sumDurationSeconds(String startCol, String endCol);
 
+    /**
+     * Truncates a timestamp expression to calendar-day granularity, returning a date type
+     * consistent across engines so that GROUP BY bucketing works portably.
+     *
+     * <ul>
+     *   <li>Postgres — {@code DATE_TRUNC('day', expr)::date}</li>
+     *   <li>MySQL — {@code DATE(expr)}</li>
+     *   <li>Oracle — {@code TRUNC(expr)}</li>
+     * </ul>
+     *
+     * <p>Bucketing is performed in the database's local zone; no UTC conversion is applied.
+     * Callers that need zone-aware bucketing must convert the column before passing {@code expr}.
+     */
+    String truncateToDay(String expr);
+
     String orderByNullsLast(String expression, String direction);
 
     /**

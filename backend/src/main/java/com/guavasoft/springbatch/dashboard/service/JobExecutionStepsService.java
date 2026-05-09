@@ -1,5 +1,6 @@
 package com.guavasoft.springbatch.dashboard.service;
 
+import com.guavasoft.springbatch.dashboard.config.TimestampFormatter;
 import com.guavasoft.springbatch.dashboard.entity.JobExecutionEntity;
 import com.guavasoft.springbatch.dashboard.model.DurationSummary;
 import com.guavasoft.springbatch.dashboard.model.IoSummary;
@@ -11,8 +12,6 @@ import com.guavasoft.springbatch.dashboard.model.StepDetailPage;
 import com.guavasoft.springbatch.dashboard.model.StepExecutionDetail;
 import com.guavasoft.springbatch.dashboard.repository.JobExecutionRepository;
 import com.guavasoft.springbatch.dashboard.repository.StepExecutionRepository;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,10 +24,9 @@ import org.springframework.web.server.ResponseStatusException;
 @Transactional(readOnly = true)
 public class JobExecutionStepsService {
 
-    private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
     private final StepExecutionRepository stepExecutionRepository;
     private final JobExecutionRepository jobExecutionRepository;
+    private final TimestampFormatter timestampFormatter;
 
     public JobExecutionStepCounts getStepCounts(long jobExecutionId) {
         return stepExecutionRepository.countsByJobExecutionId(jobExecutionId);
@@ -47,13 +45,9 @@ public class JobExecutionStepsService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "No job execution found with id " + jobExecutionId));
         return new JobExecutionTiming(
-                formatTimestamp(execution.getCreateTime()),
-                formatTimestamp(execution.getStartTime()),
-                formatTimestamp(execution.getEndTime()));
-    }
-
-    private static String formatTimestamp(LocalDateTime timestamp) {
-        return timestamp == null ? null : timestamp.format(TIMESTAMP_FORMAT);
+                timestampFormatter.format(execution.getCreateTime()),
+                timestampFormatter.format(execution.getStartTime()),
+                timestampFormatter.format(execution.getEndTime()));
     }
 
     public DurationSummary getDurationSummary(long jobExecutionId) {

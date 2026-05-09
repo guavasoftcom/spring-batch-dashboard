@@ -35,17 +35,6 @@ export type JobExecutionTiming = {
   endTime: string | null;
 };
 
-export type StepCountsSummary = {
-  readCount: number;
-  writeCount: number;
-  commitCount: number;
-  filterCount: number;
-  readSkipCount: number;
-  writeSkipCount: number;
-  processSkipCount: number;
-  rollbackCount: number;
-};
-
 export type StepDetailPage = {
   content: StepRow[];
   page: number;

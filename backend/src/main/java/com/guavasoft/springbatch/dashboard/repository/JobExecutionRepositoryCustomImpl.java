@@ -3,8 +3,14 @@ package com.guavasoft.springbatch.dashboard.repository;
 import com.guavasoft.springbatch.dashboard.dialect.SqlDialect;
 import com.guavasoft.springbatch.dashboard.entity.projection.JobRunCounts;
 import com.guavasoft.springbatch.dashboard.entity.projection.JobRunRow;
+import com.guavasoft.springbatch.dashboard.model.JobDurationPoint;
+import com.guavasoft.springbatch.dashboard.model.JobDurationSeries;
 import com.guavasoft.springbatch.dashboard.repository.rowmapper.JobRunRowMapper;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.sql.Date;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -253,5 +259,54 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
         } catch (EmptyResultDataAccessException ex) {
             return Optional.empty();
         }
+    }
+
+    @Override
+    public List<JobDurationSeries> jobDurationTrends(LocalDateTime cutoff) {
+        // ROUND(AVG(...)) is portable across Postgres, MySQL, and Oracle.
+        String sql = """
+            SELECT
+                ji.job_name                                           AS jobName,
+                %s                                                    AS runDate,
+                ROUND(AVG(%s))                                        AS averageSeconds
+            FROM BATCH_JOB_EXECUTION je
+            JOIN BATCH_JOB_INSTANCE ji ON je.job_instance_id = ji.job_instance_id
+            WHERE je.start_time >= :cutoff
+              AND je.end_time IS NOT NULL
+            GROUP BY ji.job_name, %s
+            ORDER BY ji.job_name ASC, %s ASC
+            """.formatted(
+                dialect.truncateToDay("je.start_time"),
+                dialect.durationSeconds("je.start_time", "je.end_time"),
+                dialect.truncateToDay("je.start_time"),
+                dialect.truncateToDay("je.start_time"));
+
+        // Flat rows: (jobName, runDate, averageSeconds)
+        record DurationRow(String jobName, LocalDate runDate, long averageSeconds) {}
+
+        List<DurationRow> flatRows = jdbc.query(
+                sql,
+                new MapSqlParameterSource("cutoff", cutoff),
+                (rs, rowNum) -> {
+                    String jobName = rs.getString("jobName");
+                    // The truncated date column is returned as a SQL DATE on all three engines.
+                    Date sqlDate = rs.getDate("runDate");
+                    LocalDate runDate = sqlDate != null ? sqlDate.toLocalDate() : LocalDate.EPOCH;
+                    long averageSeconds = rs.getLong("averageSeconds");
+                    return new DurationRow(jobName, runDate, averageSeconds);
+                });
+
+        // Post-process flat rows into nested JobDurationSeries, preserving job name order.
+        LinkedHashMap<String, List<JobDurationPoint>> pointsByJobName = new LinkedHashMap<>();
+        for (DurationRow row : flatRows) {
+            pointsByJobName
+                    .computeIfAbsent(row.jobName(), k -> new ArrayList<>())
+                    .add(new JobDurationPoint(row.runDate().toString(), row.averageSeconds()));
+        }
+
+        List<JobDurationSeries> jobDurationSeries = new ArrayList<>(pointsByJobName.size());
+        pointsByJobName.forEach((jobName, points) ->
+                jobDurationSeries.add(new JobDurationSeries(jobName, points)));
+        return jobDurationSeries;
     }
 }

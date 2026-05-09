@@ -26,6 +26,11 @@ public class PostgresqlDialect implements SqlDialect {
     }
 
     @Override
+    public String truncateToDay(String expr) {
+        return "DATE_TRUNC('day', " + expr + ")::date";
+    }
+
+    @Override
     public String orderByNullsLast(String expression, String direction) {
         return expression + " " + direction + " NULLS LAST";
     }

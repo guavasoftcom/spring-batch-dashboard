@@ -31,7 +31,7 @@ class JobLastRunsControllerTest {
 
     @Test
     void returnsJobLastRuns() throws Exception {
-        JobRun importRun = new JobRun(101L, "COMPLETED", "2026-04-30 09:15:30", "2026-04-30 09:16:30",
+        JobRun importRun = new JobRun(101L, "COMPLETED", "2026-04-30T09:15:30Z", "2026-04-30T09:16:30Z",
                 60L, 1000L, 950L, "COMPLETED");
         List<JobLastRun> jobLastRuns = List.of(
                 new JobLastRun("importUsersJob", importRun),

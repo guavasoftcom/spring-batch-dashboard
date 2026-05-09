@@ -139,7 +139,7 @@ class JobRunServiceTest {
 
     private static JobRun sampleJobRun(long executionId) {
         return new JobRun(executionId, "COMPLETED",
-            "2026-04-27 09:00:00", "2026-04-27 09:01:00",
+            "2026-04-27T09:00:00Z", "2026-04-27T09:01:00Z",
             60, 100, 95, "COMPLETED");
     }
 

@@ -8,8 +8,7 @@ const apiMocks = vi.hoisted(() => ({
   getStepCounts: vi.fn(),
   getThroughput: vi.fn(),
   getRuntime: vi.fn(),
-  getJobStatusChart: vi.fn(),
-  getProcessingMetrics: vi.fn(),
+  getJobDurationTrends: vi.fn(),
   getJobLastRuns: vi.fn(),
 }));
 
@@ -24,13 +23,14 @@ describe('OverviewPage', () => {
     apiMocks.getStepCounts.mockResolvedValue({ total: 200, completed: 180, failed: 10, started: 10 });
     apiMocks.getThroughput.mockResolvedValue({ readCount: 1000, writeCount: 950 });
     apiMocks.getRuntime.mockResolvedValue({ averageSeconds: 120, longestSeconds: 600 });
-    apiMocks.getJobStatusChart.mockResolvedValue([
-      { id: 0, label: 'Completed', value: 40, color: '#0a0' },
-      { id: 1, label: 'Failed', value: 5, color: '#a00' },
-    ]);
-    apiMocks.getProcessingMetrics.mockResolvedValue([
-      { metric: 'Read', value: 1000 },
-      { metric: 'Write', value: 950 },
+    apiMocks.getJobDurationTrends.mockResolvedValue([
+      {
+        jobName: 'archiveOrdersJob',
+        points: [
+          { date: '2026-04-29', averageSeconds: 60 },
+          { date: '2026-04-30', averageSeconds: 65 },
+        ],
+      },
     ]);
     apiMocks.getJobLastRuns.mockResolvedValue([
       {
@@ -38,8 +38,8 @@ describe('OverviewPage', () => {
         run: {
           executionId: 4321,
           status: 'COMPLETED',
-          startTime: '2026-04-30 09:15:30',
-          endTime: '2026-04-30 09:16:30',
+          startTime: '2026-04-30T09:15:30Z',
+          endTime: '2026-04-30T09:16:30Z',
           durationSeconds: 60,
           readCount: 1000,
           writeCount: 950,
@@ -68,8 +68,7 @@ describe('OverviewPage', () => {
     expect(await screen.findByText('Step Executions')).toBeInTheDocument();
     expect(await screen.findByText('Throughput')).toBeInTheDocument();
     expect(await screen.findByText('Runtime')).toBeInTheDocument();
-    expect(await screen.findByText('Job Status Distribution')).toBeInTheDocument();
-    expect(await screen.findByText('Processing Metrics')).toBeInTheDocument();
+    expect(await screen.findByText('Job Duration Trends')).toBeInTheDocument();
     expect(await screen.findByText('Last Run by Job')).toBeInTheDocument();
 
     expect(await screen.findByText(/40 completed, 5 failed, 5 active/)).toBeInTheDocument();

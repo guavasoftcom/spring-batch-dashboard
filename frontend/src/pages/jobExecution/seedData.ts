@@ -1,9 +1,9 @@
+import type { StepCountsSummary } from '~/types';
 import type {
   DurationSummary,
   IoSummary,
   JobExecutionStepCounts,
   JobExecutionTiming,
-  StepCountsSummary,
   StepRow,
 } from './types';
 
@@ -11,22 +11,22 @@ export const sampleSteps: StepRow[] = [
   {
     id: 1, stepName: 'extractStep', status: 'COMPLETED',
     readCount: 5042, writeCount: 5042, skipCount: 0, rollbackCount: 0,
-    durationSeconds: 42, startTime: '2026-04-24 09:25:10', endTime: '2026-04-24 09:25:52',
+    durationSeconds: 42, startTime: '2026-04-24T09:25:10Z', endTime: '2026-04-24T09:25:52Z',
   },
   {
     id: 2, stepName: 'transformStep', status: 'COMPLETED',
     readCount: 5042, writeCount: 4998, skipCount: 3, rollbackCount: 0,
-    durationSeconds: 88, startTime: '2026-04-24 09:25:52', endTime: '2026-04-24 09:27:20',
+    durationSeconds: 88, startTime: '2026-04-24T09:25:52Z', endTime: '2026-04-24T09:27:20Z',
   },
   {
     id: 3, stepName: 'reconcileStep', status: 'FAILED',
     readCount: 4998, writeCount: 4870, skipCount: 0, rollbackCount: 1,
-    durationSeconds: 67, startTime: '2026-04-24 09:27:20', endTime: '2026-04-24 09:28:27',
+    durationSeconds: 67, startTime: '2026-04-24T09:27:20Z', endTime: '2026-04-24T09:28:27Z',
   },
   {
     id: 4, stepName: 'loadStep', status: 'STARTED',
     readCount: 4870, writeCount: 0, skipCount: 0, rollbackCount: 0,
-    durationSeconds: 12, startTime: '2026-04-24 09:28:27', endTime: null,
+    durationSeconds: 12, startTime: '2026-04-24T09:28:27Z', endTime: null,
   },
 ];
 
@@ -47,9 +47,9 @@ export const computeDurationSummary = (steps: StepRow[]): DurationSummary => ({
 });
 
 export const sampleExecutionTiming: JobExecutionTiming = {
-  createTime: '2026-04-24 09:25:00',
-  startTime: '2026-04-24 09:25:10',
-  endTime: '2026-04-24 09:28:39',
+  createTime: '2026-04-24T09:25:00Z',
+  startTime: '2026-04-24T09:25:10Z',
+  endTime: '2026-04-24T09:28:39Z',
 };
 
 export const computeStepCountsSummary = (steps: StepRow[]): StepCountsSummary => ({

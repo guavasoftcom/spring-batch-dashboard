@@ -1,5 +1,5 @@
 import { BarChart } from '@mui/x-charts';
-import type { StepCountsSummary } from '~/pages/jobExecution/types';
+import type { StepCountsSummary } from '~/types';
 
 const BAR_COLORS = ['#42A5F5', '#66BB6A', '#26A69A', '#AB47BC', '#FFA726', '#FF7043', '#EC407A', '#EF5350'];
 

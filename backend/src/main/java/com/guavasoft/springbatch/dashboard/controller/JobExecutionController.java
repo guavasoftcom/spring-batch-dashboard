@@ -2,7 +2,7 @@ package com.guavasoft.springbatch.dashboard.controller;
 
 import com.guavasoft.springbatch.dashboard.model.Durations;
 import com.guavasoft.springbatch.dashboard.model.ExecutionCounts;
-import com.guavasoft.springbatch.dashboard.model.JobStatusSlice;
+import com.guavasoft.springbatch.dashboard.model.JobDurationSeries;
 import com.guavasoft.springbatch.dashboard.service.JobExecutionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,10 +41,16 @@ public class JobExecutionController {
         return jobExecutionService.getRuntime(window);
     }
 
-    @GetMapping("/job-status-chart")
-    @Operation(summary = "Job status distribution", description = "Pie-chart slices for completed, failed, and started job executions within the given lookback window.")
-    public List<JobStatusSlice> getJobStatusChart(
+    @GetMapping("/job-duration-trends")
+    @Operation(
+        summary = "Daily average run duration per job",
+        description = "Returns a time series of daily average finished-execution durations for each "
+            + "job, covering the requested lookback window. Only executions with a non-null "
+            + "end_time are included in the average. Date bucketing is performed in the "
+            + "database's local zone (no UTC edge conversion). The outer list is ordered by "
+            + "job name ascending; points within each series are ordered by date ascending.")
+    public List<JobDurationSeries> getJobDurationTrends(
             @RequestParam(defaultValue = "" + DEFAULT_WINDOW_DAYS) @Min(1) @Max(90) int window) {
-        return jobExecutionService.getStatusChart(window);
+        return jobExecutionService.getJobDurationTrends(window);
     }
 }

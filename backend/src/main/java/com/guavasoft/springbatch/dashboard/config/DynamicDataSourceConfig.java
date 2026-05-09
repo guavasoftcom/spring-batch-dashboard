@@ -7,6 +7,9 @@ import com.guavasoft.springbatch.dashboard.dialect.PostgresqlDialect;
 import com.guavasoft.springbatch.dashboard.dialect.RoutingSqlDialect;
 import com.guavasoft.springbatch.dashboard.dialect.SqlDialect;
 import com.zaxxer.hikari.HikariDataSource;
+import java.time.DateTimeException;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -27,6 +30,7 @@ public class DynamicDataSourceConfig {
     private static final int MAX_POOL_SIZE = 5;
     private static final long IDLE_TIMEOUT_MS = 60_000L;
     private static final int MAX_SCHEMA_LENGTH = 128;
+    private static final ZoneId DEFAULT_ZONE_ID = ZoneOffset.UTC;
 
     // Plain unquoted identifiers across Postgres / Oracle / MySQL: leading letter or
     // underscore, then letters / digits / underscore / dollar. Anything outside this set
@@ -50,15 +54,16 @@ public class DynamicDataSourceConfig {
         DataSource defaultTarget = null;
         for (var entry : properties.getDatasources()) {
             SqlDialect dialect = requireDialect(entry, dialectByType);
-            // Validate the schema *before* constructing the Hikari pool so misconfigured
-            // entries fail with a clear IllegalStateException instead of being shadowed by
-            // a driver-load failure (which surfaces from DataSourceBuilder.build()).
+            // Validate the schema and timezone *before* constructing the Hikari pool so
+            // misconfigured entries fail with a clear IllegalStateException instead of being
+            // shadowed by a driver-load failure (which surfaces from DataSourceBuilder.build()).
             String schema = entry.getSchema();
             String initSql = null;
             if (StringUtils.isNotBlank(schema)) {
                 validateSchema(entry.getName(), schema);
                 initSql = dialect.setSchemaSql(schema);
             }
+            resolveZoneId(entry);
 
             HikariDataSource ds = DataSourceBuilder.create()
                 .type(HikariDataSource.class)
@@ -90,6 +95,15 @@ public class DynamicDataSourceConfig {
         routing.setDefaultTargetDataSource(defaultTarget);
         routing.afterPropertiesSet();
         return routing;
+    }
+
+    @Bean
+    Map<String, ZoneId> datasourceZoneIds() {
+        Map<String, ZoneId> zoneByDatasource = new LinkedHashMap<>();
+        for (var entry : properties.getDatasources()) {
+            zoneByDatasource.put(entry.getName(), resolveZoneId(entry));
+        }
+        return Map.copyOf(zoneByDatasource);
     }
 
     @Bean
@@ -137,6 +151,20 @@ public class DynamicDataSourceConfig {
                 "Datasource '" + datasourceName + "' has an invalid schema: '" + schema
                     + "'. Schemas must be a plain identifier (letters, digits, _, $) up to "
                     + MAX_SCHEMA_LENGTH + " characters.");
+        }
+    }
+
+    private static ZoneId resolveZoneId(DatasourcesProperties.DatasourceEntry entry) {
+        String configuredZone = entry.getTimezone();
+        if (StringUtils.isBlank(configuredZone)) {
+            return DEFAULT_ZONE_ID;
+        }
+        try {
+            return ZoneId.of(configuredZone.trim());
+        } catch (DateTimeException ex) {
+            throw new IllegalStateException(
+                "Datasource '" + entry.getName() + "' has an invalid timezone: '" + configuredZone
+                    + "'. Expected an IANA zone id such as 'UTC' or 'America/New_York'.", ex);
         }
     }
 }

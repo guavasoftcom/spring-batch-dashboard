@@ -7,7 +7,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import SourceIcon from '@mui/icons-material/Source';
+import DisplaySettingsIcon from '@mui/icons-material/DisplaySettings';
 import { humanize } from '~/utils';
 
 type Props = {
@@ -29,14 +29,10 @@ const BatchJobsNav = ({ jobs, activeJobId, loading, collapsed = false, onSelect 
       </Typography>
     )}
     <List>
-      {loading && !collapsed &&
+      {loading &&
+        !collapsed &&
         [0, 1, 2].map((i) => (
-          <Skeleton
-            key={i}
-            variant="text"
-            width="80%"
-            sx={{ mx: 2, my: 0.5 }}
-          />
+          <Skeleton key={i} variant="text" width="80%" sx={{ mx: 2, my: 0.5 }} />
         ))}
       {!loading && jobs.length === 0 && !collapsed && (
         <Typography variant="body2" sx={{ px: 2, color: 'text.secondary' }}>
@@ -65,8 +61,10 @@ const BatchJobsNav = ({ jobs, activeJobId, loading, collapsed = false, onSelect 
                 '&.Mui-selected:hover': { bgcolor: 'rgba(21, 101, 192, 0.18)' },
               }}
             >
-              <ListItemIcon sx={{ minWidth: collapsed ? 0 : 32, color: 'inherit', justifyContent: 'center' }}>
-                <SourceIcon fontSize="small" />
+              <ListItemIcon
+                sx={{ minWidth: collapsed ? 0 : 32, color: 'inherit', justifyContent: 'center' }}
+              >
+                <DisplaySettingsIcon fontSize="small" />
               </ListItemIcon>
               {!collapsed && (
                 <ListItemText

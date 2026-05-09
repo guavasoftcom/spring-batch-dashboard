@@ -35,5 +35,12 @@ public class DatasourcesProperties {
          * (validated in {@code DynamicDataSourceConfig}).
          */
         private String schema;
+        /**
+         * Optional IANA time-zone id (e.g. {@code America/New_York}, {@code UTC}) for this
+         * datasource. Used when interpreting timestamp columns that the database stores
+         * without an offset. Blank or unset defaults to {@code UTC}; the value is validated
+         * at startup via {@link java.time.ZoneId#of(String)} in {@code DynamicDataSourceConfig}.
+         */
+        private String timezone;
     }
 }

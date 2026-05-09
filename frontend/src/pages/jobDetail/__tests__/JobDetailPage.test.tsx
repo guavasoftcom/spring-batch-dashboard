@@ -20,8 +20,8 @@ vi.mock('~/api', async () => {
 const sampleRun = (executionId: number) => ({
   executionId,
   status: 'COMPLETED' as const,
-  startTime: '2026-04-27 09:00:00',
-  endTime: '2026-04-27 09:01:00',
+  startTime: '2026-04-27T09:00:00Z',
+  endTime: '2026-04-27T09:01:00Z',
   durationSeconds: 60,
   readCount: 100,
   writeCount: 95,

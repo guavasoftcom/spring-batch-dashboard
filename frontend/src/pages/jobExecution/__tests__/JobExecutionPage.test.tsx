@@ -27,17 +27,17 @@ const sampleStep = (id: number, stepName: string, status: 'COMPLETED' | 'FAILED'
   skipCount: 0,
   rollbackCount: 0,
   durationSeconds: 30,
-  startTime: '2026-04-27 10:00:00',
-  endTime: '2026-04-27 10:00:30',
+  startTime: '2026-04-27T10:00:00Z',
+  endTime: '2026-04-27T10:00:30Z',
 });
 
 describe('JobExecutionPage', () => {
   beforeEach(() => {
     apiMocks.getJobExecutionStepCounts.mockResolvedValue({ totalSteps: 2, completed: 2, failed: 0, active: 0 });
     apiMocks.getExecutionTiming.mockResolvedValue({
-      createTime: '2026-04-27 09:59:58',
-      startTime: '2026-04-27 10:00:00',
-      endTime: '2026-04-27 10:00:30',
+      createTime: '2026-04-27T09:59:58Z',
+      startTime: '2026-04-27T10:00:00Z',
+      endTime: '2026-04-27T10:00:30Z',
     });
     apiMocks.getStepCountsSummary.mockResolvedValue({
       readCount: 200,
@@ -70,10 +70,10 @@ describe('JobExecutionPage', () => {
       processSkipCount: 0,
       rollbackCount: 0,
       durationSeconds: 30,
-      createTime: '2026-04-27 09:59:59',
-      startTime: '2026-04-27 10:00:00',
-      endTime: '2026-04-27 10:00:30',
-      lastUpdated: '2026-04-27 10:00:30',
+      createTime: '2026-04-27T09:59:59Z',
+      startTime: '2026-04-27T10:00:00Z',
+      endTime: '2026-04-27T10:00:30Z',
+      lastUpdated: '2026-04-27T10:00:30Z',
       exitCode: 'COMPLETED',
       exitMessage: null,
       executionContext: { checkpoint: 100 },

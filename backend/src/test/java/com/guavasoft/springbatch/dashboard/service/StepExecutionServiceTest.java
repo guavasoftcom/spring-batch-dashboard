@@ -7,11 +7,9 @@ import static org.mockito.Mockito.when;
 
 import com.guavasoft.springbatch.dashboard.entity.BatchStatus;
 import com.guavasoft.springbatch.dashboard.model.ExecutionCounts;
-import com.guavasoft.springbatch.dashboard.model.ThroughputBar;
 import com.guavasoft.springbatch.dashboard.model.ThroughputSummary;
 import com.guavasoft.springbatch.dashboard.repository.StepExecutionRepository;
 import java.time.LocalDateTime;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -47,19 +45,4 @@ class StepExecutionServiceTest {
         assertThat(stepExecutionService.getThroughput(WINDOW)).isEqualTo(new ThroughputSummary(1000, 950));
     }
 
-    @Test
-    void getProcessingMetricsReturnsBarPerThroughputMetric() {
-        when(stepExecutionRepository.sumReadCount(any(LocalDateTime.class))).thenReturn(1000L);
-        when(stepExecutionRepository.sumWriteCount(any(LocalDateTime.class))).thenReturn(950L);
-        when(stepExecutionRepository.sumCommitCount(any(LocalDateTime.class))).thenReturn(100L);
-        when(stepExecutionRepository.sumSkipCount(any(LocalDateTime.class))).thenReturn(3L);
-        when(stepExecutionRepository.sumRollbackCount(any(LocalDateTime.class))).thenReturn(1L);
-
-        List<ThroughputBar> throughputBars = stepExecutionService.getProcessingMetrics(WINDOW);
-
-        assertThat(throughputBars).extracting(ThroughputBar::metric)
-            .containsExactly("Read", "Write", "Commits", "Skips", "Rollbacks");
-        assertThat(throughputBars).extracting(ThroughputBar::value)
-            .containsExactly(1000L, 950L, 100L, 3L, 1L);
-    }
 }
