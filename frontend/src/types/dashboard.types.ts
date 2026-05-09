@@ -17,9 +17,23 @@ export type Durations = {
   longestSeconds: number;
 };
 
-export type JobStatusSlice = { id: number; label: string; value: number; color: string };
+export type JobDurationPoint = { date: string; averageSeconds: number };
 
-export type ThroughputBar = { metric: string; value: number };
+export type JobDurationSeries = {
+  jobName: string;
+  points: JobDurationPoint[];
+};
+
+export type StepCountsSummary = {
+  readCount: number;
+  writeCount: number;
+  commitCount: number;
+  filterCount: number;
+  readSkipCount: number;
+  writeSkipCount: number;
+  processSkipCount: number;
+  rollbackCount: number;
+};
 
 export type JobLastRun = {
   jobName: string;

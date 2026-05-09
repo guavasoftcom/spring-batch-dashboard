@@ -15,18 +15,16 @@ vi.mock( '~/config/client', () => ({
 import { apiClient } from '~/config/client';
 import {
   jobCountsMock,
+  jobDurationTrendsMock,
   jobLastRunsMock,
-  jobStatusChartMock,
-  processingMetricsMock,
   runtimeMock,
   stepCountsMock,
   throughputMock,
 } from '~/pages/overview/seedSummary';
 import {
   getJobCounts,
+  getJobDurationTrends,
   getJobLastRuns,
-  getJobStatusChart,
-  getProcessingMetrics,
   getRuntime,
   getStepCounts,
   getThroughput,
@@ -49,8 +47,7 @@ describe('dashboardApi', () => {
       ['getStepCounts', getStepCounts, '/api/overview/step-counts', { total: 2 }],
       ['getThroughput', getThroughput, '/api/overview/throughput', { readCount: 3 }],
       ['getRuntime', getRuntime, '/api/overview/runtime', { averageSeconds: 4 }],
-      ['getJobStatusChart', getJobStatusChart, '/api/overview/job-status-chart', [{ id: 1 }]],
-      ['getProcessingMetrics', getProcessingMetrics, '/api/overview/processing-metrics', [{ metric: 'x' }]],
+      ['getJobDurationTrends', getJobDurationTrends, '/api/overview/job-duration-trends', [{ jobName: 'j', points: [] }]],
       ['getJobLastRuns', getJobLastRuns, '/api/overview/job-last-runs', [{ jobName: 'j', run: null }]],
     ];
 
@@ -72,8 +69,7 @@ describe('dashboardApi', () => {
       await expect(getStepCounts(WINDOW)).resolves.toEqual(stepCountsMock);
       await expect(getThroughput(WINDOW)).resolves.toEqual(throughputMock);
       await expect(getRuntime(WINDOW)).resolves.toEqual(runtimeMock);
-      await expect(getJobStatusChart(WINDOW)).resolves.toEqual(jobStatusChartMock);
-      await expect(getProcessingMetrics(WINDOW)).resolves.toEqual(processingMetricsMock);
+      await expect(getJobDurationTrends(WINDOW)).resolves.toEqual(jobDurationTrendsMock);
       await expect(getJobLastRuns(WINDOW)).resolves.toEqual(jobLastRunsMock);
       expect(apiClient.get).not.toHaveBeenCalled();
     });

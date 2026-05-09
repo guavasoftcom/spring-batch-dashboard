@@ -52,4 +52,10 @@ class MysqlDialectTest {
     void setSchemaSqlReturnsNull() {
         assertThat(dialect.setSchemaSql("batch_prod")).isNull();
     }
+
+    @Test
+    void truncateToDayUsesDateFunction() {
+        assertThat(dialect.truncateToDay("je.start_time"))
+            .isEqualTo("DATE(je.start_time)");
+    }
 }

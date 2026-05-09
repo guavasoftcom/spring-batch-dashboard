@@ -1,5 +1,5 @@
 import { Box, List, ListItemButton, ListItemIcon, ListItemText, Tooltip } from '@mui/material';
-import HomeIcon from '@mui/icons-material/Home';
+import AutoGraphOutlinedIcon from '@mui/icons-material/AutoGraphOutlined';
 import { BatchJobsNav } from '~/components/BatchJobsNav';
 import { EnvironmentSelector } from '~/components/EnvironmentSelector';
 
@@ -12,7 +12,14 @@ type Props = {
   onNavigateOverview: () => void;
 };
 
-const AppNav = ({ navOpen, isWide, collapsed, onDashboard, onBackdropClick, onNavigateOverview }: Props) => {
+const AppNav = ({
+  navOpen,
+  isWide,
+  collapsed,
+  onDashboard,
+  onBackdropClick,
+  onNavigateOverview,
+}: Props) => {
   const overviewButton = (
     <ListItemButton
       selected={onDashboard}
@@ -29,8 +36,10 @@ const AppNav = ({ navOpen, isWide, collapsed, onDashboard, onBackdropClick, onNa
         '&.Mui-selected:hover': { bgcolor: 'rgba(21, 101, 192, 0.18)' },
       }}
     >
-      <ListItemIcon sx={{ minWidth: collapsed ? 0 : 32, color: 'inherit', justifyContent: 'center' }}>
-        <HomeIcon fontSize="small" />
+      <ListItemIcon
+        sx={{ minWidth: collapsed ? 0 : 32, color: 'inherit', justifyContent: 'center' }}
+      >
+        <AutoGraphOutlinedIcon fontSize="small" />
       </ListItemIcon>
       {!collapsed && (
         <ListItemText
@@ -91,8 +100,12 @@ const AppNav = ({ navOpen, isWide, collapsed, onDashboard, onBackdropClick, onNa
         <EnvironmentSelector compact={collapsed} />
         <List sx={{ mt: collapsed ? 2 : 0 }}>
           {collapsed ? (
-            <Tooltip title="Overview" placement="right">{overviewButton}</Tooltip>
-          ) : overviewButton}
+            <Tooltip title="Overview" placement="right">
+              {overviewButton}
+            </Tooltip>
+          ) : (
+            overviewButton
+          )}
         </List>
         <BatchJobsNav collapsed={collapsed} />
       </Box>

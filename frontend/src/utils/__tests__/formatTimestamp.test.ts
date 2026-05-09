@@ -1,17 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { formatTimestamp } from '~/utils/formatTimestamp';
 
+// Format assertions are zone-dependent (the function uses the browser's local zone),
+// so the tests check the *shape* of the output rather than literal strings, plus a
+// round-trip identity for relative ordering of two instants. The trailing token is the
+// abbreviated time-zone name (e.g. "CDT", "GMT", "GMT-5").
+const FORMAT_PATTERN = /^[A-Z][a-z]{2} \d{1,2}, \d{4} \d{1,2}:\d{2} (AM|PM) \S+/;
+
 describe('formatTimestamp', () => {
-  it('formats a backend timestamp into "Mon D, YYYY h:mm AM/PM"', () => {
-    expect(formatTimestamp('2026-05-05 18:00:00')).toBe('May 5, 2026 6:00 PM');
+  it('formats an ISO-8601 UTC instant into "Mon D, YYYY h:mm AM/PM TZ"', () => {
+    expect(formatTimestamp('2026-05-05T18:00:00Z')).toMatch(FORMAT_PATTERN);
   });
 
-  it('formats midnight as 12:00 AM', () => {
-    expect(formatTimestamp('2026-05-05 00:00:00')).toBe('May 5, 2026 12:00 AM');
+  it('formats midnight UTC into the host zone', () => {
+    expect(formatTimestamp('2026-05-05T00:00:00Z')).toMatch(FORMAT_PATTERN);
   });
 
-  it('zero-pads minutes', () => {
-    expect(formatTimestamp('2026-05-05 06:05:00')).toBe('May 5, 2026 6:05 AM');
+  it('produces different output for two different instants', () => {
+    const morning = formatTimestamp('2026-05-05T06:05:00Z');
+    const evening = formatTimestamp('2026-05-05T18:00:00Z');
+    expect(morning).not.toEqual(evening);
   });
 
   it('returns em dash for null', () => {

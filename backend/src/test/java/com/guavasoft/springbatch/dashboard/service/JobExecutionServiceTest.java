@@ -9,10 +9,8 @@ import static org.mockito.Mockito.when;
 import com.guavasoft.springbatch.dashboard.entity.BatchStatus;
 import com.guavasoft.springbatch.dashboard.model.Durations;
 import com.guavasoft.springbatch.dashboard.model.ExecutionCounts;
-import com.guavasoft.springbatch.dashboard.model.JobStatusSlice;
 import com.guavasoft.springbatch.dashboard.repository.JobExecutionRepository;
 import java.time.LocalDateTime;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -51,19 +49,6 @@ class JobExecutionServiceTest {
         Durations runtime = jobExecutionService.getRuntime(WINDOW);
 
         assertThat(runtime).isEqualTo(new Durations(120, 600));
-    }
-
-    @Test
-    void getStatusChartReturnsThreeSlicesInFixedOrder() {
-        when(jobExecutionRepository.countByStatus(eq(BatchStatus.COMPLETED), any(LocalDateTime.class))).thenReturn(40L);
-        when(jobExecutionRepository.countByStatus(eq(BatchStatus.FAILED), any(LocalDateTime.class))).thenReturn(5L);
-        when(jobExecutionRepository.countByStatus(eq(BatchStatus.STARTED), any(LocalDateTime.class))).thenReturn(2L);
-
-        List<JobStatusSlice> chart = jobExecutionService.getStatusChart(WINDOW);
-
-        assertThat(chart).extracting(JobStatusSlice::id).containsExactly(0, 1, 2);
-        assertThat(chart).extracting(JobStatusSlice::label).containsExactly("Completed", "Failed", "Started");
-        assertThat(chart).extracting(JobStatusSlice::value).containsExactly(40L, 5L, 2L);
     }
 
     @Test

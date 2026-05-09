@@ -8,7 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.guavasoft.springbatch.dashboard.model.Durations;
 import com.guavasoft.springbatch.dashboard.model.ExecutionCounts;
-import com.guavasoft.springbatch.dashboard.model.JobStatusSlice;
+import com.guavasoft.springbatch.dashboard.model.JobDurationPoint;
+import com.guavasoft.springbatch.dashboard.model.JobDurationSeries;
 import com.guavasoft.springbatch.dashboard.service.JobExecutionService;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -69,16 +70,41 @@ class JobExecutionControllerTest {
     }
 
     @Test
-    void returnsJobStatusChart() throws Exception {
-        when(jobExecutionService.getStatusChart(DEFAULT_WINDOW)).thenReturn(List.of(
-            new JobStatusSlice(0, "Completed", 40, "#0a0"),
-            new JobStatusSlice(1, "Failed", 5, "#a00")));
+    void returnsJobDurationTrendsWithDefaultWindow() throws Exception {
+        List<JobDurationSeries> trends = List.of(
+                new JobDurationSeries("dailyImportJob", List.of(
+                        new JobDurationPoint("2026-04-29", 95L),
+                        new JobDurationPoint("2026-04-30", 110L))));
+        when(jobExecutionService.getJobDurationTrends(DEFAULT_WINDOW)).thenReturn(trends);
 
-        mockMvc.perform(get("/api/overview/job-status-chart"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.length()").value(2))
-            .andExpect(jsonPath("$[0].label").value("Completed"))
-            .andExpect(jsonPath("$[0].value").value(40))
-            .andExpect(jsonPath("$[1].label").value("Failed"));
+        mockMvc.perform(get("/api/overview/job-duration-trends"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].jobName").value("dailyImportJob"))
+                .andExpect(jsonPath("$[0].points[0].date").value("2026-04-29"))
+                .andExpect(jsonPath("$[0].points[0].averageSeconds").value(95))
+                .andExpect(jsonPath("$[0].points[1].date").value("2026-04-30"))
+                .andExpect(jsonPath("$[0].points[1].averageSeconds").value(110));
+    }
+
+    @Test
+    void returnsJobDurationTrendsWithExplicitWindow() throws Exception {
+        when(jobExecutionService.getJobDurationTrends(30)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/overview/job-duration-trends").param("window", "30"))
+                .andExpect(status().isOk());
+
+        verify(jobExecutionService).getJobDurationTrends(30);
+    }
+
+    @Test
+    void rejectsJobDurationTrendsWindowAboveMax() throws Exception {
+        mockMvc.perform(get("/api/overview/job-duration-trends").param("window", "91"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rejectsJobDurationTrendsWindowBelowMin() throws Exception {
+        mockMvc.perform(get("/api/overview/job-duration-trends").param("window", "0"))
+                .andExpect(status().isBadRequest());
     }
 }

@@ -12,12 +12,12 @@ public record JobRun(
         allowableValues = {"COMPLETED", "FAILED", "STARTED", "STOPPING", "STOPPED", "ABANDONED", "UNKNOWN"})
     String status,
 
-    @Schema(description = "Start timestamp formatted as 'yyyy-MM-dd HH:mm:ss'.",
-        example = "2026-04-30 09:15:30")
+    @Schema(description = "Start timestamp as an ISO-8601 UTC instant.",
+        example = "2026-04-30T14:30:00Z")
     String startTime,
 
-    @Schema(description = "End timestamp formatted as 'yyyy-MM-dd HH:mm:ss'; null when still running.",
-        example = "2026-04-30 09:16:30",
+    @Schema(description = "End timestamp as an ISO-8601 UTC instant; null when still running.",
+        example = "2026-04-30T14:31:00Z",
         nullable = true)
     String endTime,
 

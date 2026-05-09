@@ -9,9 +9,9 @@ describe('ExecutionLink', () => {
     expect(screen.getByRole('button')).toHaveTextContent('#42');
   });
 
-  it('renders a DataThresholding icon to the left of the number', () => {
+  it('renders a DynamicForm icon to the left of the number', () => {
     const { container } = render(<ExecutionLink executionId={1} onClick={() => {}} />);
-    const icon = container.querySelector('svg[data-testid="DataThresholdingIcon"]');
+    const icon = container.querySelector('svg[data-testid="DynamicFormOutlinedIcon"]');
     expect(icon).toBeInTheDocument();
   });
 
@@ -27,7 +27,7 @@ describe('ExecutionLink', () => {
 
   it('uses small icon styling for the default cell variant', () => {
     const { container } = render(<ExecutionLink executionId={1} onClick={() => {}} />);
-    const icon = container.querySelector('svg[data-testid="DataThresholdingIcon"]');
+    const icon = container.querySelector('svg[data-testid="DynamicFormOutlinedIcon"]');
     expect(icon?.classList.contains('MuiSvgIcon-fontSizeSmall')).toBe(true);
   });
 
@@ -35,7 +35,7 @@ describe('ExecutionLink', () => {
     const { container } = render(
       <ExecutionLink executionId={1} onClick={() => {}} variant="large" />,
     );
-    const icon = container.querySelector('svg[data-testid="DataThresholdingIcon"]') as SVGElement;
+    const icon = container.querySelector('svg[data-testid="DynamicFormOutlinedIcon"]') as SVGElement;
     expect(icon?.classList.contains('MuiSvgIcon-fontSizeSmall')).toBe(false);
     const link = screen.getByRole('button');
     expect(window.getComputedStyle(link).fontSize).toBe('2.125rem');

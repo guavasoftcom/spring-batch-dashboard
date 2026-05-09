@@ -1,4 +1,5 @@
 import {
+  Box,
   Chip,
   Link as MuiLink,
   Table,
@@ -9,6 +10,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import DisplaySettingsIcon from '@mui/icons-material/DisplaySettings';
 import { ExecutionLink, LargeTile } from '~/components';
 import type { JobLastRun } from '~/types';
 import { STATUS_COLOR, formatDuration, formatTimestamp, humanize } from '~/utils';
@@ -54,6 +56,9 @@ const JobLastRunsTile = ({ data, loading, error, onJobClick, onRunClick }: Props
                     component="button"
                     onClick={() => onJobClick(jobName)}
                     sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 0.75,
                       fontWeight: 700,
                       color: 'primary.dark',
                       textDecoration: 'none',
@@ -64,7 +69,8 @@ const JobLastRunsTile = ({ data, loading, error, onJobClick, onRunClick }: Props
                       '&:hover': { textDecoration: 'underline' },
                     }}
                   >
-                    {humanize(jobName)}
+                    <DisplaySettingsIcon fontSize="small" sx={{ color: 'inherit' }} />
+                    <Box component="span">{humanize(jobName)}</Box>
                   </MuiLink>
                 </TableCell>
                 {run ? (

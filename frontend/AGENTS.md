@@ -22,7 +22,7 @@ src/
   api/
     index.ts                barrel
     client.ts               (re-exported from config/client.ts)
-    authApi.ts              getCurrentUser, logout
+    authApi.ts              getCurrentUser, getOAuth2Providers, logout
     environmentApi.ts       getEnvironments → EnvironmentInfo[] ({ name, type })
     jobsApi.ts              getJobs
     jobRunsApi.ts           run-level metrics + paginated runs
@@ -34,7 +34,7 @@ src/
     ColorModeToggle/        sun/moon IconButton wired to useColorMode
     DatabaseIcon/           branded SVG icon per database engine (POSTGRESQL/MYSQL/ORACLE)
     EnvironmentSelector/    Select with DatabaseIcon per option + tooltip on the trigger
-    ExecutionLink/          MuiLink-as-button + DataThresholdingIcon + #executionId (cell / large variants)
+    ExecutionLink/          MuiLink-as-button + DynamicFormOutlinedIcon + #executionId (cell / large variants)
     PageBreadcrumb/         themed breadcrumb; auto-prepends env (with DatabaseIcon) when nav is hidden
     TilePaper/              base styled Paper for tiles
     StatTile/               title + big value + subtitle (loading/error/empty)
@@ -43,7 +43,7 @@ src/
                             ships `recordToStatEntries` for adapting Record<string, unknown> (e.g. parsed execution context)
     WindowSelect/           lookback-window dropdown bound to WindowContext
   config/
-    env.ts                  BACKEND_BASE_URL, LOGIN_URL, USE_MOCK_DATA
+    env.ts                  BACKEND_BASE_URL, USE_MOCK_DATA
     client.ts               axios instance with X-Environment interceptor
   shell/                    app shell (formerly pages/shared/)
     AppShell.tsx            AppBar + sidebar; mounts once via AppShellLayout
@@ -90,7 +90,7 @@ Use the shared components in `src/components/` instead of building tile chrome i
 
 - **`TilePaper`** — base styled Paper. Use directly only when neither `StatTile` nor `LargeTile` fits.
 - **`StatTile`** — orange title, big numeric value, subtitle, loading skeletons, error message, and optional empty-state. Used for the small dashboard tiles (Job Executions, Runtime, Throughput, Total Runs, Success Rate, Avg Duration, etc.).
-- **`LargeTile`** — h6 title, optional `headerAction` (right-aligned), rectangular skeleton (overridable via `loadingSkeleton`), error message, and `children` for the data body. Used for charts and tables (JobStatusChartTile, ProcessingMetricsTile, RunDurationTrendTile, JobRunsTableTile, StepsTableTile).
+- **`LargeTile`** — h6 title, optional `headerAction` (right-aligned), rectangular skeleton (overridable via `loadingSkeleton`), error message, and `children` for the data body. Used for charts and tables (JobDurationTrendsTile, JobLastRunsTile, RunDurationTrendTile, JobRunsTableTile, StepsTableTile).
 
 When writing a new tile, prefer extending `StatTile` / `LargeTile` over duplicating the title + skeleton + error markup. Reach for `TilePaper` directly only when neither fits the pattern (e.g. small chart with body2 title — see `StepDurationsTile`).
 
@@ -98,7 +98,7 @@ When writing a new tile, prefer extending `StatTile` / `LargeTile` over duplicat
 
 `AppShell` ([src/shell/AppShell.tsx](src/shell/AppShell.tsx)) provides:
 
-- Sticky AppBar with menu-toggle button, logo, current user avatar (initials fallback), `ColorModeToggle`, Logout button
+- Sticky AppBar with menu-toggle button, logo, `ColorModeToggle`, current user name + avatar (initials fallback), and a Logout icon-button that opens a confirmation dialog
 - Left sidebar with `EnvironmentSelector` + `BatchJobsNav` (active item derived from `useParams().jobId`); sticky on `md+`, slide-in drawer on `xs`/`sm`. Open/closed state lives in `NavContext`
 - `EnvironmentContext.Provider` (persisted to `localStorage` under `spring-batch-dashboard.environment`) and `NavContext.Provider`
 - Scrolls back to top on every route change
@@ -113,7 +113,7 @@ Each page renders a breadcrumb-style title via the shared [`PageBreadcrumb`](src
 ```tsx
 <PageBreadcrumb
   segments={[
-    { label: 'Overview', icon: <HomeIcon sx={{ fontSize: 26 }} /> },
+    { label: 'Overview', icon: <AutoGraphOutlinedIcon sx={{ fontSize: 26 }} /> },
   ]}
 />
 ```
@@ -182,7 +182,7 @@ Coverage gate is **80%** on lines / statements / branches / functions, enforced 
 `src/utils/` exports a few cross-page helpers — prefer these over reimplementing:
 
 - `formatDuration(seconds)` — compact human-readable duration (`"45s"`, `"1m 30s"`, `"2h 5m"`; `"—"` for null/undefined). Used by every tile/cell that displays a runtime.
-- `formatTimestamp(raw)` — formats a backend `'yyyy-MM-dd HH:mm:ss'` LocalDateTime as `"May 5, 2026 6:00 PM"` (parsed as local time to match JVM semantics); `"—"` for null/undefined, raw string back on parse failure.
+- `formatTimestamp(raw)` — formats a backend ISO-8601 UTC instant (e.g. `'2026-05-05T18:00:00Z'`) as `"May 5, 2026 1:00 PM CDT"` rendered in the browser's local zone with the short zone abbreviation; `"—"` for null/undefined, raw string back on parse failure.
 - `STATUS_COLOR` — `Record<'COMPLETED' | 'FAILED' | 'STARTED', 'success' | 'error' | 'info'>` for `<Chip color="...">`. Keeps every list/tile/modal painting status badges with the same palette slot.
 - `humanize(camelOrSnake)` — title-cases a job/step name for display.
 

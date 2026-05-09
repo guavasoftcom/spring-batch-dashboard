@@ -1,14 +1,12 @@
 package com.guavasoft.springbatch.dashboard.controller;
 
 import com.guavasoft.springbatch.dashboard.model.ExecutionCounts;
-import com.guavasoft.springbatch.dashboard.model.ThroughputBar;
 import com.guavasoft.springbatch.dashboard.model.ThroughputSummary;
 import com.guavasoft.springbatch.dashboard.service.StepExecutionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,10 +39,4 @@ public class StepExecutionController {
         return stepExecutionService.getThroughput(window);
     }
 
-    @GetMapping("/processing-metrics")
-    @Operation(summary = "Processing metrics", description = "Bar-chart values for read, write, commit, skip, and rollback totals within the given lookback window.")
-    public List<ThroughputBar> getProcessingMetrics(
-            @RequestParam(defaultValue = "" + DEFAULT_WINDOW_DAYS) @Min(1) @Max(90) int window) {
-        return stepExecutionService.getProcessingMetrics(window);
-    }
 }

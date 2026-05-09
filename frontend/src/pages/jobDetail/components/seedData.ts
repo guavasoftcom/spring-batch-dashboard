@@ -1,11 +1,11 @@
 import type { JobRun } from '~/types';
 
 export const sampleRuns: JobRun[] = [
-  { executionId: 5142, status: 'STARTED',   startTime: '2026-04-24 09:25:10', endTime: null,                  durationSeconds: 209, readCount: 14952, writeCount: 14910, exitCode: 'EXECUTING' },
-  { executionId: 5141, status: 'FAILED',    startTime: '2026-04-23 23:00:01', endTime: '2026-04-23 23:03:18', durationSeconds: 197, readCount: 5042,  writeCount: 4870,  exitCode: 'FAILED' },
-  { executionId: 5140, status: 'COMPLETED', startTime: '2026-04-22 23:00:01', endTime: '2026-04-22 23:02:42', durationSeconds: 161, readCount: 5012,  writeCount: 5012,  exitCode: 'COMPLETED' },
-  { executionId: 5139, status: 'COMPLETED', startTime: '2026-04-21 23:00:01', endTime: '2026-04-21 23:02:51', durationSeconds: 170, readCount: 4998,  writeCount: 4998,  exitCode: 'COMPLETED' },
-  { executionId: 5138, status: 'COMPLETED', startTime: '2026-04-20 23:00:01', endTime: '2026-04-20 23:03:05', durationSeconds: 184, readCount: 5101,  writeCount: 5101,  exitCode: 'COMPLETED' },
+  { executionId: 5142, status: 'STARTED',   startTime: '2026-04-24T09:25:10Z', endTime: null,                  durationSeconds: 209, readCount: 14952, writeCount: 14910, exitCode: 'EXECUTING' },
+  { executionId: 5141, status: 'FAILED',    startTime: '2026-04-23T23:00:01Z', endTime: '2026-04-23T23:03:18Z', durationSeconds: 197, readCount: 5042,  writeCount: 4870,  exitCode: 'FAILED' },
+  { executionId: 5140, status: 'COMPLETED', startTime: '2026-04-22T23:00:01Z', endTime: '2026-04-22T23:02:42Z', durationSeconds: 161, readCount: 5012,  writeCount: 5012,  exitCode: 'COMPLETED' },
+  { executionId: 5139, status: 'COMPLETED', startTime: '2026-04-21T23:00:01Z', endTime: '2026-04-21T23:02:51Z', durationSeconds: 170, readCount: 4998,  writeCount: 4998,  exitCode: 'COMPLETED' },
+  { executionId: 5138, status: 'COMPLETED', startTime: '2026-04-20T23:00:01Z', endTime: '2026-04-20T23:03:05Z', durationSeconds: 184, readCount: 5101,  writeCount: 5101,  exitCode: 'COMPLETED' },
 ];
 
 export const computeRunCounts = (runs: JobRun[]) => {

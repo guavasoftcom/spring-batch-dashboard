@@ -53,4 +53,10 @@ class PostgresqlDialectTest {
         assertThat(dialect.setSchemaSql("batch_prod"))
             .isEqualTo("SET search_path TO batch_prod");
     }
+
+    @Test
+    void truncateToDayCastsDateTruncToDate() {
+        assertThat(dialect.truncateToDay("je.start_time"))
+            .isEqualTo("DATE_TRUNC('day', je.start_time)::date");
+    }
 }

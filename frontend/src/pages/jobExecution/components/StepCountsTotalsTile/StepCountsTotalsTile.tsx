@@ -1,6 +1,5 @@
-import { LargeTile } from '~/components';
-import type { StepCountsSummary } from '~/pages/jobExecution/types';
-import StepCountsBarChart from '../StepCountsBarChart';
+import { LargeTile, StepCountsBarChart } from '~/components';
+import type { StepCountsSummary } from '~/types';
 
 type Props = {
   data: StepCountsSummary | null;

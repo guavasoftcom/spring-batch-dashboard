@@ -17,3 +17,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Playwright MCP scratch output (page snapshots, console logs)
+.playwright-mcp/

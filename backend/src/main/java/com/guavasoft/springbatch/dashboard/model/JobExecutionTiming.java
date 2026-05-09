@@ -4,15 +4,15 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Lifecycle timestamps for a single job execution.")
 public record JobExecutionTiming(
-    @Schema(description = "Create timestamp formatted 'yyyy-MM-dd HH:mm:ss'.",
-        example = "2026-04-30 09:15:29")
+    @Schema(description = "Create timestamp as an ISO-8601 UTC instant.",
+        example = "2026-04-30T14:30:00Z")
     String createTime,
 
-    @Schema(description = "Start timestamp formatted 'yyyy-MM-dd HH:mm:ss'; null when never started.",
-        example = "2026-04-30 09:15:30", nullable = true)
+    @Schema(description = "Start timestamp as an ISO-8601 UTC instant; null when never started.",
+        example = "2026-04-30T14:30:01Z", nullable = true)
     String startTime,
 
-    @Schema(description = "End timestamp formatted 'yyyy-MM-dd HH:mm:ss'; null when still running.",
-        example = "2026-04-30 09:16:00", nullable = true)
+    @Schema(description = "End timestamp as an ISO-8601 UTC instant; null when still running.",
+        example = "2026-04-30T14:31:00Z", nullable = true)
     String endTime
 ) {}

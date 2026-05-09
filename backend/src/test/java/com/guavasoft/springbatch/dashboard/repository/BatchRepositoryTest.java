@@ -3,6 +3,7 @@ package com.guavasoft.springbatch.dashboard.repository;
 import com.guavasoft.springbatch.dashboard.TestcontainersConfiguration;
 import com.guavasoft.springbatch.dashboard.config.DatasourcesProperties;
 import com.guavasoft.springbatch.dashboard.config.DynamicDataSourceConfig;
+import com.guavasoft.springbatch.dashboard.config.TimestampFormatter;
 import com.guavasoft.springbatch.dashboard.dialect.MysqlDialect;
 import com.guavasoft.springbatch.dashboard.dialect.OracleDialect;
 import com.guavasoft.springbatch.dashboard.dialect.PostgresqlDialect;
@@ -43,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Import({
     TestcontainersConfiguration.class,
     DynamicDataSourceConfig.class,
+    TimestampFormatter.class,
     JobExecutionRepositoryCustomImpl.class,
     StepExecutionRepositoryCustomImpl.class,
     JobRunRowMapper.class,

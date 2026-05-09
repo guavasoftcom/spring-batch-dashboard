@@ -1,11 +1,10 @@
 import { Box, Container, Grid } from '@mui/material';
-import HomeIcon from '@mui/icons-material/Home';
+import AutoGraphOutlinedIcon from '@mui/icons-material/AutoGraphOutlined';
 import { PageBreadcrumb, WindowSelect } from '~/components';
 import {
+  JobDurationTrendsTile,
   JobExecutionsTile,
   JobLastRunsTile,
-  JobStatusChartTile,
-  ProcessingMetricsTile,
   RuntimeTile,
   StepExecutionsTile,
   ThroughputTile,
@@ -16,7 +15,7 @@ const OverviewPage = () => (
     <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, mb: 2 }}>
       <PageBreadcrumb
         segments={[
-          { label: 'Overview', icon: <HomeIcon sx={{ fontSize: 26 }} /> },
+          { label: 'Overview', icon: <AutoGraphOutlinedIcon sx={{ fontSize: 26 }} /> },
         ]}
       />
       <WindowSelect />
@@ -26,8 +25,7 @@ const OverviewPage = () => (
       <Grid size={{ xs: 12, sm: 6, lg: 3 }}><StepExecutionsTile /></Grid>
       <Grid size={{ xs: 12, sm: 6, lg: 3 }}><ThroughputTile /></Grid>
       <Grid size={{ xs: 12, sm: 6, lg: 3 }}><RuntimeTile /></Grid>
-      <Grid size={{ xs: 12, md: 5 }}><JobStatusChartTile /></Grid>
-      <Grid size={{ xs: 12, md: 7 }}><ProcessingMetricsTile /></Grid>
+      <Grid size={{ xs: 12 }}><JobDurationTrendsTile /></Grid>
       <Grid size={{ xs: 12 }}><JobLastRunsTile /></Grid>
     </Grid>
   </Container>

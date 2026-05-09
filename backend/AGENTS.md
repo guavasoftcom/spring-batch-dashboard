@@ -24,11 +24,14 @@ src/main/java/com/guavasoft/springbatch/
     config/
       SecurityConfig.java                  SecurityFilterChain (OAuth2 login + permitAll on /api/auth/me + allow-list)
       AuthProperties.java                  binds app.auth.* (allowed-logins + provider attribute mapping)
+      OAuth2Properties.java                binds app.oauth2.* (success-url + per-registration button label/color/icon)
       DatasourcesProperties.java           binds app.datasources (each entry: name, type, url, username, password, schema)
       DynamicDataSourceConfig.java         AbstractRoutingDataSource + RoutingSqlDialect builders
       DataSourceContext.java               ThreadLocal lookup-key holder
       DataSourceContextFilter.java         reads X-Environment request header → DataSourceContext
       GlobalExceptionHandler.java          @RestControllerAdvice; never leaks SQL/stack traces
+      TimestampFormatter.java              formats LocalDateTime → ISO-8601 UTC instant using
+                                           the active datasource's configured timezone
     dialect/
       DialectType.java                     POSTGRESQL | MYSQL | ORACLE — declared per-datasource
       SqlDialect.java                      strategy interface (duration math, NULLS LAST, etc.)
@@ -67,6 +70,7 @@ When writing native SQL, always go through `SqlDialect` for parts that diverge b
 - `dialect.durationSeconds(start, end)` — epoch-diff math (`EXTRACT(EPOCH …)::bigint` on Postgres, `TIMESTAMPDIFF(SECOND, …)` on MySQL, `(CAST(end AS DATE) - CAST(start AS DATE)) * 86400` on Oracle)
 - `dialect.orderByNullsLast(expr, dir)` — Postgres and Oracle have `NULLS LAST`, MySQL emulates with `(expr IS NULL), expr`
 - `dialect.avgDurationSeconds`, `maxDurationSeconds`, `sumDurationSeconds` — same idea for aggregates
+- `dialect.truncateToDay(expr)` — calendar-day bucketing for `GROUP BY` (`DATE_TRUNC('day', expr)::date` on Postgres, `DATE(expr)` on MySQL, `TRUNC(expr)` on Oracle); bucketing happens in the database's local zone — convert the column first if you need zone-aware bucketing
 - `dialect.paginationClause(size, offset)` — `LIMIT … OFFSET …` on Postgres / MySQL, ANSI `OFFSET … FETCH NEXT …` on Oracle
 - `dialect.setSchemaSql(schema)` — connection-init SQL for the per-datasource schema (see below)
 
@@ -85,6 +89,12 @@ Set `app.datasources[*].schema` when the `BATCH_*` tables don't live in the engi
 - **MySQL** → no init SQL (the database name in the JDBC URL plays the same role; leave `schema` unset)
 
 [DynamicDataSourceConfig](src/main/java/com/guavasoft/springbatch/dashboard/config/DynamicDataSourceConfig.java) validates the value against `^[A-Za-z_][A-Za-z0-9_$]*$` (max 128 chars) at bean creation, so the identifier can be safely concatenated into the init SQL — anything else fails the boot loudly. Hibernate's `@Table` lookups also pick up the connection-default schema, so JPA queries respect the same setting without per-entity changes.
+
+### Per-datasource timezone
+
+Set `app.datasources[*].timezone` to the IANA zone (e.g. `America/New_York`) the database stores its zone-less `TIMESTAMP` columns in. Blank or unset defaults to `UTC`. The value is parsed once at boot via `ZoneId.of(...)`; bad zones fail startup with a clear `IllegalStateException`. Resolved zones are exposed as a `Map<String, ZoneId> datasourceZoneIds` bean keyed by datasource name.
+
+[TimestampFormatter](src/main/java/com/guavasoft/springbatch/dashboard/config/TimestampFormatter.java) is the single edge-conversion seam — inject it wherever a `LocalDateTime` from the DB needs to leave the API. It interprets the value in the active datasource's zone (read from `DataSourceContext`) and emits an ISO-8601 UTC instant via `DateTimeFormatter.ISO_INSTANT`. All four pre-existing emission sites (`StepDetailRowMapper`, `StepExecutionRepositoryCustomImpl`, `JobExecutionStepsService`, `JobRunMapper`) route through it; new endpoints emitting timestamps should do the same instead of formatting locally. `JobRunMapper` wires the formatter via `@Mapper(uses = TimestampFormatter.class)` so MapStruct picks the helper for any `LocalDateTime → String` mapping.
 
 ## Controller / service / repository pattern
 
@@ -120,9 +130,9 @@ Do **not** use `JpaSort.unsafe(...)` or `Sort.by(...)` with a native query that 
 
 For paginated endpoints the response shape is `{ content, page, size, totalElements }` — see [JobRunPage](src/main/java/com/guavasoft/springbatch/dashboard/model/JobRunPage.java).
 
-Each record carries SpringDoc/OpenAPI annotations (`io.swagger.v3.oas.annotations.media.Schema`) at both the class level (description) and per-component level (description, `example`, `nullable`, `allowableValues` where appropriate). These power the Swagger UI body schemas at `/swagger-ui/index.html`; when adding a new response record, follow the existing pattern — class `@Schema(description = "…")` plus a per-parameter `@Schema(description = "…", example = "…")` on every component.
+Timestamp record fields are `String`s carrying ISO-8601 UTC instants (`2026-04-30T14:30:00Z`), produced by `TimestampFormatter` from the DB's `LocalDateTime` interpreted in the active datasource's `timezone`. Schema descriptions/examples should reflect that — don't ship local-time strings.
 
-The [`BatchStatus`](src/main/java/com/guavasoft/springbatch/dashboard/entity/BatchStatus.java) enum carries its own `label` and `color` per constant — adding a new status (e.g. `STOPPED`) means adding a single enum constant and the chart endpoints pick it up automatically. Don't hardcode chart labels/colors at the call site; iterate `BatchStatus.values()`.
+Each record carries SpringDoc/OpenAPI annotations (`io.swagger.v3.oas.annotations.media.Schema`) at both the class level (description) and per-component level (description, `example`, `nullable`, `allowableValues` where appropriate). These power the Swagger UI body schemas at `/swagger-ui/index.html`; when adding a new response record, follow the existing pattern — class `@Schema(description = "…")` plus a per-parameter `@Schema(description = "…", example = "…")` on every component.
 
 ## Mappers
 
@@ -143,7 +153,9 @@ The body shape is `{ timestamp, status, error, message, path }` — never includ
 
 [SecurityConfig](src/main/java/com/guavasoft/springbatch/dashboard/config/SecurityConfig.java) — OAuth2 login (defaults to GitHub), success URL `${app.oauth2.success-url}`. CORS allows `${app.cors.allowed-origins}` with credentials. CSRF is disabled only for `/api/logout` (the frontend hits it as a plain POST).
 
-`/api/auth/me`, `/api/logout`, `/`, `/error`, and the OAuth2 callback paths are `permitAll`. Everything else requires authentication.
+`/api/auth/me`, `/api/auth/providers`, `/api/logout`, `/`, `/error`, and the OAuth2 callback paths are `permitAll`. Everything else requires authentication.
+
+[`/api/auth/providers`](src/main/java/com/guavasoft/springbatch/dashboard/controller/AuthController.java) iterates the `ClientRegistrationRepository` and returns one [`OAuth2Provider`](src/main/java/com/guavasoft/springbatch/dashboard/model/OAuth2Provider.java) per registered provider so the frontend's login page can render a button per provider. Per-button display is sourced from [OAuth2Properties](src/main/java/com/guavasoft/springbatch/dashboard/config/OAuth2Properties.java) (`app.oauth2.buttons.<registrationId>.{label,color,iconUrl}`); missing entries fall back to a capitalized registration id with no color/icon.
 
 Unauthenticated `/api/**` requests get a clean **401** via a scoped `HttpStatusEntryPoint` (instead of being redirected through the OAuth2 entry-point chain, which produced a 404). This matches the contract the frontend's axios interceptor expects — see [`frontend/src/config/client.ts`](../frontend/src/config/client.ts), which redirects to `/` on a 401. Browser navigation outside `/api/**` still flows through the normal OAuth2 redirect.
 
@@ -177,7 +189,7 @@ Surefire activates the `test` Spring profile (`spring.profiles.active=test`), wh
 
 Test layers in this repo:
 
-- **Unit tests** (services, mappers, dialects, the `ThroughputMetric` enum) — plain JUnit 5; services use `@ExtendWith(MockitoExtension.class)` + `@Mock` + `@InjectMocks` to fake their repository / mapper deps.
+- **Unit tests** (services, mappers, dialects) — plain JUnit 5; services use `@ExtendWith(MockitoExtension.class)` + `@Mock` + `@InjectMocks` to fake their repository / mapper deps.
 - **WebMvc slice tests** (controllers) — `@WebMvcTest(controllers = X.class)` + `@AutoConfigureMockMvc(addFilters = false)` to bypass security; service deps mocked with `@MockitoBean` (Spring Framework 6.2+ replacement for `@MockBean`). Imports come from `org.springframework.boot.webmvc.test.autoconfigure` in Boot 4.
 - **JPA slice tests** (repositories) — share the [`@BatchRepositoryTest`](src/test/java/com/guavasoft/springbatch/dashboard/repository/BatchRepositoryTest.java) meta-annotation: `@DataJpaTest` + `@AutoConfigureTestDatabase(replace = NONE)` + imports for the dynamic datasource, every dialect impl plus the `RoutingSqlDialect` facade, and the custom JDBC repo impls. All three Testcontainers boot once per JUnit run; tests against `SqlDialect`-backed methods use the [`@AcrossDatasources`](src/test/java/com/guavasoft/springbatch/dashboard/repository/TestDatasources.java) meta-annotation, which fans out to PG / MySQL / Oracle by setting `DataSourceContext` on each parameter (a class-level `@AfterEach` clears the ThreadLocal). Tests of portable JPA-derived / JPQL queries stay as plain `@Test` and run once against the default datasource.
 

@@ -28,6 +28,6 @@ describe('AppShellLayout', () => {
 
     expect(await screen.findByText('nested page body')).toBeInTheDocument();
     // Header from AppShell is also visible.
-    expect(await screen.findByRole('button', { name: /account menu/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /^logout$/i })).toBeInTheDocument();
   });
 });

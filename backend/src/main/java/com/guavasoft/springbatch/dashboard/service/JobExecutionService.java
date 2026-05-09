@@ -3,10 +3,9 @@ package com.guavasoft.springbatch.dashboard.service;
 import com.guavasoft.springbatch.dashboard.entity.BatchStatus;
 import com.guavasoft.springbatch.dashboard.model.Durations;
 import com.guavasoft.springbatch.dashboard.model.ExecutionCounts;
-import com.guavasoft.springbatch.dashboard.model.JobStatusSlice;
+import com.guavasoft.springbatch.dashboard.model.JobDurationSeries;
 import com.guavasoft.springbatch.dashboard.repository.JobExecutionRepository;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -37,15 +36,9 @@ public class JobExecutionService {
                 Math.round(longestSeconds == null ? 0 : longestSeconds));
     }
 
-    public List<JobStatusSlice> getStatusChart(int windowDays) {
-        LocalDateTime since = sinceFor(windowDays);
-        return Arrays.stream(BatchStatus.values())
-                .map(status -> new JobStatusSlice(
-                        status.ordinal(),
-                        status.getLabel(),
-                        jobExecutionRepository.countByStatus(status, since),
-                        status.getColor()))
-                .toList();
+    public List<JobDurationSeries> getJobDurationTrends(int windowDays) {
+        LocalDateTime cutoff = sinceFor(windowDays);
+        return jobExecutionRepository.jobDurationTrends(cutoff);
     }
 
     private static LocalDateTime sinceFor(int windowDays) {

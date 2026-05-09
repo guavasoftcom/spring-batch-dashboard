@@ -6,6 +6,7 @@ export { EnvironmentSelector } from './EnvironmentSelector';
 export { LargeTile } from './LargeTile';
 export { StatGrid, recordToStatEntries } from './StatGrid';
 export type { StatGridEntry } from './StatGrid';
+export { default as StepCountsBarChart } from './StepCountsBarChart';
 export { PageBreadcrumb } from './PageBreadcrumb';
 export type { PageBreadcrumbSegment } from './PageBreadcrumb';
 export { StatTile } from './StatTile';

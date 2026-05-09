@@ -3,13 +3,16 @@ import {
   AppBar,
   Avatar,
   Box,
-  ButtonBase,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Divider,
   IconButton,
-  ListItemIcon,
-  ListItemText,
-  Menu,
-  MenuItem,
   Toolbar,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -30,20 +33,34 @@ type Props = {
 };
 
 const initialsFor = (user: CurrentUserResponse | null): string => {
-  if (!user) {return '?';}
+  if (!user) {
+    return '?';
+  }
   const source = user.name?.trim() || user.login || '';
-  if (!source) {return '?';}
+  if (!source) {
+    return '?';
+  }
   const parts = source.split(/\s+/).filter(Boolean);
-  if (parts.length === 1) {return parts[0].slice(0, 2).toUpperCase();}
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
-const AppHeader = ({ user, displayName, mode, isLoggingOut, onToggleNav, onTitleClick, onLogout }: Props) => {
-  const [accountAnchor, setAccountAnchor] = useState<HTMLElement | null>(null);
-  const accountMenuOpen = Boolean(accountAnchor);
-  const closeAccountMenu = () => setAccountAnchor(null);
-  const handleLogoutClick = () => {
-    closeAccountMenu();
+const AppHeader = ({
+  user,
+  displayName,
+  mode,
+  isLoggingOut,
+  onToggleNav,
+  onTitleClick,
+  onLogout,
+}: Props) => {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const openConfirm = () => setConfirmOpen(true);
+  const closeConfirm = () => setConfirmOpen(false);
+  const handleConfirmLogout = () => {
+    closeConfirm();
     onLogout();
   };
 
@@ -92,39 +109,32 @@ const AppHeader = ({ user, displayName, mode, isLoggingOut, onToggleNav, onTitle
             }}
             onClick={onTitleClick}
           >
-            <Box component="span" sx={{ fontFamily: '"Trebuchet MS", "Segoe UI", sans-serif', fontWeight: 700 }}>
+            <Box
+              component="span"
+              sx={{ fontFamily: '"Trebuchet MS", "Segoe UI", sans-serif', fontWeight: 700 }}
+            >
               Spring Batch
             </Box>
-            <Box component="span" sx={{ ml: 1, fontFamily: '"Arial Black", "Segoe UI", sans-serif', fontWeight: 800 }}>
+            <Box
+              component="span"
+              sx={{ ml: 1, fontFamily: '"Arial Black", "Segoe UI", sans-serif', fontWeight: 800 }}
+            >
               Dashboard
             </Box>
           </Typography>
         </Box>
+        <ColorModeToggle sx={{ color: appColors.white, mr: 1 }} />
         {user && (
-          <ButtonBase
-            onClick={(event) => setAccountAnchor(event.currentTarget)}
-            aria-label="account menu"
-            aria-haspopup="menu"
-            aria-expanded={accountMenuOpen}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              mr: 2,
-              px: 1,
-              py: 0.5,
-              borderRadius: 1,
-              transition: 'background-color 150ms ease',
-              '&:hover': { bgcolor: 'rgba(255,255,255,0.10)' },
-              '&:focus-visible': { outline: `2px solid ${appColors.white}`, outlineOffset: 2 },
-            }}
-          >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 1 }}>
+            <Typography sx={{ color: appColors.white, fontWeight: 600, fontSize: 14 }}>
+              {displayName}
+            </Typography>
             <Avatar
               src={user.avatarUrl ?? undefined}
               alt={displayName}
               sx={{
-                width: 36,
-                height: 36,
+                width: 24,
+                height: 24,
                 bgcolor: 'primary.dark',
                 color: appColors.white,
                 fontSize: 14,
@@ -135,26 +145,52 @@ const AppHeader = ({ user, displayName, mode, isLoggingOut, onToggleNav, onTitle
             >
               {initialsFor(user)}
             </Avatar>
-            <Typography sx={{ color: appColors.white, fontWeight: 600, fontSize: 14 }}>
-              {displayName}
-            </Typography>
-          </ButtonBase>
+            <Tooltip title="Logout">
+              <span>
+                <IconButton
+                  onClick={openConfirm}
+                  aria-label="logout"
+                  disabled={isLoggingOut}
+                  sx={{ color: appColors.white }}
+                >
+                  <LogoutIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Box>
         )}
-        <Menu
-          anchorEl={accountAnchor}
-          open={accountMenuOpen}
-          onClose={closeAccountMenu}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-          slotProps={{ paper: { sx: { mt: 0.5, minWidth: 160 } } }}
-        >
-          <MenuItem onClick={handleLogoutClick} disabled={isLoggingOut}>
-            <ListItemIcon><LogoutIcon fontSize="small" /></ListItemIcon>
-            <ListItemText>Logout</ListItemText>
-          </MenuItem>
-        </Menu>
-        <ColorModeToggle sx={{ color: appColors.white }} />
       </Toolbar>
+      <Dialog
+        open={confirmOpen}
+        maxWidth="xs"
+        fullWidth
+        onClose={closeConfirm}
+        aria-labelledby="logout-confirm-title"
+      >
+        <DialogTitle id="logout-confirm-title" sx={{ textAlign: 'center' }}>
+          Log out
+        </DialogTitle>
+        <Divider />
+        <DialogContent>
+          <DialogContentText sx={{ textAlign: 'center' }}>
+            Are you sure you want to log out?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center' }}>
+          <Button onClick={closeConfirm} disabled={isLoggingOut}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmLogout}
+            color="primary"
+            variant="contained"
+            disabled={isLoggingOut}
+            autoFocus
+          >
+            Log out
+          </Button>
+        </DialogActions>
+      </Dialog>
     </AppBar>
   );
 };

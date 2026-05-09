@@ -1,8 +1,7 @@
 import { Alert, Box, Dialog, DialogContent, Skeleton, Typography } from '@mui/material';
-import { StatGrid, recordToStatEntries } from '~/components';
+import { StatGrid, StepCountsBarChart, recordToStatEntries } from '~/components';
 import type { StepExecutionDetail } from '~/pages/jobExecution/types';
 import { formatTimestamp } from '~/utils';
-import StepCountsBarChart from '../StepCountsBarChart';
 import StepDetailModalHeader from './StepDetailModalHeader';
 
 type Props = {

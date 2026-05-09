@@ -1,5 +1,5 @@
 import { Link as MuiLink, type SxProps, type Theme } from '@mui/material';
-import DataThresholdingIcon from '@mui/icons-material/DataThresholding';
+import DynamicFormOutlinedIcon from '@mui/icons-material/DynamicFormOutlined';
 
 type Variant = 'cell' | 'large';
 
@@ -50,9 +50,9 @@ const ExecutionLink = ({ executionId, onClick, variant = 'cell', sx }: Props) =>
       ]}
     >
       {typeof iconFontSize === 'string' ? (
-        <DataThresholdingIcon fontSize={iconFontSize} />
+        <DynamicFormOutlinedIcon fontSize={iconFontSize} />
       ) : (
-        <DataThresholdingIcon sx={{ fontSize: iconFontSize }} />
+        <DynamicFormOutlinedIcon sx={{ fontSize: iconFontSize }} />
       )}
       #{executionId}
     </MuiLink>
