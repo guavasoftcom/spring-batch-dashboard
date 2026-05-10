@@ -24,3 +24,22 @@ spring:
       hibernate:
         format_sql: true
     open-in-view: false
+
+# Actuator wired up for Kubernetes probes only. /actuator/health/{readiness,liveness}
+# expose the dedicated probe groups; /actuator/health stays at default (status-only,
+# no details) for anonymous callers. The auto-registered DataSource indicator is
+# disabled because the primary bean is a routing DataSource that requires a per-
+# request ThreadLocal — a status-time getConnection() with no context isn't
+# meaningful and can spuriously fail readiness.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    db:
+      enabled: false

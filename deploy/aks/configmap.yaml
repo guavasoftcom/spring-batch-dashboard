@@ -1,0 +1,43 @@
+# Non-secret configuration. Spring Boot reads each key as a property via
+# relaxed binding: lowercase becomes uppercase, "." and "-" both become "_",
+# list indices are surrounded by "_". So APP_DATASOURCES_0_NAME maps onto
+# app.datasources[0].name, the same property documented in the project README.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dashboard-config
+  namespace: spring-batch-dashboard
+data:
+  # Anything except "local" — the local profile assumes host-side docker-compose
+  # databases. "production" is the conventional choice; the value only matters
+  # if you also mount an application-<profile>.yml.
+  SPRING_PROFILES_ACTIVE: production
+
+  # Honor X-Forwarded-* headers from the Application Gateway so OAuth2 redirects
+  # use the public https URL instead of the internal pod address.
+  SERVER_FORWARD_HEADERS_STRATEGY: framework
+
+  # OAuth2 success redirect — full public URL of the SPA root.
+  APP_OAUTH2_SUCCESS_URL: https://dashboard.example.com/overview
+
+  # GitHub OAuth2 client. Register a GitHub OAuth App with callback URL
+  # https://dashboard.example.com/login/oauth2/code/github
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GITHUB_CLIENT_ID: Iv1.replace-me
+
+  # Login-page button styling (label/color/icon-url) for the github registration.
+  APP_OAUTH2_BUTTONS_GITHUB_LABEL: GitHub
+  APP_OAUTH2_BUTTONS_GITHUB_COLOR: "#24292f"
+
+  # Optional: comma-delimited allow-list, matched case-insensitively against
+  # the attribute named by app.auth.attributes.login (default: GitHub's "login").
+  # APP_AUTH_ALLOWED_LOGINS: alice,bob
+
+  # Single Spring Batch metadata datasource. To add more environments, append
+  # APP_DATASOURCES_1_*, APP_DATASOURCES_2_*, … — each block is independent and
+  # can declare a different engine (POSTGRESQL / MYSQL / ORACLE).
+  APP_DATASOURCES_0_NAME: prod
+  APP_DATASOURCES_0_TYPE: POSTGRESQL
+  APP_DATASOURCES_0_URL: jdbc:postgresql://postgres.prod.svc.cluster.local:5432/batch
+  APP_DATASOURCES_0_USERNAME: batch_reader
+  APP_DATASOURCES_0_TIMEZONE: America/New_York
+  # APP_DATASOURCES_0_SCHEMA: batch_prod   # Postgres search_path / Oracle CURRENT_SCHEMA; ignored on MySQL.
