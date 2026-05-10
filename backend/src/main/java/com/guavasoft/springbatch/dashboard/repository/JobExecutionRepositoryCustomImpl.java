@@ -263,12 +263,15 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
 
     @Override
     public List<JobDurationSeries> jobDurationTrends(LocalDateTime cutoff) {
-        // ROUND(AVG(...)) is portable across Postgres, MySQL, and Oracle.
+        // FLOOR(AVG(...) + 0.5) is portable rounding across Postgres, MySQL, Oracle, and
+        // SQL Server. Single-argument ROUND(x) is not valid on SQL Server, which requires
+        // ROUND(x, length). FLOOR(...) achieves the same nearest-integer rounding without
+        // engine-specific syntax.
         String sql = """
             SELECT
                 ji.job_name                                           AS jobName,
                 %s                                                    AS runDate,
-                ROUND(AVG(%s))                                        AS averageSeconds
+                FLOOR(AVG(%s) + 0.5)                                  AS averageSeconds
             FROM BATCH_JOB_EXECUTION je
             JOIN BATCH_JOB_INSTANCE ji ON je.job_instance_id = ji.job_instance_id
             WHERE je.start_time >= :cutoff

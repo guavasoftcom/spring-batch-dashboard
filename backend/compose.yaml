@@ -34,7 +34,37 @@ services:
       - ./db/init-oracle:/container-entrypoint-initdb.d:ro
       - oracle-data:/opt/oracle/oradata
 
+  sqlserver:
+    image: 'mcr.microsoft.com/mssql/server:2022-latest'
+    user: root
+    environment:
+      - 'ACCEPT_EULA=Y'
+      - 'MSSQL_SA_PASSWORD=${SQLSERVER_PASSWORD}'
+      - 'MSSQL_PID=Developer'
+    ports:
+      - '1433:1433'
+    volumes:
+      - ./db/init-sqlserver:/init:ro
+      - sqlserver-data:/var/opt/mssql
+    command:
+      - /bin/bash
+      - -c
+      - |
+        /opt/mssql/bin/sqlservr &
+        pid=$$!
+        echo "Waiting for SQL Server to come up..."
+        until /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -No -Q "SELECT 1" >/dev/null 2>&1; do sleep 2; done
+        echo "Applying init scripts..."
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -No -Q "IF DB_ID('${SQLSERVER_DB}') IS NULL CREATE DATABASE [${SQLSERVER_DB}]"
+        for f in /init/*.sql; do
+          echo "  applying $$f"
+          /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -d "${SQLSERVER_DB}" -No -i "$$f"
+        done
+        echo "Init complete."
+        wait $$pid
+
 volumes:
   postgres-data:
   mysql-data:
   oracle-data:
+  sqlserver-data:

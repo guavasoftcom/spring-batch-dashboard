@@ -1,6 +1,6 @@
 # Backend agent guide
 
-Spring Boot 4 service that exposes the Spring Batch metadata as a REST API for the dashboard frontend. Reads from one or more PostgreSQL, MySQL, **and / or** Oracle databases that already host `BATCH_*` metadata tables (the schema Spring Batch creates for itself). Doesn't write to those tables. All three JDBC drivers ship in the same artifact, so a single deployment can serve mixed engines simultaneously — each `app.datasources` entry declares its own `type` and the matching dialect is selected per request.
+Spring Boot 4 service that exposes the Spring Batch metadata as a REST API for the dashboard frontend. Reads from one or more PostgreSQL, MySQL, Oracle, **and / or** SQL Server databases that already host `BATCH_*` metadata tables (the schema Spring Batch creates for itself). Doesn't write to those tables. All four JDBC drivers ship in the same artifact, so a single deployment can serve mixed engines simultaneously — each `app.datasources` entry declares its own `type` and the matching dialect is selected per request.
 
 ## Stack
 
@@ -34,11 +34,12 @@ src/main/java/com/guavasoft/springbatch/
       TimestampFormatter.java              formats LocalDateTime → ISO-8601 UTC instant using
                                            the active datasource's configured timezone
     dialect/
-      DialectType.java                     POSTGRESQL | MYSQL | ORACLE — declared per-datasource
+      DialectType.java                     POSTGRESQL | MYSQL | ORACLE | SQLSERVER — declared per-datasource
       SqlDialect.java                      strategy interface (duration math, NULLS LAST, etc.)
       PostgresqlDialect.java               @Component, stateless
       MysqlDialect.java                    @Component, stateless
       OracleDialect.java                   @Component, stateless
+      SqlServerDialect.java                @Component, stateless
       RoutingSqlDialect.java               @Primary facade — delegates per DataSourceContext
     controller/                            REST endpoints — AuthController (/api/auth/me, /api/auth/providers) + dashboard endpoints; SpaController forwards SPA routes to /index.html
     service/                               business logic
@@ -50,11 +51,12 @@ src/main/java/com/guavasoft/springbatch/
 db/init-postgresql/                        Postgres docker compose initdb scripts
 db/init-mysql/                             MySQL docker compose initdb scripts (upstream Spring Batch DDL, uppercase)
 db/init-oracle/                            Oracle (gvenzl/oracle-free) initdb scripts (upstream Spring Batch DDL)
+db/init-sqlserver/                         SQL Server initdb scripts (upstream Spring Batch DDL; GO separators preserved)
 ```
 
 ## Multi-engine datasources
 
-Each `app.datasources` entry declares its engine via `type: POSTGRESQL | MYSQL | ORACLE`, and all three JDBC drivers are bundled at runtime. A single deployment can mix engines — entries can be all of the same type, or any combination. The frontend's `EnvironmentSelector` switches between them via the `X-Environment` request header.
+Each `app.datasources` entry declares its engine via `type: POSTGRESQL | MYSQL | ORACLE | SQLSERVER`, and all four JDBC drivers are bundled at runtime. A single deployment can mix engines — entries can be all of the same type, or any combination. The frontend's `EnvironmentSelector` switches between them via the `X-Environment` request header.
 
 The wiring:
 
@@ -68,18 +70,18 @@ The wiring:
 
 When writing native SQL, always go through `SqlDialect` for parts that diverge between engines:
 
-- `dialect.durationSeconds(start, end)` — epoch-diff math (`EXTRACT(EPOCH …)::bigint` on Postgres, `TIMESTAMPDIFF(SECOND, …)` on MySQL, `(CAST(end AS DATE) - CAST(start AS DATE)) * 86400` on Oracle)
-- `dialect.orderByNullsLast(expr, dir)` — Postgres and Oracle have `NULLS LAST`, MySQL emulates with `(expr IS NULL), expr`
+- `dialect.durationSeconds(start, end)` — epoch-diff math (`EXTRACT(EPOCH …)::bigint` on Postgres, `TIMESTAMPDIFF(SECOND, …)` on MySQL, `(CAST(end AS DATE) - CAST(start AS DATE)) * 86400` on Oracle, `DATEDIFF(SECOND, …)` on SQL Server)
+- `dialect.orderByNullsLast(expr, dir)` — Postgres and Oracle have `NULLS LAST`; MySQL emulates with `(expr IS NULL), expr`; SQL Server emulates with `CASE WHEN expr IS NULL THEN 1 ELSE 0 END, expr` (it doesn't accept `(expr IS NULL)` as a value expression like MySQL does)
 - `dialect.avgDurationSeconds`, `maxDurationSeconds`, `sumDurationSeconds` — same idea for aggregates
-- `dialect.truncateToDay(expr)` — calendar-day bucketing for `GROUP BY` (`DATE_TRUNC('day', expr)::date` on Postgres, `DATE(expr)` on MySQL, `TRUNC(expr)` on Oracle); bucketing happens in the database's local zone — convert the column first if you need zone-aware bucketing
-- `dialect.paginationClause(size, offset)` — `LIMIT … OFFSET …` on Postgres / MySQL, ANSI `OFFSET … FETCH NEXT …` on Oracle
+- `dialect.truncateToDay(expr)` — calendar-day bucketing for `GROUP BY` (`DATE_TRUNC('day', expr)::date` on Postgres, `DATE(expr)` on MySQL, `TRUNC(expr)` on Oracle, `CAST(expr AS DATE)` on SQL Server); bucketing happens in the database's local zone — convert the column first if you need zone-aware bucketing
+- `dialect.paginationClause(size, offset)` — `LIMIT … OFFSET …` on Postgres / MySQL; ANSI `OFFSET … FETCH NEXT …` on Oracle and SQL Server
 - `dialect.setSchemaSql(schema)` — connection-init SQL for the per-datasource schema (see below)
 
-Anything else stays portable. `COUNT(*) FILTER (WHERE …)` is Postgres-only — rewrite as `SUM(CASE WHEN … THEN 1 ELSE 0 END)` (see existing custom impls).
+Anything else stays portable. `COUNT(*) FILTER (WHERE …)` is Postgres-only — rewrite as `SUM(CASE WHEN … THEN 1 ELSE 0 END)` (see existing custom impls). One-arg `ROUND(x)` is invalid on SQL Server (it requires `ROUND(x, length)`) — use `FLOOR(x + 0.5)` for integer rounding, which is portable across all four engines.
 
 ### Hibernate caveat
 
-Hibernate detects its dialect once, on the first JDBC connection it acquires from the routing data source (whichever `app.datasources` entry is first). All Spring Data JPA queries — derived methods, `@Query` JPQL, native `@Query` — are generated against that cached dialect. That's fine for portable SQL (basic SELECT / COUNT / aggregations across PG / MySQL / Oracle), but engine-specific JPA features such as **`Pageable`-driven LIMIT / OFFSET** assume the cached dialect's pagination syntax. PG and MySQL share `LIMIT … OFFSET …`; Oracle uses `OFFSET … FETCH NEXT …`. Cross-engine routing for those queries is *not* supported — when you need engine-aware SQL, write it through the JdbcTemplate fragment + `SqlDialect` path instead.
+Hibernate detects its dialect once, on the first JDBC connection it acquires from the routing data source (whichever `app.datasources` entry is first). All Spring Data JPA queries — derived methods, `@Query` JPQL, native `@Query` — are generated against that cached dialect. That's fine for portable SQL (basic SELECT / COUNT / aggregations across PG / MySQL / Oracle / SQL Server), but engine-specific JPA features such as **`Pageable`-driven LIMIT / OFFSET** assume the cached dialect's pagination syntax. PG and MySQL share `LIMIT … OFFSET …`; Oracle and SQL Server use `OFFSET … FETCH NEXT …`. Cross-engine routing for those queries is *not* supported — when you need engine-aware SQL, write it through the JdbcTemplate fragment + `SqlDialect` path instead.
 
 ### Per-datasource schema
 
@@ -88,6 +90,7 @@ Set `app.datasources[*].schema` when the `BATCH_*` tables don't live in the engi
 - **Postgres** → `SET search_path TO <schema>`
 - **Oracle** → `ALTER SESSION SET CURRENT_SCHEMA = <schema>`
 - **MySQL** → no init SQL (the database name in the JDBC URL plays the same role; leave `schema` unset)
+- **SQL Server** → no init SQL. SQL Server has no per-session default-schema knob; the database in the JDBC URL plays the schema role and the `BATCH_*` tables must live in the user's default schema (typically `dbo`). Leave `schema` unset.
 
 [DynamicDataSourceConfig](src/main/java/com/guavasoft/springbatch/dashboard/config/DynamicDataSourceConfig.java) validates the value against `^[A-Za-z_][A-Za-z0-9_$]*$` (max 128 chars) at bean creation, so the identifier can be safely concatenated into the init SQL — anything else fails the boot loudly. Hibernate's `@Table` lookups also pick up the connection-default schema, so JPA queries respect the same setting without per-entity changes.
 
@@ -170,12 +173,12 @@ OAuth client credentials live in `.env` (`GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECR
 ## Running
 
 ```bash
-./mvnw spring-boot:run               # uses the `local` profile (all three engines)
+./mvnw spring-boot:run               # uses the `local` profile (all four engines)
 ```
 
-The `local` profile ([application-local.yml](src/main/resources/application-local.yml)) declares one `app.datasources` entry per supported engine, each pointing at the matching docker-compose container, so the running app sees Postgres / MySQL / Oracle simultaneously and the frontend's `EnvironmentSelector` can flip between them. Production deployments override `app.datasources` directly and can list any combination of POSTGRESQL / MYSQL / ORACLE entries.
+The `local` profile ([application-local.yml](src/main/resources/application-local.yml)) declares one `app.datasources` entry per supported engine, each pointing at the matching docker-compose container, so the running app sees Postgres / MySQL / Oracle / SQL Server simultaneously and the frontend's `EnvironmentSelector` can flip between them. Production deployments override `app.datasources` directly and can list any combination of POSTGRESQL / MYSQL / ORACLE / SQLSERVER entries.
 
-Postgres, MySQL, and Oracle are all brought up by `spring-boot-docker-compose` from [compose.yaml](compose.yaml) on first run. `db/init-postgresql/`, `db/init-mysql/`, and `db/init-oracle/` SQL is applied to each container's initdb step the first time the volume is created. After schema changes, `docker compose down -v` to drop the volumes and re-init (or `docker volume rm backend_<name>-data` to drop just one).
+Postgres, MySQL, Oracle, and SQL Server are all brought up by `spring-boot-docker-compose` from [compose.yaml](compose.yaml) on first run. `db/init-postgresql/`, `db/init-mysql/`, and `db/init-oracle/` SQL is applied through each engine's native initdb hook; the SQL Server container has no equivalent, so its service runs a small `command:` wrapper that boots `sqlservr`, polls until ready, then applies `db/init-sqlserver/` via `sqlcmd`. After schema changes, `docker compose down -v` to drop the volumes and re-init (or `docker volume rm backend_<name>-data` to drop just one).
 
 The Oracle dev container uses [gvenzl/oracle-free](https://github.com/gvenzl/oci-oracle-free) and the app connects as `SYSTEM` into the default pluggable database `FREEPDB1`. Init scripts under `db/init-oracle/` are dropped into `/container-entrypoint-initdb.d/` and run as `SYSTEM`, so the seeded `BATCH_*` tables live in the SYSTEM schema (fine for local dev — production deployments should point `app.datasources` at whatever schema actually owns the Spring Batch tables).
 
@@ -186,13 +189,13 @@ The Oracle dev container uses [gvenzl/oracle-free](https://github.com/gvenzl/oci
 ./mvnw verify                        # full build incl. coverage report
 ```
 
-Surefire activates the `test` Spring profile (`spring.profiles.active=test`), which loads [src/test/resources/application-test.yml](src/test/resources/application-test.yml). That file declares one `app.datasources` entry per engine; the placeholders (`POSTGRES_HOST`, `MYSQL_HOST`, `ORACLE_HOST`, …) are bound at context refresh by the [`DynamicPropertyRegistrar`s](src/test/java/com/guavasoft/springbatch/dashboard/TestcontainersConfiguration.java) that boot the matching Testcontainers.
+Surefire activates the `test` Spring profile (`spring.profiles.active=test`), which loads [src/test/resources/application-test.yml](src/test/resources/application-test.yml). That file declares one `app.datasources` entry per engine; the placeholders (`POSTGRES_HOST`, `MYSQL_HOST`, `ORACLE_HOST`, `SQLSERVER_HOST`, …) are bound at context refresh by the [`DynamicPropertyRegistrar`s](src/test/java/com/guavasoft/springbatch/dashboard/TestcontainersConfiguration.java) that boot the matching Testcontainers. The SQL Server container has no native init-script hook, so a separate `sqlServerSchemaInitializer` bean creates `mydatabase` and applies `db/init-sqlserver/{01-schema,02-seed}.sql` via Spring's `ScriptUtils` after the container starts; the registrar `@DependsOn`s it so test code only sees the datasource once it's seeded.
 
 Test layers in this repo:
 
 - **Unit tests** (services, mappers, dialects) — plain JUnit 5; services use `@ExtendWith(MockitoExtension.class)` + `@Mock` + `@InjectMocks` to fake their repository / mapper deps.
 - **WebMvc slice tests** (controllers) — `@WebMvcTest(controllers = X.class)` + `@AutoConfigureMockMvc(addFilters = false)` to bypass security; service deps mocked with `@MockitoBean` (Spring Framework 6.2+ replacement for `@MockBean`). Imports come from `org.springframework.boot.webmvc.test.autoconfigure` in Boot 4.
-- **JPA slice tests** (repositories) — share the [`@BatchRepositoryTest`](src/test/java/com/guavasoft/springbatch/dashboard/repository/BatchRepositoryTest.java) meta-annotation: `@DataJpaTest` + `@AutoConfigureTestDatabase(replace = NONE)` + imports for the dynamic datasource, every dialect impl plus the `RoutingSqlDialect` facade, and the custom JDBC repo impls. All three Testcontainers boot once per JUnit run; tests against `SqlDialect`-backed methods use the [`@AcrossDatasources`](src/test/java/com/guavasoft/springbatch/dashboard/repository/TestDatasources.java) meta-annotation, which fans out to PG / MySQL / Oracle by setting `DataSourceContext` on each parameter (a class-level `@AfterEach` clears the ThreadLocal). Tests of portable JPA-derived / JPQL queries stay as plain `@Test` and run once against the default datasource.
+- **JPA slice tests** (repositories) — share the [`@BatchRepositoryTest`](src/test/java/com/guavasoft/springbatch/dashboard/repository/BatchRepositoryTest.java) meta-annotation: `@DataJpaTest` + `@AutoConfigureTestDatabase(replace = NONE)` + imports for the dynamic datasource, every dialect impl plus the `RoutingSqlDialect` facade, and the custom JDBC repo impls. All four Testcontainers boot once per JUnit run; tests against `SqlDialect`-backed methods use the [`@AcrossDatasources`](src/test/java/com/guavasoft/springbatch/dashboard/repository/TestDatasources.java) meta-annotation, which fans out to PG / MySQL / Oracle / SQL Server by setting `DataSourceContext` on each parameter (a class-level `@AfterEach` clears the ThreadLocal). Tests of portable JPA-derived / JPQL queries stay as plain `@Test` and run once against the default datasource.
 
 ### Coverage
 

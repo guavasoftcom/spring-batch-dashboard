@@ -19,14 +19,15 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-supported-4169E1.svg?logo=postgresql&logoColor=white)](#datasources)
 [![MySQL](https://img.shields.io/badge/MySQL-supported-4479A1.svg?logo=mysql&logoColor=white)](#datasources)
 [![Oracle](https://img.shields.io/badge/Oracle-supported-F80000.svg?logo=oracle&logoColor=white)](#datasources)
+[![SQL Server](https://img.shields.io/badge/SQL%20Server-supported-A91D22.svg?logo=microsoftsqlserver&logoColor=white)](#datasources)
 
-A web dashboard for inspecting Spring Batch metadata (job runs, step executions, throughput, status distributions) across any mix of PostgreSQL, MySQL, and Oracle environments — all from a single deployment.
+A web dashboard for inspecting Spring Batch metadata (job runs, step executions, throughput, status distributions) across any mix of PostgreSQL, MySQL, Oracle, and SQL Server environments — all from a single deployment.
 
 ## What's in here
 
 | Component                | Stack                                           | Purpose                                                                                                                                                                                                                                                                                                                                     |
 | ------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`backend/`](backend/)   | Spring Boot 4, Java 21, Spring Data JPA, OAuth2 | REST API that reads `BATCH_*` metadata and serves it to the frontend. Multi-environment via per-request datasource routing; each `app.datasources` entry declares its own engine (POSTGRESQL / MYSQL / ORACLE) and a routing `SqlDialect` picks the right per-engine SQL on every call. All three JDBC drivers are bundled in one artifact. |
+| [`backend/`](backend/)   | Spring Boot 4, Java 21, Spring Data JPA, OAuth2 | REST API that reads `BATCH_*` metadata and serves it to the frontend. Multi-environment via per-request datasource routing; each `app.datasources` entry declares its own engine (POSTGRESQL / MYSQL / ORACLE / SQLSERVER) and a routing `SqlDialect` picks the right per-engine SQL on every call. All four JDBC drivers are bundled in one artifact. |
 | [`frontend/`](frontend/) | React 19, Vite, MUI, TanStack Query, Vitest     | The dashboard SPA. Browses jobs, runs, and per-execution step details.                                                                                                                                                                                                                                                                      |
 
 The components don't share code — they're independent apps that meet at the database.
@@ -113,7 +114,7 @@ To smoke-test the combined Docker image locally (same artifact CI publishes to G
 
 ## Datasources
 
-A single deployment can serve any combination of POSTGRESQL / MYSQL / ORACLE entries. Each `app.datasources` entry declares its own engine via `type`, and a routing `SqlDialect` picks the matching per-engine SQL (epoch math, `NULLS LAST`, pagination clause, schema-init SQL) on every call. All three JDBC drivers are bundled in the same artifact — no build flag picks one.
+A single deployment can serve any combination of POSTGRESQL / MYSQL / ORACLE / SQLSERVER entries. Each `app.datasources` entry declares its own engine via `type`, and a routing `SqlDialect` picks the matching per-engine SQL (epoch math, `NULLS LAST`, pagination clause, schema-init SQL) on every call. All four JDBC drivers are bundled in the same artifact — no build flag picks one.
 
 ```yaml
 app:
@@ -135,13 +136,20 @@ app:
       password: …
       schema: BATCH_PROD # optional; applied as connection-init SQL per-dialect
       timezone: America/New_York # optional; defaults to UTC
+    - name: prod-sqlserver
+      type: SQLSERVER
+      url: jdbc:sqlserver://…;databaseName=batch;encrypt=true
+      username: …
+      password: …
 ```
 
-The local dev profile ([`application-local.yml`](backend/src/main/resources/application-local.yml)) ships one entry per engine pointing at the matching `docker compose` container, so a fresh `./mvnw spring-boot:run` already exposes Postgres + MySQL + Oracle to the UI.
+`schema` is honored on Postgres (`search_path`) and Oracle (`CURRENT_SCHEMA`); MySQL and SQL Server ignore it (the database in the JDBC URL plays that role, and on SQL Server the `BATCH_*` tables must live in the user's default schema, typically `dbo`).
+
+The local dev profile ([`application-local.yml`](backend/src/main/resources/application-local.yml)) ships one entry per engine pointing at the matching `docker compose` container, so a fresh `./mvnw spring-boot:run` already exposes Postgres + MySQL + Oracle + SQL Server to the UI.
 
 Timestamp fields in API responses are emitted as ISO-8601 UTC instants (`2026-04-30T14:30:00Z`), computed from each datasource's configured `timezone` (default `UTC`); the frontend renders them in the browser's local zone.
 
-> **Hibernate caveat.** Hibernate detects its dialect once on the first JDBC connection and caches it for the SessionFactory, so `Pageable`-driven JPA queries use whichever pagination syntax the _first_ datasource implies (PG/MySQL share `LIMIT … OFFSET …`, Oracle differs). Anything cross-engine belongs in a JdbcTemplate fragment that goes through `SqlDialect`. Details in [backend/AGENTS.md](backend/AGENTS.md#hibernate-caveat).
+> **Hibernate caveat.** Hibernate detects its dialect once on the first JDBC connection and caches it for the SessionFactory, so `Pageable`-driven JPA queries use whichever pagination syntax the _first_ datasource implies (PG/MySQL share `LIMIT … OFFSET …`; Oracle and SQL Server use `OFFSET … ROWS FETCH NEXT …`). Anything cross-engine belongs in a JdbcTemplate fragment that goes through `SqlDialect`. Details in [backend/AGENTS.md](backend/AGENTS.md#hibernate-caveat).
 
 ## Multi-environment selector
 

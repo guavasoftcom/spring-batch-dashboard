@@ -37,3 +37,8 @@ app:
       url: jdbc:oracle:thin:@//${ORACLE_HOST:localhost}:${ORACLE_PORT:1521}/${ORACLE_DB:FREEPDB1}
       username: ${ORACLE_USER}
       password: ${ORACLE_PASSWORD}
+    - name: Localhost SQL Server
+      type: SQLSERVER
+      url: jdbc:sqlserver://${SQLSERVER_HOST:localhost}:${SQLSERVER_PORT:1433};databaseName=${SQLSERVER_DB};encrypt=false;trustServerCertificate=true
+      username: ${SQLSERVER_USER}
+      password: ${SQLSERVER_PASSWORD}

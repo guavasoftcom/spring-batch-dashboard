@@ -9,7 +9,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Datasource names declared in {@code src/test/resources/application-test.yml}, plus a
- * meta-annotation that fans a parameterized test out across all three. Tests that exercise
+ * meta-annotation that fans a parameterized test out across all four. Tests that exercise
  * dialect-specific SQL set {@code DataSourceContext} to the parameter and rely on a class-
  * level {@code @AfterEach} to clear it.
  */
@@ -18,13 +18,14 @@ public final class TestDatasources {
     public static final String POSTGRES = "Test Postgres";
     public static final String MYSQL = "Test MySQL";
     public static final String ORACLE = "Test Oracle";
+    public static final String SQLSERVER = "Test SQL Server";
 
     private TestDatasources() {}
 
     @Target(ElementType.METHOD)
     @Retention(RetentionPolicy.RUNTIME)
     @ParameterizedTest(name = "[{0}]")
-    @ValueSource(strings = {POSTGRES, MYSQL, ORACLE})
+    @ValueSource(strings = {POSTGRES, MYSQL, ORACLE, SQLSERVER})
     public @interface AcrossDatasources {
     }
 }

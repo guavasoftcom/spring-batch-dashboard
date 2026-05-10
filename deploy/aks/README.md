@@ -42,7 +42,7 @@ Once the ingress's backend is healthy, browse to `https://dashboard.example.com/
 
 ### Adding more datasources
 
-The manifest declares a single `app.datasources[0]`; the backend supports any number of entries and any mix of POSTGRESQL / MYSQL / ORACLE. Append additional indexed blocks to [`configmap.yaml`](configmap.yaml) (and the matching password to [`secret.yaml`](secret.yaml)):
+The manifest declares a single `app.datasources[0]`; the backend supports any number of entries and any mix of POSTGRESQL / MYSQL / ORACLE / SQLSERVER. Append additional indexed blocks to [`configmap.yaml`](configmap.yaml) (and the matching password to [`secret.yaml`](secret.yaml)):
 
 ```yaml
 APP_DATASOURCES_1_NAME: staging
@@ -55,7 +55,12 @@ APP_DATASOURCES_2_NAME: dr
 APP_DATASOURCES_2_TYPE: ORACLE
 APP_DATASOURCES_2_URL: jdbc:oracle:thin:@//dr-db.dr.svc.cluster.local:1521/BATCHPDB
 APP_DATASOURCES_2_USERNAME: batch_reader
-APP_DATASOURCES_2_SCHEMA: BATCH_PROD       # honored on Oracle; ignored on MySQL
+APP_DATASOURCES_2_SCHEMA: BATCH_PROD       # honored on Oracle; ignored on MySQL / SQL Server
+
+APP_DATASOURCES_3_NAME: legacy
+APP_DATASOURCES_3_TYPE: SQLSERVER
+APP_DATASOURCES_3_URL: jdbc:sqlserver://legacy-db.legacy.svc.cluster.local:1433;databaseName=batch;encrypt=true
+APP_DATASOURCES_3_USERNAME: batch_reader
 ```
 
 Each entry shows up in the SPA's environment selector and routes via `X-Environment`. See the [Datasources section of the project README](../../README.md#datasources) for the YAML reference and the Hibernate caveat that affects mixed-engine deployments.

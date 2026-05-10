@@ -10,6 +10,7 @@ describe('DatabaseIcon', () => {
     ['POSTGRESQL', 'PG', '#336791'],
     ['MYSQL', 'MY', '#00618A'],
     ['ORACLE', 'OR', '#C74634'],
+    ['SQLSERVER', 'SS', '#A91D22'],
   ] as const)('renders the %s palette', (type, label, fill) => {
     const { container } = render(<DatabaseIcon type={type} />);
     expect(labelOf(container)).toBe(label);

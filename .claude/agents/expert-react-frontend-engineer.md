@@ -11,8 +11,8 @@ You're working on the spring-batch-dashboard frontend: a React 19 + TypeScript S
 
 ## Stack (what's actually here)
 
-- **React 19** + TypeScript + **Vite 5** — pure SPA, no SSR / no Next.js / no React Server Components
-- **MUI** — `@mui/material` (v7 next), `@mui/x-charts`, `@mui/x-data-grid`, `@mui/icons-material`. Emotion as the styling engine.
+- **React 19.2** + TypeScript + **Vite 6** — pure SPA, no SSR / no Next.js / no React Server Components
+- **MUI 9.x (beta)** — `@mui/material`, `@mui/x-charts`, `@mui/x-data-grid`, `@mui/icons-material`, `@mui/system`. Emotion as the styling engine.
 - **Routing** — `react-router-dom@6` with nested routes
 - **HTTP** — `axios` via [`src/config/client.ts`](../../frontend/src/config/client.ts) (`withCredentials: true`, `X-Environment` request interceptor)
 - **Data fetching** — `@tanstack/react-query` (`useQuery` / `useMutation`)
@@ -26,12 +26,11 @@ These get suggested in generic React 19 guides but **don't apply here**:
 
 - ❌ Server Components, `'use client'`, `cacheSignal`, RSC streaming — this is a Vite SPA.
 - ❌ Server Actions, `useActionState`, `useFormStatus`, the `<form action={...}>` Actions API — forms use Formik.
-- ❌ `useEffectEvent` and `<Activity>` — React 19.2 only; the app pins `react@^19` (currently 19.0).
 - ❌ `useOptimistic` — TanStack Query's optimistic-mutation pattern is the convention if you need it.
 - ❌ Next.js-specific imports / app router conventions.
 - ❌ Class components, `forwardRef` — refs are passed as plain props in React 19.
 
-Things that **do** apply: `use()` hook for promise consumption (sparingly — TanStack Query usually fits better), Suspense boundaries for code splitting, `startTransition` / `useDeferredValue` for non-urgent updates, ref-as-prop, ref-callback cleanup, document metadata in components.
+Things that **do** apply: `use()` hook for promise consumption (sparingly — TanStack Query usually fits better), Suspense boundaries for code splitting, `startTransition` / `useDeferredValue` for non-urgent updates, ref-as-prop, ref-callback cleanup, document metadata in components. React 19.2 features (`useEffectEvent`, `<Activity>`) are available since the project is on 19.2 — use them when they actually fit, but don't reach for them where existing patterns already work.
 
 ## Project layout
 
@@ -40,17 +39,19 @@ frontend/src/
   App.tsx                routes
   main.tsx               entry
   api/                   axios wrappers, one *Api.ts per resource, barrel in index.ts
-  components/            cross-page shared components (TilePaper, StatTile, LargeTile, BatchJobsNav, EnvironmentSelector)
+  components/            cross-page shared components — TilePaper, StatTile, LargeTile, StatGrid,
+                         StepCountsBarChart, BatchJobsNav, EnvironmentSelector, DatabaseIcon,
+                         ExecutionLink, PageBreadcrumb, ColorModeToggle, WindowSelect
   config/                env.ts (BACKEND_BASE_URL, USE_MOCK_DATA), client.ts (axios)
-  shell/                 AppShell + AppShellLayout + EnvironmentContext (mounts once for nested routes)
+  shell/                 AppShell + AppShellLayout + EnvironmentContext + NavContext (mounts once for nested routes)
   pages/
-    login/               OAuth2 GitHub start
+    login/               OAuth2 multi-provider login (one button per registration from /api/auth/providers)
     overview/            dashboard tiles + charts
     jobDetail/           run-level metrics for one job
-    jobExecution/        per-execution step metrics
-  theme/                 appTheme.ts + appColors palette
+    jobExecution/        per-execution step metrics + StepDetailModal
+  theme/                 createAppTheme(mode), appColors, ColorModeProvider/useColorMode
   types/                 shared TS types
-  hooks/, utils/
+  hooks/, utils/         (utils/ ships formatDuration, formatTimestamp, statusColor)
 ```
 
 ## Container / presentation pattern
@@ -82,8 +83,14 @@ Use these instead of building tile chrome inline:
 - **`TilePaper`** — base styled Paper. Reach for it directly only when neither `StatTile` nor `LargeTile` fits.
 - **`StatTile`** — small dashboard tile: orange title, big numeric value, subtitle, loading skeleton, error/empty state.
 - **`LargeTile`** — chart/table tile: h6 title, optional `headerAction`, rectangular skeleton (overridable via `loadingSkeleton`), error state, `children` for the body.
+- **`StatGrid`** — compact "label above value" CSS-grid card for read-only detail panes (e.g. step execution context). Ships `recordToStatEntries` for adapting `Record<string, unknown>` payloads (parsed exit descriptions, persistent context blobs, etc.).
+- **`StepCountsBarChart`** — shared horizontal bar-chart component for read/write/skip step-count breakdowns; reuse on Job Detail and Job Execution pages instead of redefining the same chart.
 
 Prefer extending these over duplicating title + skeleton + error markup.
+
+## Dark mode
+
+The app supports light and dark modes via `ColorModeProvider` / `useColorMode` ([`src/theme/`](../../frontend/src/theme/)) — the user toggles via `ColorModeToggle` (sun/moon `IconButton`) in `AppHeader`. Theme tokens come from `createAppTheme(mode)`; never read `palette.mode` to gate behavior — `palette.primary.main`, `palette.background.default`, etc. already resolve correctly per mode. Hardcoded hex values that look fine in light mode usually fail in dark mode; route everything through `appColors` or the MUI palette.
 
 ## Data fetching (TanStack Query)
 

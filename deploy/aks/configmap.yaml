@@ -34,7 +34,7 @@ data:
 
   # Single Spring Batch metadata datasource. To add more environments, append
   # APP_DATASOURCES_1_*, APP_DATASOURCES_2_*, … — each block is independent and
-  # can declare a different engine (POSTGRESQL / MYSQL / ORACLE).
+  # can declare a different engine (POSTGRESQL / MYSQL / ORACLE / SQLSERVER).
   APP_DATASOURCES_0_NAME: prod
   APP_DATASOURCES_0_TYPE: POSTGRESQL
   APP_DATASOURCES_0_URL: jdbc:postgresql://postgres.prod.svc.cluster.local:5432/batch
