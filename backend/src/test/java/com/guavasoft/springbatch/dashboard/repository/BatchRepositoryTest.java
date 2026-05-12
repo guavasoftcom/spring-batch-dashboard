@@ -7,6 +7,7 @@ import com.guavasoft.springbatch.dashboard.config.TimestampFormatter;
 import com.guavasoft.springbatch.dashboard.dialect.MysqlDialect;
 import com.guavasoft.springbatch.dashboard.dialect.OracleDialect;
 import com.guavasoft.springbatch.dashboard.dialect.PostgresqlDialect;
+import com.guavasoft.springbatch.dashboard.dialect.SqlServerDialect;
 import com.guavasoft.springbatch.dashboard.repository.rowmapper.JobRunRowMapper;
 import com.guavasoft.springbatch.dashboard.repository.rowmapper.StepDetailRowMapper;
 import java.lang.annotation.ElementType;
@@ -51,7 +52,8 @@ import org.springframework.transaction.annotation.Transactional;
     StepDetailRowMapper.class,
     PostgresqlDialect.class,
     MysqlDialect.class,
-    OracleDialect.class
+    OracleDialect.class,
+    SqlServerDialect.class
 })
 public @interface BatchRepositoryTest {
 }

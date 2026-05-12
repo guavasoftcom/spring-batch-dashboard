@@ -4,6 +4,7 @@ const PALETTE: Record<string, { fill: string; label: string }> = {
   POSTGRESQL: { fill: '#336791', label: 'PG' },
   MYSQL: { fill: '#00618A', label: 'MY' },
   ORACLE: { fill: '#C74634', label: 'OR' },
+  SQLSERVER: { fill: '#A91D22', label: 'SS' },
 };
 
 type Props = SvgIconProps & { type: string };

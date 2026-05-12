@@ -7,12 +7,12 @@ model: sonnet
 
 # Backend engineer (spring-batch-dashboard)
 
-You're working on the spring-batch-dashboard backend: a Spring Boot 4 / Java 21 REST API that reads Spring Batch metadata (BATCH_* tables) across mixed PostgreSQL / MySQL / Oracle datasources in a single deployment. [`backend/AGENTS.md`](../../backend/AGENTS.md) is the canonical guide — these instructions are the short list of rules to follow when generating or editing code.
+You're working on the spring-batch-dashboard backend: a Spring Boot 4 / Java 21 REST API that reads Spring Batch metadata (BATCH_* tables) across mixed PostgreSQL / MySQL / Oracle / SQL Server datasources in a single deployment. [`backend/AGENTS.md`](../../backend/AGENTS.md) is the canonical guide — these instructions are the short list of rules to follow when generating or editing code.
 
 ## Project Setup & Structure
 
 - **Build Tool:** Maven via the wrapper (`./mvnw`); never `mvn` directly. Tests run with `./mvnw test`; full build (incl. JaCoCo) with `./mvnw verify`.
-- **Starters:** Use Spring Boot starters (e.g., `spring-boot-starter-web`, `spring-boot-starter-data-jpa`) to simplify dependency management.
+- **Starters:** Spring Boot 4 splits the old `spring-boot-starter-web` — this project uses `spring-boot-starter-webmvc`. Other starters in play: `spring-boot-starter-data-jpa`, `spring-boot-starter-security-oauth2-client`, `spring-boot-starter-actuator`.
 - **Package Structure:** Code is organized by layer under `com.guavasoft.springbatch.dashboard.{controller,service,repository,entity,mapper,model,config,dialect}`. Match that layout when adding new code; don't introduce a feature-folder layout in this project.
 
 ## Dependency Injection & Components
@@ -27,13 +27,13 @@ You're working on the spring-batch-dashboard backend: a Spring Boot 4 / Java 21 
 - **Externalized Configuration:** Use `application.yml` for configuration; YAML matches what the rest of the project uses.
 - **Type-Safe Properties:** Use `@ConfigurationProperties` to bind configuration to strongly-typed Java objects (see `AuthProperties`, `DatasourcesProperties`).
 - **Profiles:** `local` is the dev profile (boots all three engines via `spring-boot-docker-compose`); `test` is set automatically by Surefire and loads `application-test.yml` against Testcontainers.
-- **Secrets:** Never hardcode. Backend OAuth credentials live in `.env` (`GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`); database creds come from `app.datasources[*]`.
+- **Secrets:** Never hardcode. Backend OAuth credentials live in `.env` per provider (e.g. `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` for the default GitHub registration; multi-provider login is supported by adding more `spring.security.oauth2.client.registration.<id>.*` blocks). Database creds come from `app.datasources[*]`.
 
 ## Multi-engine datasources & SqlDialect
 
-A single deployment serves any mix of POSTGRESQL / MYSQL / ORACLE entries; `X-Environment` headers route per request via `DataSourceContext` + `AbstractRoutingDataSource`. **All cross-engine SQL must go through `SqlDialect`** — `dialect.durationSeconds(start, end)`, `dialect.orderByNullsLast(expr, dir)`, `dialect.paginationClause(size, offset)`, `dialect.avgDurationSeconds(...)`, `dialect.maxDurationSeconds(...)`, `dialect.setSchemaSql(schema)`. Anything else stays portable JPA/JPQL.
+A single deployment serves any mix of POSTGRESQL / MYSQL / ORACLE / SQLSERVER entries; `X-Environment` headers route per request via `DataSourceContext` + `AbstractRoutingDataSource`. **All cross-engine SQL must go through `SqlDialect`** — `dialect.durationSeconds(start, end)`, `dialect.orderByNullsLast(expr, dir)`, `dialect.paginationClause(size, offset)`, `dialect.avgDurationSeconds(...)`, `dialect.maxDurationSeconds(...)`, `dialect.setSchemaSql(schema)`. Anything else stays portable JPA/JPQL.
 
-**Hibernate caveat:** Hibernate caches its dialect on the first JDBC connection, so `Pageable`-driven JPA queries are baked against whichever engine appeared first in `app.datasources`. Cross-engine pagination belongs in a `JdbcTemplate` fragment routed through `SqlDialect`, not in `Pageable` JPA queries. `COUNT(*) FILTER (WHERE …)` is Postgres-only — rewrite as `SUM(CASE WHEN … THEN 1 ELSE 0 END)`.
+**Hibernate caveat:** Hibernate caches its dialect on the first JDBC connection, so `Pageable`-driven JPA queries are baked against whichever engine appeared first in `app.datasources`. Cross-engine pagination belongs in a `JdbcTemplate` fragment routed through `SqlDialect`, not in `Pageable` JPA queries. `COUNT(*) FILTER (WHERE …)` is Postgres-only — rewrite as `SUM(CASE WHEN … THEN 1 ELSE 0 END)`. One-arg `ROUND(x)` is invalid on SQL Server — use `FLOOR(x + 0.5)` for portable integer rounding.
 
 ## Web Layer (Controllers)
 
@@ -88,7 +88,7 @@ Each record carries SpringDoc `@Schema` annotations at both class and component 
 
 Three layers in this repo:
 
-- **Unit tests** — services, mappers, dialects, the `ThroughputMetric` enum. Plain JUnit 5; services use `@ExtendWith(MockitoExtension.class)` + `@Mock` + `@InjectMocks` to fake their repository / mapper deps.
+- **Unit tests** — services, mappers, dialects, `TimestampFormatter`. Plain JUnit 5; services use `@ExtendWith(MockitoExtension.class)` + `@Mock` + `@InjectMocks` to fake their repository / mapper deps.
 - **WebMvc slice tests** — controllers via `@WebMvcTest(controllers = X.class)` + `@AutoConfigureMockMvc(addFilters = false)` to bypass security; service deps mocked with `@MockitoBean` (Spring Framework 6.2+ replacement for `@MockBean`). Imports come from `org.springframework.boot.webmvc.test.autoconfigure` in Boot 4.
 - **JPA slice tests** — repositories via the [`@BatchRepositoryTest`](../../backend/src/test/java/com/guavasoft/springbatch/dashboard/repository/BatchRepositoryTest.java) meta-annotation: `@DataJpaTest` + `@AutoConfigureTestDatabase(replace = NONE)` + imports for the dynamic datasource, every dialect impl plus `RoutingSqlDialect`, and the custom JDBC repo impls. All three Testcontainers boot once per JUnit run; tests against `SqlDialect`-backed methods use the [`@AcrossDatasources`](../../backend/src/test/java/com/guavasoft/springbatch/dashboard/repository/TestDatasources.java) meta-annotation, which fans out to PG / MySQL / Oracle.
 
@@ -96,13 +96,21 @@ Three layers in this repo:
 
 ## Security
 
-[`SecurityConfig`](../../backend/src/main/java/com/guavasoft/springbatch/dashboard/config/SecurityConfig.java) — OAuth2 login (defaults to GitHub, configurable), success URL `${app.oauth2.success-url}`. CORS allows `${app.cors.allowed-origins}` with credentials. CSRF is disabled only for `/api/logout`. `/api/auth/me`, `/api/logout`, `/`, `/error`, and the OAuth2 callback paths are `permitAll`; everything else requires authentication.
+[`SecurityConfig`](../../backend/src/main/java/com/guavasoft/springbatch/dashboard/config/SecurityConfig.java) — OAuth2 login (defaults to GitHub, any number of providers configurable), success URL `${app.oauth2.success-url}`. CORS allows `${app.cors.allowed-origins}` with credentials. CSRF is disabled only for `/api/logout`. `/api/**` requires authentication, with `/api/auth/me`, `/api/auth/providers`, and `/api/logout` open. Everything else — the SPA shell, static assets bundled at `classpath:/static/`, OAuth2 callback paths, and `/error` — is `permitAll`; the SPA enforces auth at runtime via `/api/auth/me`. SPA deep links (`/overview`, `/jobs/...`) are forwarded to `/index.html` by [`SpaController`](../../backend/src/main/java/com/guavasoft/springbatch/dashboard/controller/SpaController.java) so React Router resolves them on hard refresh.
 
-Unauthenticated `/api/**` requests get a clean 401 via a scoped `HttpStatusEntryPoint` (the frontend's axios interceptor redirects to `/` on 401). Browser navigation outside `/api/**` flows through the normal OAuth2 redirect.
+Unauthenticated `/api/**` requests get a clean 401 via a scoped `HttpStatusEntryPoint` (the frontend's axios interceptor redirects to `/` on 401). [`/api/auth/providers`](../../backend/src/main/java/com/guavasoft/springbatch/dashboard/controller/AuthController.java) iterates the `ClientRegistrationRepository` so the login page can render one button per registered provider; per-button display (label/color/icon-url) is sourced from `app.oauth2.buttons.<registrationId>.*`.
 
 `AuthProperties` (`app.auth.*`) controls provider attribute mapping (so non-GitHub providers work by remapping `login` / `name` / `avatar-url`) and an optional comma-delimited `allowed-logins` allow-list that rejects logins outside the list at OAuth2 user-loading time.
 
 **Input sanitization for SQL.** Authentication is OAuth2-only — there are no passwords stored or hashed anywhere in this app, so the typical "use BCrypt" guidance doesn't apply. The remaining injection surface is custom JDBC SQL: always parameterize values via `NamedParameterJdbcTemplate` named binds (never concatenate user input), and build dynamic clauses (ORDER BY columns, etc.) from a whitelist `Map<String, String>` inside the repo impl, never from user input directly.
+
+## Timestamps
+
+API responses emit timestamps as ISO-8601 UTC instants (`2026-04-30T14:30:00Z`). [`TimestampFormatter`](../../backend/src/main/java/com/guavasoft/springbatch/dashboard/config/TimestampFormatter.java) is the single edge-conversion seam: it interprets a DB-local `LocalDateTime` in the active datasource's configured `timezone` (`app.datasources[*].timezone`, default `UTC`, parsed once at boot) and emits the UTC instant. Inject it wherever a timestamp leaves the API; never format locally. `JobRunMapper` wires it via `@Mapper(uses = TimestampFormatter.class)` so MapStruct picks it up automatically for any `LocalDateTime → String` mapping.
+
+## Actuator
+
+`spring-boot-starter-actuator` is wired up only for Kubernetes probes. [`application.yml`](../../backend/src/main/resources/application.yml) exposes only `health`, enables the readiness/liveness probe groups (`/actuator/health/{readiness,liveness}`), and **disables the auto DataSource health indicator** because the primary `DataSource` bean is a routing one that needs a per-request ThreadLocal — a status-time `getConnection()` would spuriously fail readiness. Don't re-enable it without working through that.
 
 ## Conventions
 

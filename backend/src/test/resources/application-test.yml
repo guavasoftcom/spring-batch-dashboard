@@ -34,3 +34,8 @@ app:
       url: jdbc:oracle:thin:@//${ORACLE_HOST}:${ORACLE_PORT}/${ORACLE_DB}
       username: ${ORACLE_USER}
       password: ${ORACLE_PASSWORD}
+    - name: Test SQL Server
+      type: SQLSERVER
+      url: jdbc:sqlserver://${SQLSERVER_HOST}:${SQLSERVER_PORT};databaseName=${SQLSERVER_DB};encrypt=false;trustServerCertificate=true
+      username: ${SQLSERVER_USER}
+      password: ${SQLSERVER_PASSWORD}

@@ -6,6 +6,7 @@ import com.guavasoft.springbatch.dashboard.dialect.OracleDialect;
 import com.guavasoft.springbatch.dashboard.dialect.PostgresqlDialect;
 import com.guavasoft.springbatch.dashboard.dialect.RoutingSqlDialect;
 import com.guavasoft.springbatch.dashboard.dialect.SqlDialect;
+import com.guavasoft.springbatch.dashboard.dialect.SqlServerDialect;
 import com.zaxxer.hikari.HikariDataSource;
 import java.time.DateTimeException;
 import java.time.ZoneId;
@@ -41,6 +42,7 @@ public class DynamicDataSourceConfig {
     private final PostgresqlDialect postgresqlDialect;
     private final MysqlDialect mysqlDialect;
     private final OracleDialect oracleDialect;
+    private final SqlServerDialect sqlServerDialect;
 
     @Bean
     @Primary
@@ -131,6 +133,7 @@ public class DynamicDataSourceConfig {
         map.put(DialectType.POSTGRESQL, postgresqlDialect);
         map.put(DialectType.MYSQL, mysqlDialect);
         map.put(DialectType.ORACLE, oracleDialect);
+        map.put(DialectType.SQLSERVER, sqlServerDialect);
         return map;
     }
 
@@ -140,7 +143,7 @@ public class DynamicDataSourceConfig {
         if (type == null) {
             throw new IllegalStateException(
                 "Datasource '" + entry.getName() + "' is missing required property 'type' "
-                    + "(expected POSTGRESQL, MYSQL, or ORACLE).");
+                    + "(expected POSTGRESQL, MYSQL, ORACLE, or SQLSERVER).");
         }
         return dialectByType.get(type);
     }

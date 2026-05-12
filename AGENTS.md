@@ -16,10 +16,10 @@ spring-batch-dashboard/
 Postgres (BATCH_* + app tables) <──reads── backend ──serves──> frontend (browser)
 ```
 
-- **`backend/`** is the dashboard's read-only API. It connects to one or more Postgres databases (multi-environment) and serves the BATCH\_\* data as JSON. Per-request datasource routing is driven by an `X-Environment` header.
-- **`frontend/`** is a Vite SPA that authenticates via OAuth2 (GitHub), persists the selected environment in localStorage, and forwards it to the backend on every request.
+- **`backend/`** is the dashboard's read-only API. It connects to one or more PostgreSQL / MySQL / Oracle / SQL Server databases (multi-engine, multi-environment) and serves the BATCH\_\* data as JSON. Per-request datasource routing is driven by an `X-Environment` header; per-engine SQL by a routing `SqlDialect`.
+- **`frontend/`** is a Vite SPA that authenticates via OAuth2 (one or more configured providers), persists the selected environment in localStorage, and forwards it to the backend on every request.
 
-The dashboard reads from whatever Postgres instances are listed under `app.datasources` — point those at any database that holds Spring Batch metadata you want to inspect.
+The dashboard reads from whatever databases are listed under `app.datasources` — point those at any combination of PostgreSQL, MySQL, Oracle, or SQL Server instances that hold Spring Batch metadata you want to inspect.
 
 ## Local stack runbook
 

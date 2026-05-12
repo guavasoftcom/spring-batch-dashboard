@@ -8,6 +8,7 @@ import com.guavasoft.springbatch.dashboard.dialect.DialectType;
 import com.guavasoft.springbatch.dashboard.dialect.MysqlDialect;
 import com.guavasoft.springbatch.dashboard.dialect.OracleDialect;
 import com.guavasoft.springbatch.dashboard.dialect.PostgresqlDialect;
+import com.guavasoft.springbatch.dashboard.dialect.SqlServerDialect;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -24,6 +25,7 @@ class DynamicDataSourceConfigSchemaTest {
     private final PostgresqlDialect postgresqlDialect = new PostgresqlDialect();
     private final MysqlDialect mysqlDialect = new MysqlDialect();
     private final OracleDialect oracleDialect = new OracleDialect();
+    private final SqlServerDialect sqlServerDialect = new SqlServerDialect();
 
     @Test
     void rejectsSchemaWithSemicolon() {
@@ -111,6 +113,6 @@ class DynamicDataSourceConfigSchemaTest {
         DatasourcesProperties props = new DatasourcesProperties();
         props.setDatasources(List.of(entry));
 
-        return new DynamicDataSourceConfig(props, postgresqlDialect, mysqlDialect, oracleDialect);
+        return new DynamicDataSourceConfig(props, postgresqlDialect, mysqlDialect, oracleDialect, sqlServerDialect);
     }
 }
