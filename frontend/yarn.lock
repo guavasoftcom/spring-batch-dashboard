@@ -1249,9 +1249,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/x-charts-vendor@npm:9.0.0-rc.0":
-  version: 9.0.0-rc.0
-  resolution: "@mui/x-charts-vendor@npm:9.0.0-rc.0"
+"@mui/x-charts-vendor@npm:^9.0.0":
+  version: 9.0.0
+  resolution: "@mui/x-charts-vendor@npm:9.0.0"
   dependencies:
     "@babel/runtime": "npm:^7.28.6"
     "@types/d3-array": "npm:^3.2.2"
@@ -1276,19 +1276,19 @@ __metadata:
     d3-timer: "npm:^3.0.1"
     flatqueue: "npm:^3.0.0"
     internmap: "npm:^2.0.3"
-  checksum: 10c0/5d9c7b8cb15335f109846cfda6f7848d351a28dc3b14176bc8f778566bba9053993980f38b63ffd6e015212f6bae8f099353454efb3305ab7433e02025a64822
+  checksum: 10c0/5240628012d0e3ee950fea713968ab1a17f007defc48aebe0ab5de3af2fa2edad73f2d49f1cfc05eb4fa1fda2000effce6a3dafc33de4fda113f5061ee2a785c
   languageName: node
   linkType: hard
 
-"@mui/x-charts@npm:9.0.0-rc.0":
-  version: 9.0.0-rc.0
-  resolution: "@mui/x-charts@npm:9.0.0-rc.0"
+"@mui/x-charts@npm:9.1.0":
+  version: 9.1.0
+  resolution: "@mui/x-charts@npm:9.1.0"
   dependencies:
-    "@babel/runtime": "npm:^7.28.6"
-    "@mui/utils": "npm:9.0.0-beta.1"
-    "@mui/x-charts-vendor": "npm:9.0.0-rc.0"
-    "@mui/x-internal-gestures": "npm:9.0.0-rc.0"
-    "@mui/x-internals": "npm:9.0.0-rc.0"
+    "@babel/runtime": "npm:^7.29.2"
+    "@mui/utils": "npm:9.0.0"
+    "@mui/x-charts-vendor": "npm:^9.0.0"
+    "@mui/x-internal-gestures": "npm:^9.1.0"
+    "@mui/x-internals": "npm:^9.1.0"
     bezier-easing: "npm:^2.1.0"
     clsx: "npm:^2.1.1"
     prop-types: "npm:^15.8.1"
@@ -1297,8 +1297,8 @@ __metadata:
   peerDependencies:
     "@emotion/react": ^11.9.0
     "@emotion/styled": ^11.8.1
-    "@mui/material": ^7.3.0 || ^9.0.0-beta.0 || ^9.0.0
-    "@mui/system": ^7.3.0 || ^9.0.0-beta.1
+    "@mui/material": ^7.3.0 || ^9.0.0
+    "@mui/system": ^7.3.0 || ^9.0.0
     react: ^17.0.0 || ^18.0.0 || ^19.0.0
     react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
   peerDependenciesMeta:
@@ -1306,18 +1306,18 @@ __metadata:
       optional: true
     "@emotion/styled":
       optional: true
-  checksum: 10c0/014fb4d25fda09017d069bd29e6fea4667594f4f76ccd1219b05c322638f59c9167b2973635c0184350bd1932698482147e16bfd2375c23b738ac515a31f2f6f
+  checksum: 10c0/82a559b7f1274d7d9906727481186e8f9bfcf1ca9fb010ce2588832ed11333a73e1404da3adafba46494b6ad72d609d08e2fb3b3f046a73535351654b96d67e3
   languageName: node
   linkType: hard
 
-"@mui/x-data-grid@npm:9.0.2":
-  version: 9.0.2
-  resolution: "@mui/x-data-grid@npm:9.0.2"
+"@mui/x-data-grid@npm:9.1.0":
+  version: 9.1.0
+  resolution: "@mui/x-data-grid@npm:9.1.0"
   dependencies:
-    "@babel/runtime": "npm:^7.28.6"
+    "@babel/runtime": "npm:^7.29.2"
     "@mui/utils": "npm:9.0.0"
-    "@mui/x-internals": "npm:^9.0.0"
-    "@mui/x-virtualizer": "npm:9.0.0-alpha.0"
+    "@mui/x-internals": "npm:^9.1.0"
+    "@mui/x-virtualizer": "npm:9.0.0-alpha.5"
     clsx: "npm:^2.1.1"
     prop-types: "npm:^15.8.1"
     use-sync-external-store: "npm:^1.6.0"
@@ -1333,58 +1333,44 @@ __metadata:
       optional: true
     "@emotion/styled":
       optional: true
-  checksum: 10c0/962d1516a00d6b9b6f547c219b5b45b3fd9b770a0fe6c055f7f077b7cc8000f72b79ab8a5dff1eb0deb308963446acbdfd4af86cde41508d2158ae58de02601e
+  checksum: 10c0/afdf894abaf1fc22c8a5507f24de7050e3fec6e3e20aed1649941937c4859f781adce500cdce9c0acdb5140e75451d101133a56e9c9c2e772d5992261bc77370
   languageName: node
   linkType: hard
 
-"@mui/x-internal-gestures@npm:9.0.0-rc.0":
-  version: 9.0.0-rc.0
-  resolution: "@mui/x-internal-gestures@npm:9.0.0-rc.0"
+"@mui/x-internal-gestures@npm:^9.1.0":
+  version: 9.1.0
+  resolution: "@mui/x-internal-gestures@npm:9.1.0"
   dependencies:
-    "@babel/runtime": "npm:^7.28.6"
-  checksum: 10c0/eb1d9034d3b2b1f5e9169d758262f8ead7c86dcee82a9181c4191f47a448c9063eb9c1780d677af67198c63b93f68c4398f334a8bbdc3d133205871d1cebbcf1
+    "@babel/runtime": "npm:^7.29.2"
+  checksum: 10c0/33920d39f47c4e195ba8b79769e8e24fb5dcd22ac3d4c4586b26cb69232fea94996eb18ea84e38fc7f2d03d65df0b69dc936e22bc5df9f745ceec3ce3337e601
   languageName: node
   linkType: hard
 
-"@mui/x-internals@npm:9.0.0-rc.0":
-  version: 9.0.0-rc.0
-  resolution: "@mui/x-internals@npm:9.0.0-rc.0"
+"@mui/x-internals@npm:^9.1.0":
+  version: 9.1.0
+  resolution: "@mui/x-internals@npm:9.1.0"
   dependencies:
-    "@babel/runtime": "npm:^7.28.6"
-    "@mui/utils": "npm:9.0.0-beta.1"
-    reselect: "npm:^5.1.1"
-    use-sync-external-store: "npm:^1.6.0"
-  peerDependencies:
-    react: ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: 10c0/0dc65795f1c36bbbfe38a82064cdcc41ac73e97ddfe18615f01b9845edbe8ac62d1407de33f9e561447e7afc4d008c636e343aaf48b56a79f5942bb39ce275e2
-  languageName: node
-  linkType: hard
-
-"@mui/x-internals@npm:^9.0.0":
-  version: 9.0.0
-  resolution: "@mui/x-internals@npm:9.0.0"
-  dependencies:
-    "@babel/runtime": "npm:^7.28.6"
+    "@babel/runtime": "npm:^7.29.2"
     "@mui/utils": "npm:9.0.0"
     reselect: "npm:^5.1.1"
     use-sync-external-store: "npm:^1.6.0"
   peerDependencies:
     react: ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: 10c0/d64f7b951eb696333800430680db88c78b65f76a55e915f9edb9fc33dcdfeb46568afbcb5d7040be7f631acd28034a2dffda15d724db81decdff18fc1b1b6bbe
+  checksum: 10c0/3494fb8794b11e3d10e17310dcfb4affa95e73be00908b6e27f6016f13569bd643bc41b02ac032e7bd2dbbe44c8ba211a348fff4110548d7af6450650814eb3e
   languageName: node
   linkType: hard
 
-"@mui/x-virtualizer@npm:9.0.0-alpha.0":
-  version: 9.0.0-alpha.0
-  resolution: "@mui/x-virtualizer@npm:9.0.0-alpha.0"
+"@mui/x-virtualizer@npm:9.0.0-alpha.5":
+  version: 9.0.0-alpha.5
+  resolution: "@mui/x-virtualizer@npm:9.0.0-alpha.5"
   dependencies:
-    "@babel/runtime": "npm:^7.28.6"
+    "@babel/runtime": "npm:^7.29.2"
     "@mui/utils": "npm:9.0.0"
-    "@mui/x-internals": "npm:^9.0.0"
+    "@mui/x-internals": "npm:^9.1.0"
   peerDependencies:
     react: ^17.0.0 || ^18.0.0 || ^19.0.0
     react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: 10c0/3ab6d0117f74ad394e78abcb7815e1782aae41a7dceae2203aba7afb3b2da8cb0978263420ffd047d8e11d6d3dd2001e932415ffd97ae6be862efa4f5ca79a0e
+  checksum: 10c0/cd22781b9260b416e5710afb36d56dfcf19f38cf184ff65eea11c83c69522f5f997e3b6b01d03cc722f13db68999fa851ff2666245695dab54f0c5b85b599879
   languageName: node
   linkType: hard
 
@@ -3291,8 +3277,8 @@ __metadata:
     "@mui/icons-material": "npm:9.0.0"
     "@mui/material": "npm:9.0.0-beta.1"
     "@mui/system": "npm:9.0.0"
-    "@mui/x-charts": "npm:9.0.0-rc.0"
-    "@mui/x-data-grid": "npm:9.0.2"
+    "@mui/x-charts": "npm:9.1.0"
+    "@mui/x-data-grid": "npm:9.1.0"
     "@tanstack/react-query": "npm:5.100.5"
     "@testing-library/dom": "npm:10.4.1"
     "@testing-library/jest-dom": "npm:6.9.1"
