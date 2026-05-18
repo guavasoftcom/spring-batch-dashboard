@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import { keepPreviousData } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getRunsTrend } from '~/api';
 import { useJobQuery } from '~/hooks';
@@ -9,9 +10,14 @@ const RunDurationTrendTileContainer = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
   const { windowDays } = useWindow();
+  // keepPreviousData: while a new window value is fetching, keep showing the
+  // previous data so the chart never unmounts. Without this, switching windows
+  // before the new query is cached produces a brief data=undefined render that
+  // unmounts the chart, then a remount when data arrives — visible as flicker.
   const { data, loading, error } = useJobQuery(
     ['job-runs-trend', windowDays],
     (id) => getRunsTrend(id, windowDays),
+    { placeholderData: keepPreviousData },
   );
 
   const chartData = useMemo(() => {

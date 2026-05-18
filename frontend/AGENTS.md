@@ -128,6 +128,8 @@ To get **distinct colors per bar** in a `BarChart`, MUI colors per *series*, not
 
 Pie charts hide zero-count slices entirely; for status distributions where a bucket can be empty, use a horizontal `BarChart` instead so every category keeps its labeled row.
 
+For chart tiles inside `LargeTile`, override the default skeleton with an invisible spacer matching the chart's height (`loadingSkeleton={<Box sx={{ height: 300 }} />}`). The default `MuiSkeleton` height often differs from the chart's, and the swap resize on data arrival interrupts MUI x-charts' enter animation. For queries whose key changes within the same view (e.g. tiles bound to the window selector), pass `placeholderData: keepPreviousData` to `useEnvQuery` / `useJobQuery` so the chart stays mounted across refetches and MUI animates the data transition rather than unmounting and remounting on every switch.
+
 ## API
 
 - `apiClient` lives in [src/config/client.ts](src/config/client.ts); axios instance with `withCredentials: true` and an `X-Environment` request interceptor.

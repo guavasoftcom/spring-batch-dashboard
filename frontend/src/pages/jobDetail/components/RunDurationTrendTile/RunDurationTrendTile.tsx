@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { Box } from '@mui/material';
 import { LineChart } from '@mui/x-charts';
 import { LargeTile } from '~/components';
 import { appColors } from '~/theme';
@@ -97,7 +98,15 @@ const RunDurationTrendTile = ({ loading, error, chartData, onTickClick, onAxisCl
   );
 
   return (
-    <LargeTile title="Run Duration Trend" loading={loading} error={error}>
+    <LargeTile
+      title="Run Duration Trend"
+      loading={loading}
+      error={error}
+      // Reserve the chart's exact height with an invisible spacer instead of a
+      // shimmery skeleton; keeps the container geometry stable across the
+      // loading→data swap so MUI x-charts can paint its enter animation.
+      loadingSkeleton={<Box sx={{ height: 220 }} />}
+    >
       {chartData && xAxis && (
         <LineChart
           height={220}

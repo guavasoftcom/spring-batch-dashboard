@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { LineChart } from '@mui/x-charts';
 import { LargeTile } from '~/components';
 import type { JobDurationSeries } from '~/types';
@@ -46,7 +46,11 @@ const JobDurationTrendsTile = ({ data, loading, error }: Props) => {
       loading={loading}
       error={error}
       minHeight={340}
-      loadingHeight={260}
+      // Replace the animated skeleton with an invisible spacer of the chart's
+      // exact height. The default 260px skeleton vs. 300px chart created a
+      // 40px layout jump when the swap happened, which made MUI x-charts
+      // measure mid-transition and skip its enter animation.
+      loadingSkeleton={<Box sx={{ height: 300 }} />}
     >
       {data && data.length > 0 && (
         <LineChart

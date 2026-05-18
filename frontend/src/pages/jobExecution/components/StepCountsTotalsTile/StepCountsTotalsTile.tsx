@@ -1,3 +1,4 @@
+import { Box } from '@mui/material';
 import { LargeTile, StepCountsBarChart } from '~/components';
 import type { StepCountsSummary } from '~/types';
 
@@ -13,7 +14,10 @@ const StepCountsTotalsTile = ({ data, loading, error }: Props) => (
     loading={loading}
     error={error}
     minHeight={340}
-    loadingHeight={260}
+    // Reserve the chart's exact height with an invisible spacer instead of a
+    // shimmery skeleton; keeps the container geometry stable across the
+    // loading→data swap so MUI x-charts can paint its enter animation.
+    loadingSkeleton={<Box sx={{ height: 300 }} />}
   >
     {data && <StepCountsBarChart data={data} />}
   </LargeTile>
