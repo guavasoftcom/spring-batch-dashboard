@@ -1,4 +1,5 @@
 import { Chip, TableCell, TableRow } from '@mui/material';
+import { InProgressTimestamp } from '~/components';
 import type { StepRow } from '~/pages/jobExecution/types';
 import { STATUS_COLOR, formatDuration, formatTimestamp, humanize } from '~/utils';
 
@@ -19,7 +20,7 @@ const StepTableRow = ({ step, onClick }: Props) => (
     <TableCell align="right">{step.rollbackCount}</TableCell>
     <TableCell align="right">{formatDuration(step.durationSeconds)}</TableCell>
     <TableCell>{formatTimestamp(step.startTime)}</TableCell>
-    <TableCell>{formatTimestamp(step.endTime)}</TableCell>
+    <TableCell><InProgressTimestamp value={step.endTime} /></TableCell>
   </TableRow>
 );
 

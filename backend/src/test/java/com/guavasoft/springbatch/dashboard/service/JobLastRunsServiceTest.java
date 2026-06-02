@@ -39,7 +39,7 @@ class JobLastRunsServiceTest {
 
     @Test
     void returnsLatestRunPerJobAndNullWhenAJobHasNoneInWindow() {
-        when(jobInstanceRepository.findDistinctJobNames())
+        when(jobInstanceRepository.findDistinctJobNamesSince(any(LocalDateTime.class)))
                 .thenReturn(List.of("importUsersJob", "reconcileLedgerJob"));
 
         JobRunRow importRow = stubRow();
@@ -61,7 +61,7 @@ class JobLastRunsServiceTest {
 
     @Test
     void returnsEmptyListWhenNoJobsExist() {
-        when(jobInstanceRepository.findDistinctJobNames()).thenReturn(List.of());
+        when(jobInstanceRepository.findDistinctJobNamesSince(any(LocalDateTime.class))).thenReturn(List.of());
 
         List<JobLastRun> result = jobLastRunsService.getJobLastRuns(WINDOW);
 

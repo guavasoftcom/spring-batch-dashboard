@@ -2,6 +2,7 @@ export { BatchJobsNav } from './BatchJobsNav';
 export { ColorModeToggle } from './ColorModeToggle';
 export { DatabaseIcon } from './DatabaseIcon';
 export { ExecutionLink } from './ExecutionLink';
+export { InProgressTimestamp } from './InProgressTimestamp/InProgressTimestamp';
 export { EnvironmentSelector } from './EnvironmentSelector';
 export { LargeTile } from './LargeTile';
 export { StatGrid, recordToStatEntries } from './StatGrid';

@@ -10,7 +10,7 @@ import {
   TableSortLabel,
 } from '@mui/material';
 import type { RunSortField, SortDir } from '~/api/jobRunsApi';
-import { ExecutionLink, LargeTile } from '~/components';
+import { ExecutionLink, InProgressTimestamp, LargeTile } from '~/components';
 import type { JobRun } from '~/types';
 import { STATUS_COLOR, formatDuration, formatTimestamp } from '~/utils';
 
@@ -93,7 +93,7 @@ const JobRunsTableTile = ({
                   <Chip label={run.status} color={STATUS_COLOR[run.status]} size="small" />
                 </TableCell>
                 <TableCell>{formatTimestamp(run.startTime)}</TableCell>
-                <TableCell>{formatTimestamp(run.endTime)}</TableCell>
+                <TableCell><InProgressTimestamp value={run.endTime} /></TableCell>
                 <TableCell align="right">{formatDuration(run.durationSeconds)}</TableCell>
                 <TableCell align="right">{run.readCount.toLocaleString()}</TableCell>
                 <TableCell align="right">{run.writeCount.toLocaleString()}</TableCell>
