@@ -4,7 +4,7 @@ React + TypeScript + Vite app for the Spring Batch Dashboard. Backend is a Sprin
 
 ## Stack
 
-- React 19, TypeScript, Vite 5
+- React 19, TypeScript, Vite 8
 - MUI: `@mui/material` (next), `@mui/x-charts`, `@mui/icons-material`
 - Routing: `react-router-dom`
 - HTTP: `axios` via `src/config/client.ts` (`withCredentials: true` for the OAuth2 session cookie; injects `X-Environment` header from localStorage)

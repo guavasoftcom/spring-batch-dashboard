@@ -80,6 +80,7 @@ const LoginPage = ({ checking, providers }: LoginPageProps) => {
           >
             Spring Batch
           </Box>
+          {' '}
           <Box
             component="span"
             sx={{

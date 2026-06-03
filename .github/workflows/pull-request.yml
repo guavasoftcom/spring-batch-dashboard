@@ -92,7 +92,7 @@ jobs:
           if-no-files-found: ignore
 
   frontend:
-    name: Frontend (Node 20 + Yarn 4)
+    name: Frontend
     runs-on: ubuntu-latest
     permissions:
       contents: read

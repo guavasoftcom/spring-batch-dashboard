@@ -15,7 +15,7 @@ export default defineConfig({
     reporters: process.env.CI ? ['default', 'junit'] : ['default'],
     outputFile: { junit: './test-results/junit.xml' },
     coverage: {
-      provider: 'v8',
+      provider: 'istanbul',
       reporter: ['text', 'html', 'json-summary', 'json', 'cobertura'],
       reportsDirectory: './coverage',
       reportOnFailure: true,

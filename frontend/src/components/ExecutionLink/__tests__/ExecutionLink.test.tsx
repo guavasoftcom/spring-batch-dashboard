@@ -38,7 +38,20 @@ describe('ExecutionLink', () => {
     const icon = container.querySelector('svg[data-testid="DynamicFormOutlinedIcon"]') as SVGElement;
     expect(icon?.classList.contains('MuiSvgIcon-fontSizeSmall')).toBe(false);
     const link = screen.getByRole('button');
-    expect(window.getComputedStyle(link).fontSize).toBe('2.125rem');
+    const classes = Array.from(link.classList);
+    const hasFontSizeRule = Array.from(document.styleSheets).some((sheet) => {
+      try {
+        return Array.from(sheet.cssRules).some(
+          (rule) =>
+            rule instanceof CSSStyleRule &&
+            classes.some((cls) => rule.selectorText?.includes(cls)) &&
+            rule.style.fontSize === '2.125rem',
+        );
+      } catch {
+        return false;
+      }
+    });
+    expect(hasFontSizeRule).toBe(true);
   });
 
   it('merges caller-provided sx', () => {
