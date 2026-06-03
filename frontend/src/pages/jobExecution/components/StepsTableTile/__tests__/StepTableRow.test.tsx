@@ -35,9 +35,9 @@ describe('StepTableRow', () => {
     expect(screen.getByText('1,230')).toBeInTheDocument();
   });
 
-  it('falls back to em-dash when endTime is null', () => {
+  it('shows in-progress indicator when endTime is null', () => {
     render(wrap({ ...baseStep, endTime: null }));
-    expect(screen.getByText('—')).toBeInTheDocument();
+    expect(screen.getByText('In progress')).toBeInTheDocument();
   });
 
   it('fires onClick with the step id when the row is clicked', async () => {

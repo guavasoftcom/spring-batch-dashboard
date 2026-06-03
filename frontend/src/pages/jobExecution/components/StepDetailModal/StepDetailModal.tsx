@@ -1,5 +1,5 @@
 import { Alert, Box, Dialog, DialogContent, Skeleton, Typography } from '@mui/material';
-import { StatGrid, StepCountsBarChart, recordToStatEntries } from '~/components';
+import { InProgressTimestamp, StatGrid, StepCountsBarChart, recordToStatEntries } from '~/components';
 import type { StepExecutionDetail } from '~/pages/jobExecution/types';
 import { formatTimestamp } from '~/utils';
 import StepDetailModalHeader from './StepDetailModalHeader';
@@ -63,7 +63,7 @@ const StepDetailModal = ({ open, data, loading, error, onClose }: Props) => (
               entries={[
                 { label: 'Created', value: formatTimestamp(data.createTime) },
                 { label: 'Started', value: formatTimestamp(data.startTime) },
-                { label: 'Ended', value: formatTimestamp(data.endTime) },
+                { label: 'Ended', value: <InProgressTimestamp value={data.endTime} /> },
                 { label: 'Last updated', value: formatTimestamp(data.lastUpdated) },
               ]}
             />

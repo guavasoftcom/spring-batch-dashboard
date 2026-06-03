@@ -11,7 +11,7 @@ import {
   Typography,
 } from '@mui/material';
 import DisplaySettingsIcon from '@mui/icons-material/DisplaySettings';
-import { ExecutionLink, LargeTile } from '~/components';
+import { ExecutionLink, InProgressTimestamp, LargeTile } from '~/components';
 import type { JobLastRun } from '~/types';
 import { STATUS_COLOR, formatDuration, formatTimestamp, humanize } from '~/utils';
 
@@ -34,6 +34,7 @@ const JobLastRunsTile = ({ data, loading, error, onJobClick, onRunClick }: Props
               <TableCell>Execution</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Started</TableCell>
+              <TableCell>Completed</TableCell>
               <TableCell align="right">Duration</TableCell>
               <TableCell align="right">Read</TableCell>
               <TableCell align="right">Write</TableCell>
@@ -42,7 +43,7 @@ const JobLastRunsTile = ({ data, loading, error, onJobClick, onRunClick }: Props
           <TableBody>
             {data.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7}>
+                <TableCell colSpan={8}>
                   <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                     No jobs in this environment.
                   </Typography>
@@ -85,12 +86,13 @@ const JobLastRunsTile = ({ data, loading, error, onJobClick, onRunClick }: Props
                       <Chip label={run.status} color={STATUS_COLOR[run.status]} size="small" />
                     </TableCell>
                     <TableCell>{formatTimestamp(run.startTime)}</TableCell>
+                    <TableCell><InProgressTimestamp value={run.endTime} /></TableCell>
                     <TableCell align="right">{formatDuration(run.durationSeconds)}</TableCell>
                     <TableCell align="right">{run.readCount.toLocaleString()}</TableCell>
                     <TableCell align="right">{run.writeCount.toLocaleString()}</TableCell>
                   </>
                 ) : (
-                  <TableCell colSpan={6}>
+                  <TableCell colSpan={7}>
                     <Typography variant="body2" sx={{ color: 'text.disabled' }}>
                       No runs in this window
                     </Typography>

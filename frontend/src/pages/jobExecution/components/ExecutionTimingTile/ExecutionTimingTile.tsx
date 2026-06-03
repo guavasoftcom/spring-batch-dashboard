@@ -1,5 +1,5 @@
 import { Box, Skeleton, Typography } from '@mui/material';
-import { TilePaper } from '~/components';
+import { InProgressTimestamp, TilePaper } from '~/components';
 import { appColors } from '~/theme';
 import type { JobExecutionTiming } from '~/pages/jobExecution/types';
 import { formatTimestamp } from '~/utils';
@@ -10,7 +10,7 @@ type Props = {
   error: string | null;
 };
 
-const TimingRow = ({ label, value }: { label: string; value: string }) => (
+const TimingRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 1 }}>
     <Typography
       component="span"
@@ -46,7 +46,7 @@ const ExecutionTimingTile = ({ data, loading, error }: Props) => (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mt: 1.25 }}>
         <TimingRow label="Created" value={formatTimestamp(data.createTime)} />
         {data.startTime && <TimingRow label="Started" value={formatTimestamp(data.startTime)} />}
-        {data.endTime && <TimingRow label="Ended" value={formatTimestamp(data.endTime)} />}
+        <TimingRow label="Completed" value={<InProgressTimestamp value={data.endTime} />} />
       </Box>
     )}
   </TilePaper>

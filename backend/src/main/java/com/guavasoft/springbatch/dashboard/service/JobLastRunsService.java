@@ -21,7 +21,7 @@ public class JobLastRunsService {
 
     public List<JobLastRun> getJobLastRuns(int windowDays) {
         LocalDateTime since = LocalDateTime.now().minusDays(windowDays);
-        return jobInstanceRepository.findDistinctJobNames().stream()
+        return jobInstanceRepository.findDistinctJobNamesSince(since).stream()
                 .map(jobName -> new JobLastRun(
                         jobName,
                         jobExecutionRepository.findLatestRunByJobName(jobName, since)
