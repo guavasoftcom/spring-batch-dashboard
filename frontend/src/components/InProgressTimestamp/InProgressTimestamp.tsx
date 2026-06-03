@@ -7,9 +7,13 @@ const InProgressTimestamp = ({ value }: Props) =>
   value ? (
     <>{formatTimestamp(value)}</>
   ) : (
-    <Typography component="span" variant="body2" sx={{ color: 'text.disabled', fontStyle: 'italic' }}>
+    <Typography
+      component="span"
+      variant="body2"
+      sx={{ color: 'text.disabled', fontStyle: 'italic' }}
+    >
       In progress
     </Typography>
   );
 
-export { InProgressTimestamp };
+export default InProgressTimestamp;
