@@ -61,12 +61,12 @@ class JobExecutionRepositoryTest {
     void findRunsByJobNameReturnsRowsInRequestedOrder(String datasource) {
         DataSourceContext.set(datasource);
         // Highest exec ids first; with desc order the head is today's run, then yesterday, etc.
-        List<JobRunRow> descending = jobExecutionRepository.findRunsByJobName(DAILY_IMPORT, "executionId", "desc", 0, 3);
+        List<JobRunRow> descending = jobExecutionRepository.findRunsByJobName(DAILY_IMPORT, "executionId", "desc", 0, 3, ALL_TIME);
         assertThat(descending)
             .extracting(JobRunRow::getExecutionId)
             .containsExactly(90L, 89L, 88L);
 
-        List<JobRunRow> ascending = jobExecutionRepository.findRunsByJobName(DAILY_IMPORT, "executionId", "asc", 0, 3);
+        List<JobRunRow> ascending = jobExecutionRepository.findRunsByJobName(DAILY_IMPORT, "executionId", "asc", 0, 3, ALL_TIME);
         assertThat(ascending)
             .extracting(JobRunRow::getExecutionId)
             .containsExactly(1L, 2L, 3L);
@@ -75,8 +75,8 @@ class JobExecutionRepositoryTest {
     @AcrossDatasources
     void findRunsByJobNameRespectsPageBounds(String datasource) {
         DataSourceContext.set(datasource);
-        List<JobRunRow> firstPage = jobExecutionRepository.findRunsByJobName(DAILY_IMPORT, "executionId", "desc", 0, 1);
-        List<JobRunRow> secondPage = jobExecutionRepository.findRunsByJobName(DAILY_IMPORT, "executionId", "desc", 1, 1);
+        List<JobRunRow> firstPage = jobExecutionRepository.findRunsByJobName(DAILY_IMPORT, "executionId", "desc", 0, 1, ALL_TIME);
+        List<JobRunRow> secondPage = jobExecutionRepository.findRunsByJobName(DAILY_IMPORT, "executionId", "desc", 1, 1, ALL_TIME);
 
         assertThat(firstPage).hasSize(1).first().extracting(JobRunRow::getExecutionId).isEqualTo(NEWEST_DAILY_EXEC);
         assertThat(secondPage).hasSize(1).first().extracting(JobRunRow::getExecutionId).isEqualTo(SECOND_NEWEST_DAILY_EXEC);
@@ -85,16 +85,16 @@ class JobExecutionRepositoryTest {
     @AcrossDatasources
     void findRunsByUnknownJobNameReturnsEmpty(String datasource) {
         DataSourceContext.set(datasource);
-        assertThat(jobExecutionRepository.findRunsByJobName(UNKNOWN_JOB, "executionId", "desc", 0, 10)).isEmpty();
+        assertThat(jobExecutionRepository.findRunsByJobName(UNKNOWN_JOB, "executionId", "desc", 0, 10, ALL_TIME)).isEmpty();
     }
 
     @AcrossDatasources
     void countRunsByJobNameReflectsSeed(String datasource) {
         DataSourceContext.set(datasource);
         // 90 dailyImport + 30 reconcile + 12 digest. See the db seed scripts.
-        assertThat(jobExecutionRepository.countRunsByJobName(DAILY_IMPORT)).isEqualTo(90);
-        assertThat(jobExecutionRepository.countRunsByJobName(RECONCILE_LEDGER)).isEqualTo(30);
-        assertThat(jobExecutionRepository.countRunsByJobName(UNKNOWN_JOB)).isZero();
+        assertThat(jobExecutionRepository.countRunsByJobName(DAILY_IMPORT, ALL_TIME)).isEqualTo(90);
+        assertThat(jobExecutionRepository.countRunsByJobName(RECONCILE_LEDGER, ALL_TIME)).isEqualTo(30);
+        assertThat(jobExecutionRepository.countRunsByJobName(UNKNOWN_JOB, ALL_TIME)).isZero();
     }
 
     @AcrossDatasources

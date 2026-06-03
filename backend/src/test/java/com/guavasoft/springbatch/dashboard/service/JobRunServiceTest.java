@@ -92,13 +92,13 @@ class JobRunServiceTest {
         JobRunRow secondRow = mock(JobRunRow.class);
         JobRun firstJobRun = sampleJobRun(1L);
         JobRun secondJobRun = sampleJobRun(2L);
-        when(jobExecutionRepository.findRunsByJobName(eq(JOB), anyString(), anyString(), anyInt(), anyInt()))
+        when(jobExecutionRepository.findRunsByJobName(eq(JOB), anyString(), anyString(), anyInt(), anyInt(), any(LocalDateTime.class)))
             .thenReturn(List.of(firstRow, secondRow));
         when(jobRunMapper.toDto(firstRow)).thenReturn(firstJobRun);
         when(jobRunMapper.toDto(secondRow)).thenReturn(secondJobRun);
-        when(jobExecutionRepository.countRunsByJobName(JOB)).thenReturn(7L);
+        when(jobExecutionRepository.countRunsByJobName(eq(JOB), any(LocalDateTime.class))).thenReturn(7L);
 
-        JobRunPage jobRunPage = jobRunService.getRuns(JOB, "executionId", "desc", 0, 20);
+        JobRunPage jobRunPage = jobRunService.getRuns(JOB, "executionId", "desc", 0, 20, 7);
 
         assertThat(jobRunPage).isEqualTo(new JobRunPage(List.of(firstJobRun, secondJobRun), 0, 20, 7));
     }

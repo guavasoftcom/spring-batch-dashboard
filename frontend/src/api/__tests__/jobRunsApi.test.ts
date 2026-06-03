@@ -77,10 +77,10 @@ describe('jobRunsApi', () => {
       const page = { content: [], page: 0, size: 20, totalElements: 0 };
       vi.mocked(apiClient.get).mockResolvedValueOnce({ data: page });
 
-      await getRuns('jobA', 'startTime', 'asc', 2, 10);
+      await getRuns('jobA', 'startTime', 'asc', 2, 10, 30);
 
       expect(apiClient.get).toHaveBeenCalledWith('/api/jobs/jobA/runs', {
-        params: { sortBy: 'startTime', sortDir: 'asc', page: 2, size: 10 },
+        params: { sortBy: 'startTime', sortDir: 'asc', page: 2, size: 10, window: 30 },
       });
     });
 
@@ -92,7 +92,7 @@ describe('jobRunsApi', () => {
       await getRuns('jobA');
 
       expect(apiClient.get).toHaveBeenCalledWith('/api/jobs/jobA/runs', {
-        params: { sortBy: 'executionId', sortDir: 'desc', page: 0, size: 20 },
+        params: { sortBy: 'executionId', sortDir: 'desc', page: 0, size: 20, window: 7 },
       });
     });
 

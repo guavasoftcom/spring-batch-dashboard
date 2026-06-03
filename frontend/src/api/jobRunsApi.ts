@@ -68,9 +68,10 @@ export const getRuns = async (
   sortDir: SortDir = 'desc',
   page = 0,
   size = 20,
+  windowDays = 7,
 ): Promise<JobRunPage> => {
   if (USE_MOCK_DATA) {
-    const sorted = [...sampleRuns].sort((a, b) => {
+    const sorted = [...filterTrendRuns(sampleRuns, windowDays)].sort((a, b) => {
       const av = a[sortBy];
       const bv = b[sortBy];
       if (av === bv) {
@@ -94,7 +95,7 @@ export const getRuns = async (
     };
   }
   const response = await apiClient.get<JobRunPage>(base(jobId), {
-    params: { sortBy, sortDir, page, size },
+    params: { sortBy, sortDir, page, size, window: windowDays },
   });
   return response.data;
 };

@@ -66,7 +66,7 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
     private final JobRunRowMapper jobRunRowMapper;
 
     @Override
-    public List<JobRunRow> findRunsByJobName(String jobName, String sortBy, String sortDir, int page, int size) {
+    public List<JobRunRow> findRunsByJobName(String jobName, String sortBy, String sortDir, int page, int size, LocalDateTime since) {
         String sortKey = SORT_EXPRESSIONS.containsKey(sortBy) ? sortBy : DEFAULT_SORT_FIELD;
         String expression = COL_DURATION_SECONDS.equals(sortKey)
                 ? dialect.durationSeconds(START_COL, END_COL)
@@ -87,6 +87,7 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
             JOIN BATCH_JOB_INSTANCE ji ON je.job_instance_id = ji.job_instance_id
             LEFT JOIN BATCH_STEP_EXECUTION se ON se.job_execution_id = je.job_execution_id
             WHERE ji.job_name = :jobName
+              AND je.create_time >= :since
             GROUP BY je.job_execution_id, je.status, je.start_time, je.end_time, je.exit_code
             ORDER BY %s
             %s
@@ -97,6 +98,7 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
 
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue(PARAM_JOB_NAME, jobName)
+                .addValue(PARAM_SINCE, since)
                 .addValue(PARAM_SIZE, size)
                 .addValue(PARAM_OFFSET, (long) page * size);
 
@@ -104,12 +106,14 @@ public class JobExecutionRepositoryCustomImpl implements JobExecutionRepositoryC
     }
 
     @Override
-    public long countRunsByJobName(String jobName) {
+    public long countRunsByJobName(String jobName, LocalDateTime since) {
         Long count = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM BATCH_JOB_EXECUTION je "
                         + "JOIN BATCH_JOB_INSTANCE ji ON je.job_instance_id = ji.job_instance_id "
-                        + "WHERE ji.job_name = :jobName",
-                new MapSqlParameterSource().addValue(PARAM_JOB_NAME, jobName),
+                        + "WHERE ji.job_name = :jobName AND je.create_time >= :since",
+                new MapSqlParameterSource()
+                        .addValue(PARAM_JOB_NAME, jobName)
+                        .addValue(PARAM_SINCE, since),
                 Long.class);
         return count == null ? 0L : count;
     }

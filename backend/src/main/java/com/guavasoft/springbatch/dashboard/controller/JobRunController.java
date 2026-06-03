@@ -66,16 +66,17 @@ public class JobRunController {
     }
 
     @GetMapping
-    @Operation(summary = "List runs", description = "Paginated runs for the job, sorted by the given field and direction (defaults: executionId desc, page 0, size 20). Returns all runs regardless of age.")
+    @Operation(summary = "List runs", description = "Paginated runs for the job within the given lookback window, sorted by the given field and direction (defaults: executionId desc, page 0, size 20, window 7 days).")
     public JobRunPage getRuns(
             @PathVariable String jobId,
             @RequestParam(defaultValue = "executionId") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "" + DEFAULT_WINDOW_DAYS) @Min(1) @Max(90) int window) {
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), 100);
-        return jobRunService.getRuns(jobId, sortBy, sortDir, safePage, safeSize);
+        return jobRunService.getRuns(jobId, sortBy, sortDir, safePage, safeSize, window);
     }
 
     @GetMapping("/trend")
