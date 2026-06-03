@@ -10,9 +10,9 @@ import java.util.Optional;
 public interface JobExecutionRepositoryCustom {
 
 
-    List<JobRunRow> findRunsByJobName(String jobName, String sortBy, String sortDir, int page, int size);
+    List<JobRunRow> findRunsByJobName(String jobName, String sortBy, String sortDir, int page, int size, LocalDateTime since);
 
-    long countRunsByJobName(String jobName);
+    long countRunsByJobName(String jobName, LocalDateTime since);
 
     double findAverageDurationSeconds(LocalDateTime since);
 
