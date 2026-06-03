@@ -1,4 +1,5 @@
 import { keepPreviousData } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getRuns } from '~/api';
 import type { RunSortField } from '~/api/jobRunsApi';
@@ -13,6 +14,10 @@ const JobRunsTableTileContainer = () => {
   const navigate = useNavigate();
   const { windowDays } = useWindow();
   const { sortBy, sortDir, page, setPage, onSortChange } = useTableState<RunSortField>('executionId');
+
+  useEffect(() => {
+    setPage(0);
+  }, [windowDays, setPage]);
 
   const { data, loading, error } = useJobQuery(
     ['job-runs', sortBy, sortDir, page, PAGE_SIZE, windowDays],
