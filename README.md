@@ -100,7 +100,7 @@ To run the dashboard without configuring OAuth or a database, set `VITE_USE_MOCK
 
 ## Running the published image
 
-Each release publishes a single image to GHCR — Spring Boot serves the API and the SPA from the same origin on `:8080`. Pull a tag:
+Each release publishes a single image to GHCR — Spring Boot serves the API and the SPA from the same origin on `:8080`. The bundled SPA calls the API with relative URLs, so no hostname is baked in at build time and the same image works behind `localhost`, an Ingress, or any custom domain. Pull a tag:
 
 ```bash
 docker pull ghcr.io/guavasoftcom/spring-batch-dashboard:latest

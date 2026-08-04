@@ -11,8 +11,13 @@
 # Examples:
 #   scripts/build-image.sh                              # tags as spring-batch-dashboard:local
 #   scripts/build-image.sh spring-batch-dashboard:dev   # custom tag
-#   VITE_BACKEND_BASE_URL=https://dash.example.com scripts/build-image.sh
 #   scripts/build-image.sh -- --no-cache                # forward flags to docker build
+#
+# The SPA is built with an empty VITE_BACKEND_BASE_URL so it calls the API on its own
+# origin, whatever host the image ends up served from. Only override that
+# (VITE_BACKEND_BASE_URL=https://api.example.com scripts/build-image.sh) if you intend
+# to point the bundle at a backend on a different origin — the value is baked in and
+# the backend's CORS allow-list has to include the SPA's origin.
 
 set -euo pipefail
 
@@ -32,11 +37,11 @@ log "Building frontend (yarn install + yarn build)"
 (
   cd frontend
   yarn install --immutable
-  if [[ -n "${VITE_BACKEND_BASE_URL:-}" ]]; then
-    VITE_BACKEND_BASE_URL="${VITE_BACKEND_BASE_URL}" yarn build
-  else
-    yarn build
-  fi
+  # Always export the var — an empty value makes the SPA issue same-origin relative
+  # requests (correct for this image, where Spring Boot serves both the SPA and the
+  # API) and, because process env beats .env files in Vite, it also stops a
+  # developer's .env.local from baking http://localhost:8080 into the bundle.
+  VITE_BACKEND_BASE_URL="${VITE_BACKEND_BASE_URL:-}" yarn build
 )
 
 log "Bundling SPA into Spring Boot static resources"
