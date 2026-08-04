@@ -146,6 +146,7 @@ export const getX = async (...): Promise<T> => {
 ```
 
 - Set `VITE_USE_MOCK_DATA=true` in `.env` to run the app without a live backend; every endpoint returns canned data and `apiClient` is bypassed.
+- `VITE_BACKEND_BASE_URL` defaults to empty, i.e. same-origin relative requests — that is what the released image needs, since Spring Boot serves the SPA and the API from one port. The committed [.env.development](.env.development) sets `http://localhost:8080` for `yarn dev` only; don't reintroduce a hardcoded fallback in [src/config/env.ts](src/config/env.ts) or it will be baked into the release bundle.
 - Avoid name collisions in the barrel — `getStepCounts` (overview totals) is distinct from `getJobExecutionStepCounts` (per-execution).
 - One Vitest file per API module under [src/api/__tests__/](src/api/__tests__/) covers both real-mode (asserts URL/params via mocked `apiClient`) and mock-mode (asserts canned data, no HTTP).
 

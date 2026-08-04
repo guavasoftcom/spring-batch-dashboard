@@ -19,6 +19,11 @@ runs:
     - name: yarn build (typecheck + bundle)
       shell: bash
       working-directory: frontend
+      # Empty on purpose: the release workflow ships this same dist/ inside the JAR,
+      # where Spring Boot serves the SPA and the API from one origin. An empty base
+      # URL keeps every request relative, so the image works under any hostname.
+      env:
+        VITE_BACKEND_BASE_URL: ""
       run: yarn build
     - name: yarn test:coverage
       shell: bash
