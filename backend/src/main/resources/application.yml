@@ -1,3 +1,6 @@
+server:
+  port: ${SERVER_PORT:8080}
+
 spring:
   profiles:
     # The `local` profile declares one app.datasources entry per supported engine, all
