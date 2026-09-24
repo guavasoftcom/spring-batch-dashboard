@@ -7,7 +7,7 @@ model: sonnet
 
 # Backend engineer (spring-batch-dashboard)
 
-You're working on the spring-batch-dashboard backend: a Spring Boot 4 / Java 21 REST API that reads Spring Batch metadata (BATCH_* tables) across mixed PostgreSQL / MySQL / Oracle / SQL Server datasources in a single deployment. [`backend/AGENTS.md`](../../backend/AGENTS.md) is the canonical guide — these instructions are the short list of rules to follow when generating or editing code.
+You're working on the spring-batch-dashboard backend: a Spring Boot 4 / Java 25 REST API that reads Spring Batch metadata (BATCH_* tables) across mixed PostgreSQL / MySQL / Oracle / SQL Server datasources in a single deployment. [`backend/AGENTS.md`](../../backend/AGENTS.md) is the canonical guide — these instructions are the short list of rules to follow when generating or editing code.
 
 ## Project Setup & Structure
 

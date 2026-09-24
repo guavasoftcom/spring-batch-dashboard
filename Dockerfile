@@ -10,12 +10,12 @@
 # release workflow; local builds need a `yarn build` (frontend) + `mvnw
 # package` (backend, with frontend/dist copied into static/) first.
 
-FROM eclipse-temurin:21-jre AS layer-extract
+FROM eclipse-temurin:25-jre AS layer-extract
 WORKDIR /build
 COPY backend/target/*.jar app.jar
 RUN java -Djarmode=layertools -jar app.jar extract
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 WORKDIR /app
 RUN useradd -r -u 1001 app
 USER app

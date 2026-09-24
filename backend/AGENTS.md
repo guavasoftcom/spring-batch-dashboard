@@ -4,7 +4,7 @@ Spring Boot 4 service that exposes the Spring Batch metadata as a REST API for t
 
 ## Stack
 
-- Java 21, Spring Boot 4.0.x, Spring Framework 7
+- Java 25, Spring Boot 4.0.x, Spring Framework 7
 - Spring MVC (`spring-boot-starter-webmvc`)
 - Spring Data JPA + Hibernate 6 for entity-based reads (`BATCH_JOB_INSTANCE`, `BATCH_JOB_EXECUTION`, `BATCH_STEP_EXECUTION`, etc.)
 - `NamedParameterJdbcTemplate` for any read where dynamic `ORDER BY` / aggregates are needed (Spring Data's `Sort` rewrites property paths in unsafe ways for native queries — see [Repository conventions](#repository-conventions))

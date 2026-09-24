@@ -4,7 +4,7 @@ Top-level components. Each has its own `AGENTS.md` with stack/layout/conventions
 
 ```
 spring-batch-dashboard/
-├── backend/        Spring Boot 4 / Java 21 REST API (reads BATCH_* metadata)
+├── backend/        Spring Boot 4 / Java 25 REST API (reads BATCH_* metadata)
 │   AGENTS.md       — backend conventions
 └── frontend/       React 19 + Vite + MUI dashboard (consumes the backend)
     AGENTS.md       — frontend conventions
