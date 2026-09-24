@@ -21,35 +21,37 @@ const AppNav = ({
   onNavigateOverview,
 }: Props) => {
   const overviewButton = (
-    <ListItemButton
-      selected={onDashboard}
-      onClick={onNavigateOverview}
-      aria-label="Overview"
-      sx={{
-        mx: 1,
-        borderRadius: 1,
-        justifyContent: collapsed ? 'center' : 'flex-start',
-        '&.Mui-selected': {
-          bgcolor: 'rgba(21, 101, 192, 0.12)',
-          color: 'primary.dark',
-        },
-        '&.Mui-selected:hover': { bgcolor: 'rgba(21, 101, 192, 0.18)' },
-      }}
-    >
-      <ListItemIcon
-        sx={{ minWidth: collapsed ? 0 : 32, color: 'inherit', justifyContent: 'center' }}
+    <Tooltip title="Overview" placement="right">
+      <ListItemButton
+        selected={onDashboard}
+        onClick={onNavigateOverview}
+        aria-label="Overview"
+        sx={{
+          mx: 1,
+          borderRadius: 1,
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          '&.Mui-selected': {
+            bgcolor: 'rgba(21, 101, 192, 0.12)',
+            color: 'primary.dark',
+          },
+          '&.Mui-selected:hover': { bgcolor: 'rgba(21, 101, 192, 0.18)' },
+        }}
       >
-        <AutoGraphOutlinedIcon fontSize="small" />
-      </ListItemIcon>
-      {!collapsed && (
-        <ListItemText
-          primary="Overview"
-          slotProps={{
-            primary: { sx: { fontWeight: onDashboard ? 700 : 500, fontSize: 14 } },
-          }}
-        />
-      )}
-    </ListItemButton>
+        <ListItemIcon
+          sx={{ minWidth: collapsed ? 0 : 32, color: 'inherit', justifyContent: 'center' }}
+        >
+          <AutoGraphOutlinedIcon fontSize="small" />
+        </ListItemIcon>
+        {!collapsed && (
+          <ListItemText
+            primary="Overview"
+            slotProps={{
+              primary: { sx: { fontWeight: onDashboard ? 700 : 500, fontSize: 14 } },
+            }}
+          />
+        )}
+      </ListItemButton>
+    </Tooltip>
   );
 
   return (
@@ -99,13 +101,7 @@ const AppNav = ({
       >
         <EnvironmentSelector compact={collapsed} />
         <List sx={{ mt: collapsed ? 2 : 0 }}>
-          {collapsed ? (
-            <Tooltip title="Overview" placement="right">
-              {overviewButton}
-            </Tooltip>
-          ) : (
-            overviewButton
-          )}
+          {overviewButton}
         </List>
         <BatchJobsNav collapsed={collapsed} />
       </Box>

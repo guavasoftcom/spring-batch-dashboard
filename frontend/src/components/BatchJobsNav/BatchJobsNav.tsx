@@ -21,12 +21,14 @@ type Props = {
 const BatchJobsNav = ({ jobs, activeJobId, loading, collapsed = false, onSelect }: Props) => (
   <>
     {!collapsed && (
-      <Typography
-        variant="overline"
-        sx={{ px: 2, color: 'text.secondary', fontWeight: 700, letterSpacing: 1 }}
-      >
-        Batch Jobs
-      </Typography>
+      <Tooltip title="Batch Jobs" placement="right">
+        <Typography
+          variant="overline"
+          sx={{ px: 2, color: 'text.secondary', fontWeight: 700, letterSpacing: 1 }}
+        >
+          Batch Jobs
+        </Typography>
+      </Tooltip>
     )}
     <List>
       {loading &&
@@ -81,12 +83,10 @@ const BatchJobsNav = ({ jobs, activeJobId, loading, collapsed = false, onSelect 
             </ListItemButton>
           );
 
-          return collapsed ? (
+          return (
             <Tooltip key={jobId} title={label} placement="right">
               {button}
             </Tooltip>
-          ) : (
-            button
           );
         })}
     </List>
