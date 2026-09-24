@@ -1,10 +1,10 @@
 name: Set up JDK
-description: Provision Temurin JDK 21 with Maven dependency caching.
+description: Provision Temurin JDK 25 with Maven dependency caching.
 runs:
   using: composite
   steps:
     - uses: actions/setup-java@v4
       with:
         distribution: temurin
-        java-version: '21'
+        java-version: '25'
         cache: maven

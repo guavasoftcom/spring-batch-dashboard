@@ -8,7 +8,7 @@
 [![Coverage ≥ 80%](https://img.shields.io/badge/Coverage-%E2%89%A580%25-brightgreen.svg)](#ci)
 
 <!-- Tech stack -->
-[![Java 21](https://img.shields.io/badge/Java-21-007396.svg?logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/21/)
+[![Java 25](https://img.shields.io/badge/Java-25-007396.svg?logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/25/)
 [![Spring Boot 4](https://img.shields.io/badge/Spring%20Boot-4.0-6DB33F.svg?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![React 19](https://img.shields.io/badge/React-19-61DAFB.svg?logo=react&logoColor=white)](https://react.dev/)
 [![TypeScript 6](https://img.shields.io/badge/TypeScript-6-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -27,7 +27,7 @@ A web dashboard for inspecting Spring Batch metadata (job runs, step executions,
 
 | Component                | Stack                                           | Purpose                                                                                                                                                                                                                                                                                                                                     |
 | ------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`backend/`](backend/)   | Spring Boot 4, Java 21, Spring Data JPA, OAuth2 | REST API that reads `BATCH_*` metadata and serves it to the frontend. Multi-environment via per-request datasource routing; each `app.datasources` entry declares its own engine (POSTGRESQL / MYSQL / ORACLE / SQLSERVER) and a routing `SqlDialect` picks the right per-engine SQL on every call. All four JDBC drivers are bundled in one artifact. |
+| [`backend/`](backend/)   | Spring Boot 4, Java 25, Spring Data JPA, OAuth2 | REST API that reads `BATCH_*` metadata and serves it to the frontend. Multi-environment via per-request datasource routing; each `app.datasources` entry declares its own engine (POSTGRESQL / MYSQL / ORACLE / SQLSERVER) and a routing `SqlDialect` picks the right per-engine SQL on every call. All four JDBC drivers are bundled in one artifact. |
 | [`frontend/`](frontend/) | React 19, Vite, MUI, TanStack Query, Vitest     | The dashboard SPA. Browses jobs, runs, and per-execution step details.                                                                                                                                                                                                                                                                      |
 
 The components don't share code — they're independent apps that meet at the database.
@@ -80,7 +80,7 @@ The components don't share code — they're independent apps that meet at the da
 
 ## Quick start
 
-You'll need: JDK 21, Node 20+, Yarn 4 (Berry), Docker.
+You'll need: JDK 25, Node 20+, Yarn 4 (Berry), Docker.
 
 ```bash
 # 1. Backend — pulls up Postgres + MySQL + Oracle in docker containers, serves on :8080
