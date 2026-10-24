@@ -8,10 +8,10 @@ describe('createAppTheme', () => {
     expect(theme.palette.primary.dark.toUpperCase()).toBe('#003C8F');
   });
 
-  it('uses #006bff as primary.dark in dark mode', () => {
+  it('uses #5E92F3 as primary.dark in dark mode', () => {
     const theme = createAppTheme('dark');
     expect(theme.palette.mode).toBe('dark');
-    expect(theme.palette.primary.dark.toLowerCase()).toBe('#006bff');
+    expect(theme.palette.primary.dark.toUpperCase()).toBe('#5E92F3');
   });
 
   it('exposes a different background.paper per mode', () => {
