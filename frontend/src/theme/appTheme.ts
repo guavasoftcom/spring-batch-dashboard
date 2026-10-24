@@ -57,7 +57,6 @@ export const pageGradient: Record<ColorMode, string> = {
   dark: `linear-gradient(180deg, #0E2238 0%, #06192C 55%, ${pageGradientBottom.dark} 100%)`,
 };
 
-const chartTextFill = (theme: Theme) => (theme.palette.mode === 'dark' ? '#FFFFFF' : '#37474F');
 
 export const createAppTheme = (mode: ColorMode): Theme =>
   createTheme({
@@ -66,7 +65,7 @@ export const createAppTheme = (mode: ColorMode): Theme =>
       primary: {
         main: appColors.brandBlue,
         light: appColors.brandBlueLight,
-        dark: mode === 'dark' ? '#006bff' : appColors.brandBlueDark,
+        dark: mode === 'dark' ? appColors.brandBlueLight : appColors.brandBlueDark,
         contrastText: appColors.white,
       },
       secondary: {
@@ -77,7 +76,7 @@ export const createAppTheme = (mode: ColorMode): Theme =>
       },
       success: { main: '#2E7D32', contrastText: appColors.white },
       error: { main: '#D32F2F', contrastText: appColors.white },
-      info: { main: '#0288D1', contrastText: appColors.white },
+      info: { main: '#0277BD', contrastText: appColors.white },
       background:
         mode === 'light'
           ? { default: '#F7F9FC', paper: appColors.white }
@@ -85,27 +84,35 @@ export const createAppTheme = (mode: ColorMode): Theme =>
       divider: mode === 'light' ? '#D5DBE3' : '#2A3440',
       // Subtly inset card background — used by the StepDetailModal StatGrid to render
       // data cards on top of the dialog Paper.
-      surface: { inset: mode === 'light' ? '#F7F9FC' : '#2A3440' },
+      surface: { inset: mode === 'light' ? '#F7F9FC' : '#222B38' },
     },
     shape: { borderRadius: 12 },
     typography: {
-      fontFamily: '"Segoe UI", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
       h4: { fontWeight: 700 },
       h6: { fontWeight: 700 },
     },
     components: {
+      MuiPaper: {
+        styleOverrides: {
+          root: ({ theme }) =>
+            theme.palette.mode === 'dark'
+              ? { backgroundImage: 'none' }
+              : {},
+        },
+      },
       MuiChartsAxis: {
         styleOverrides: {
           root: ({ theme }) => ({
-            '& .MuiChartsAxis-tickLabel': { fill: chartTextFill(theme) },
-            '& .MuiChartsAxis-label': { fill: chartTextFill(theme) },
+            '& .MuiChartsAxis-tickLabel': { fill: theme.palette.text.secondary },
+            '& .MuiChartsAxis-label': { fill: theme.palette.text.primary },
           }),
         },
       },
       MuiChartsLegend: {
         styleOverrides: {
           root: ({ theme }) => ({
-            '& .MuiChartsLegend-label': { fill: chartTextFill(theme) },
+            '& .MuiChartsLegend-label': { fill: theme.palette.text.primary },
           }),
         },
       },
