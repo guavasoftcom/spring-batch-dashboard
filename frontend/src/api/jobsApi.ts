@@ -8,10 +8,14 @@ const mockJobs = [
   'syncInventoryJob',
 ];
 
-export const getJobs = async (): Promise<string[]> => {
+/**
+ * Names of jobs with at least one run in the last `windowDays` days. Mock mode returns every
+ * seed job regardless of the window.
+ */
+export const getJobs = async (windowDays: number): Promise<string[]> => {
   if (USE_MOCK_DATA) {
     return [...mockJobs];
   }
-  const response = await apiClient.get<string[]>('/api/jobs');
+  const response = await apiClient.get<string[]>('/api/jobs', { params: { window: windowDays } });
   return response.data;
 };

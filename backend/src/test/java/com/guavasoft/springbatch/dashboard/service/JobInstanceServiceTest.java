@@ -2,6 +2,7 @@ package com.guavasoft.springbatch.dashboard.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.guavasoft.springbatch.dashboard.repository.JobInstanceRepository;
@@ -9,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -27,6 +29,19 @@ class JobInstanceServiceTest {
         List<String> expected = List.of("a", "b");
         when(jobInstanceRepository.findDistinctJobNamesSince(any(LocalDateTime.class))).thenReturn(expected);
 
-        assertThat(jobInstanceService.getJobNames()).isSameAs(expected);
+        assertThat(jobInstanceService.getJobNames(7)).isSameAs(expected);
+    }
+
+    @Test
+    void getJobNamesLooksBackByTheRequestedWindow() {
+        when(jobInstanceRepository.findDistinctJobNamesSince(any(LocalDateTime.class))).thenReturn(List.of());
+        LocalDateTime before = LocalDateTime.now();
+
+        jobInstanceService.getJobNames(7);
+
+        ArgumentCaptor<LocalDateTime> since = ArgumentCaptor.forClass(LocalDateTime.class);
+        verify(jobInstanceRepository).findDistinctJobNamesSince(since.capture());
+        assertThat(since.getValue())
+                .isBetween(before.minusDays(7), LocalDateTime.now().minusDays(7));
     }
 }

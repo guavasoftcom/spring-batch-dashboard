@@ -26,12 +26,28 @@ class JobInstanceControllerTest {
 
     @Test
     void returnsJobNames() throws Exception {
-        when(jobInstanceService.getJobNames()).thenReturn(List.of("importUsers", "billingJob"));
+        when(jobInstanceService.getJobNames(90)).thenReturn(List.of("importUsers", "billingJob"));
 
         mockMvc.perform(get("/api/jobs"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.length()").value(2))
             .andExpect(jsonPath("$[0]").value("importUsers"))
             .andExpect(jsonPath("$[1]").value("billingJob"));
+    }
+
+    @Test
+    void passesTheWindowToTheService() throws Exception {
+        when(jobInstanceService.getJobNames(7)).thenReturn(List.of("importUsers"));
+
+        mockMvc.perform(get("/api/jobs").param("window", "7"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0]").value("importUsers"));
+    }
+
+    @Test
+    void rejectsAnOutOfRangeWindow() throws Exception {
+        mockMvc.perform(get("/api/jobs").param("window", "0")).andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/jobs").param("window", "91")).andExpect(status().isBadRequest());
     }
 }
