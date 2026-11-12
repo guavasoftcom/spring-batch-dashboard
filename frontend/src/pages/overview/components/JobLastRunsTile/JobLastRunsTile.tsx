@@ -52,6 +52,13 @@ const FILTER_LABELS: Record<JobFilter, string> = {
   completed: 'Completed',
 };
 
+const FILTER_DOT_COLORS: Partial<Record<JobFilter, string>> = {
+  failed: 'error.main',
+  running: 'info.main',
+  slower: 'warning.main',
+  completed: 'success.main',
+};
+
 const SORT_LABELS: Record<JobSort, string> = {
   attention: 'Needs attention first',
   slowdown: 'Biggest slowdown',
@@ -129,8 +136,18 @@ const JobLastRunsTile = ({
                 key={key}
                 label={`${FILTER_LABELS[key]} ${counts[key]}`}
                 size="small"
+                icon={
+                  FILTER_DOT_COLORS[key] ? (
+                    <Box
+                      component="span"
+                      data-testid={`filter-dot-${key}`}
+                      sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: FILTER_DOT_COLORS[key] }}
+                    />
+                  ) : undefined
+                }
                 variant={filter === key ? 'filled' : 'outlined'}
                 color={filter === key ? 'primary' : 'default'}
+                sx={{ px: 0.75, '& .MuiChip-label': { px: 1 } }}
                 disabled={key !== 'all' && counts[key] === 0}
                 aria-pressed={filter === key}
                 onClick={() => onFilterChange(key)}

@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
+import { Box, Typography } from '@mui/material';
 import { ChartsReferenceLine, LineChart } from '@mui/x-charts';
 import { formatDuration } from '~/utils';
 import type { JobRow } from '../../jobInsights';
@@ -20,6 +21,7 @@ const JobDurationChart = ({ row }: Props) => {
   }
 
   return (
+    <Box>
     <LineChart
       height={180}
       xAxis={[{ scaleType: 'time', data: dates }]}
@@ -44,7 +46,24 @@ const JobDurationChart = ({ row }: Props) => {
         />
       )}
     </LineChart>
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 0.5, ml: 1, color: 'text.secondary' }}>
+      <LegendItem swatch={<Box sx={{ width: 16, height: 2, bgcolor: 'primary.main' }} />} label="Daily average" />
+      {row.usualSeconds !== null && (
+        <LegendItem
+          swatch={<Box sx={{ width: 16, borderTop: '1px dashed', borderColor: 'text.secondary' }} />}
+          label="Usual (median)"
+        />
+      )}
+    </Box>
+    </Box>
   );
 };
+
+const LegendItem = ({ swatch, label }: { swatch: ReactNode; label: string }) => (
+  <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+    {swatch}
+    <Typography variant="caption">{label}</Typography>
+  </Box>
+);
 
 export default JobDurationChart;
