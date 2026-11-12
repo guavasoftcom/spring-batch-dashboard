@@ -1,1 +1,1 @@
-export { default as OverviewPage } from './OverviewPage.container';
+export { default as OverviewPage } from './OverviewPage';

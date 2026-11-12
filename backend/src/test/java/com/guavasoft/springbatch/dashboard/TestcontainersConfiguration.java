@@ -14,9 +14,9 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.test.context.DynamicPropertyRegistrar;
-import org.testcontainers.containers.MSSQLServerContainer;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.mssqlserver.MSSQLServerContainer;
+import org.testcontainers.mysql.MySQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.oracle.OracleContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -32,8 +32,8 @@ import org.testcontainers.utility.MountableFile;
 public class TestcontainersConfiguration {
 
     @Bean
-    PostgreSQLContainer<?> postgresContainer() {
-        return new PostgreSQLContainer<>(DockerImageName.parse("postgres:latest"))
+    PostgreSQLContainer postgresContainer() {
+        return new PostgreSQLContainer(DockerImageName.parse("postgres:latest"))
             .withCopyFileToContainer(
                 MountableFile.forHostPath("db/init-postgresql/01-schema.sql"),
                 "/docker-entrypoint-initdb.d/01-schema.sql")
@@ -43,7 +43,7 @@ public class TestcontainersConfiguration {
     }
 
     @Bean
-    DynamicPropertyRegistrar postgresDatasourceProperties(PostgreSQLContainer<?> postgres) {
+    DynamicPropertyRegistrar postgresDatasourceProperties(PostgreSQLContainer postgres) {
         return registry -> {
             registry.add("POSTGRES_HOST", postgres::getHost);
             registry.add("POSTGRES_PORT", () -> postgres.getMappedPort(PostgreSQLContainer.POSTGRESQL_PORT));
@@ -54,8 +54,8 @@ public class TestcontainersConfiguration {
     }
 
     @Bean
-    MySQLContainer<?> mysqlContainer() {
-        return new MySQLContainer<>(DockerImageName.parse("mysql:8"))
+    MySQLContainer mysqlContainer() {
+        return new MySQLContainer(DockerImageName.parse("mysql:8"))
             .withCopyFileToContainer(
                 MountableFile.forHostPath("db/init-mysql/01-schema.sql"),
                 "/docker-entrypoint-initdb.d/01-schema.sql")
@@ -65,7 +65,7 @@ public class TestcontainersConfiguration {
     }
 
     @Bean
-    DynamicPropertyRegistrar mysqlDatasourceProperties(MySQLContainer<?> mysql) {
+    DynamicPropertyRegistrar mysqlDatasourceProperties(MySQLContainer mysql) {
         return registry -> {
             registry.add("MYSQL_HOST", mysql::getHost);
             registry.add("MYSQL_PORT", () -> mysql.getMappedPort(MySQLContainer.MYSQL_PORT));
@@ -109,8 +109,8 @@ public class TestcontainersConfiguration {
     }
 
     @Bean
-    MSSQLServerContainer<?> sqlServerContainer() {
-        return new MSSQLServerContainer<>(DockerImageName.parse("mcr.microsoft.com/mssql/server:2022-latest"))
+    MSSQLServerContainer sqlServerContainer() {
+        return new MSSQLServerContainer(DockerImageName.parse("mcr.microsoft.com/mssql/server:2022-latest"))
             .acceptLicense()
             .withUrlParam("encrypt", "false")
             .withUrlParam("trustServerCertificate", "true");
@@ -128,7 +128,7 @@ public class TestcontainersConfiguration {
      * datasource URL with the test context.
      */
     @Bean
-    SqlServerSchemaInitializer sqlServerSchemaInitializer(MSSQLServerContainer<?> sqlServer)
+    SqlServerSchemaInitializer sqlServerSchemaInitializer(MSSQLServerContainer sqlServer)
         throws IOException, SQLException {
         String masterUrl = sqlServer.getJdbcUrl();
         String user = sqlServer.getUsername();
@@ -176,7 +176,7 @@ public class TestcontainersConfiguration {
 
     @Bean
     @DependsOn("sqlServerSchemaInitializer")
-    DynamicPropertyRegistrar sqlServerDatasourceProperties(MSSQLServerContainer<?> sqlServer) {
+    DynamicPropertyRegistrar sqlServerDatasourceProperties(MSSQLServerContainer sqlServer) {
         return registry -> {
             registry.add("SQLSERVER_HOST", sqlServer::getHost);
             registry.add("SQLSERVER_PORT",

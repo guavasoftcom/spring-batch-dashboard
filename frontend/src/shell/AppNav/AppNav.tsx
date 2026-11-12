@@ -2,11 +2,17 @@ import { Box, List, ListItemButton, ListItemIcon, ListItemText, Tooltip } from '
 import AutoGraphOutlinedIcon from '@mui/icons-material/AutoGraphOutlined';
 import { BatchJobsNav } from '~/components/BatchJobsNav';
 import { EnvironmentSelector } from '~/components/EnvironmentSelector';
+import { NAV_WIDTH_DEFAULT, NAV_WIDTH_MAX, NAV_WIDTH_MIN, type NavResizeHandleProps } from './useNavResize';
+
+const NAV_WIDTH_COLLAPSED = 64;
 
 type Props = {
   navOpen: boolean;
   isWide: boolean;
   collapsed: boolean;
+  width: number;
+  resizing: boolean;
+  resizeHandleProps: NavResizeHandleProps;
   onDashboard: boolean;
   onBackdropClick: () => void;
   onNavigateOverview: () => void;
@@ -16,6 +22,9 @@ const AppNav = ({
   navOpen,
   isWide,
   collapsed,
+  width,
+  resizing,
+  resizeHandleProps,
   onDashboard,
   onBackdropClick,
   onNavigateOverview,
@@ -71,16 +80,13 @@ const AppNav = ({
       <Box
         component="nav"
         sx={{
-          width: collapsed ? 64 : 240,
+          width: collapsed ? NAV_WIDTH_COLLAPSED : isWide ? width : NAV_WIDTH_DEFAULT,
           flexShrink: 0,
           bgcolor: 'background.paper',
           borderRight: 1,
           borderColor: 'divider',
-          pb: 2,
-          pt: 2,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          transition: 'width 200ms ease',
+          // No width animation while dragging, or the nav lags behind the pointer.
+          transition: resizing ? 'none' : 'width 200ms ease',
           ...(isWide
             ? {
                 position: 'sticky',
@@ -99,11 +105,55 @@ const AppNav = ({
               }),
         }}
       >
-        <EnvironmentSelector compact={collapsed} />
-        <List sx={{ mt: collapsed ? 2 : 0 }}>
-          {overviewButton}
-        </List>
-        <BatchJobsNav collapsed={collapsed} />
+        <Box sx={{ height: '100%', py: 2, overflowY: 'auto', overflowX: 'hidden' }}>
+          <EnvironmentSelector compact={collapsed} />
+          <List sx={{ mt: collapsed ? 2 : 0 }}>
+            {overviewButton}
+          </List>
+          <BatchJobsNav collapsed={collapsed} />
+        </Box>
+        {isWide && !collapsed && (
+          <Box
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize navigation"
+            aria-valuenow={width}
+            aria-valuemin={NAV_WIDTH_MIN}
+            aria-valuemax={NAV_WIDTH_MAX}
+            tabIndex={0}
+            {...resizeHandleProps}
+            sx={{
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              right: -4,
+              width: 8,
+              zIndex: 1,
+              cursor: 'col-resize',
+              touchAction: 'none',
+              bgcolor: resizing ? 'primary.main' : 'transparent',
+              transition: 'background-color 150ms ease',
+              // Grip pill, always visible so the edge reads as draggable.
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                width: 4,
+                height: 40,
+                transform: 'translate(-50%, -50%)',
+                borderRadius: 2,
+                bgcolor: resizing ? 'primary.contrastText' : 'text.disabled',
+                transition: 'background-color 150ms ease',
+              },
+              '&:hover, &:focus-visible': {
+                bgcolor: 'primary.main',
+                outline: 'none',
+                '&::before': { bgcolor: 'primary.contrastText' },
+              },
+            }}
+          />
+        )}
       </Box>
     </>
   );

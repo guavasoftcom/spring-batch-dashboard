@@ -2,7 +2,6 @@ import { Box, Container, Grid } from '@mui/material';
 import AutoGraphOutlinedIcon from '@mui/icons-material/AutoGraphOutlined';
 import { PageBreadcrumb, WindowSelect } from '~/components';
 import {
-  JobDurationTrendsTile,
   JobExecutionsTile,
   JobLastRunsTile,
   RuntimeTile,
@@ -25,7 +24,6 @@ const OverviewPage = () => (
       <Grid size={{ xs: 12, sm: 6, lg: 3 }}><StepExecutionsTile /></Grid>
       <Grid size={{ xs: 12, sm: 6, lg: 3 }}><ThroughputTile /></Grid>
       <Grid size={{ xs: 12, sm: 6, lg: 3 }}><RuntimeTile /></Grid>
-      <Grid size={{ xs: 12 }}><JobDurationTrendsTile /></Grid>
       <Grid size={{ xs: 12 }}><JobLastRunsTile /></Grid>
     </Grid>
   </Container>

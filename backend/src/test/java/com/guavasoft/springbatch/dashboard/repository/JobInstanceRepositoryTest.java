@@ -21,6 +21,13 @@ class JobInstanceRepositoryTest {
     }
 
     @Test
+    void findDistinctJobNamesExcludesJobsWithNoExecutionStartedSinceTheCutoff() {
+        List<String> names = jobInstanceRepository.findDistinctJobNamesSince(LocalDateTime.now().plusDays(1));
+
+        assertThat(names).isEmpty();
+    }
+
+    @Test
     void countMatchesSeededInstances() {
         // 90 dailyImportJob + 30 reconcileLedgerJob + 12 sendDigestEmailJob = 132
         assertThat(jobInstanceRepository.count()).isEqualTo(132);

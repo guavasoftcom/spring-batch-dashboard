@@ -12,7 +12,7 @@ public interface JobInstanceRepository extends JpaRepository<JobInstanceEntity, 
     @Query("""
             SELECT DISTINCT e.jobInstance.jobName
             FROM JobExecutionEntity e
-            WHERE e.createTime >= :since
+            WHERE e.startTime >= :since
             ORDER BY e.jobInstance.jobName
             """)
     List<String> findDistinctJobNamesSince(@Param("since") LocalDateTime since);

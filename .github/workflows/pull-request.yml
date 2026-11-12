@@ -35,6 +35,11 @@ jobs:
         # tests boot one container per engine and parameterize over them — a single run
         # exercises every dialect.
         run: ./mvnw --batch-mode --no-transfer-progress verify
+        env:
+          # The runner's Docker daemon rejects API versions below 1.40, but the bundled
+          # docker-java client defaults to 1.32. Pin a supported version until Testcontainers
+          # negotiates it on its own.
+          DOCKER_API_VERSION: "1.44"
 
       - name: Annotate Checkstyle results
         if: always()
