@@ -2,7 +2,6 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { OverviewPage } from '~/pages/overview';
-import { EnvironmentContext } from '~/shell/EnvironmentContext';
 import { renderWithProviders } from '~/test-utils/renderWithProviders';
 
 const apiMocks = vi.hoisted(() => ({
@@ -70,8 +69,7 @@ describe('OverviewPage', () => {
     expect(await screen.findByText('Step Executions')).toBeInTheDocument();
     expect(await screen.findByText('Throughput')).toBeInTheDocument();
     expect(await screen.findByText('Runtime')).toBeInTheDocument();
-    expect(await screen.findByText('Job Duration Trends')).toBeInTheDocument();
-    expect(await screen.findByText('Last Run by Job')).toBeInTheDocument();
+    expect(await screen.findByText('Jobs')).toBeInTheDocument();
 
     expect(await screen.findByText(/40 completed, 5 failed, 5 active/)).toBeInTheDocument();
     expect(await screen.findByText(/180 completed, 10 failed, 10 active/)).toBeInTheDocument();
@@ -81,89 +79,117 @@ describe('OverviewPage', () => {
     expect(await screen.findByText('No runs in this window')).toBeInTheDocument();
   });
 
-  // Smoke check that the JobLastRunsTile renders its Duration column header.
-  it('renders the Duration column header in the last-runs table', async () => {
+  it('renders the Duration column header in the jobs table', async () => {
     renderWithProviders(<OverviewPage />, { environment: 'prod' });
 
     expect((await screen.findAllByText('Duration')).length).toBeGreaterThan(0);
   });
 
-  describe('charted job selection', () => {
-    // Six jobs with distinct averages so the default top-5 is unambiguous:
-    // job1Job is the fastest and should be left off the chart.
-    const jobNames = ['job1Job', 'job2Job', 'job3Job', 'job4Job', 'job5Job', 'job6Job'];
+  describe('job table', () => {
+    const run = (executionId: number, status: string, durationSeconds: number, startTime: string) => ({
+      executionId,
+      status,
+      startTime,
+      endTime: status === 'STARTED' ? null : startTime,
+      durationSeconds,
+      readCount: 10,
+      writeCount: 9,
+      exitCode: status,
+    });
 
     beforeEach(() => {
-      apiMocks.getJobDurationTrends.mockResolvedValue(
-        jobNames.map((jobName, index) => ({
-          jobName,
-          points: [{ date: '2026-04-30', averageSeconds: (index + 1) * 10 }],
-        })),
-      );
+      apiMocks.getJobDurationTrends.mockResolvedValue([
+        'slowJob',
+        'steadyJob',
+        'brokenJob',
+        'busyJob',
+      ].map((jobName) => ({
+        jobName,
+        points: [
+          { date: '2026-04-28', averageSeconds: 100 },
+          { date: '2026-04-29', averageSeconds: 100 },
+          { date: '2026-04-30', averageSeconds: 100 },
+        ],
+      })));
       apiMocks.getJobLastRuns.mockResolvedValue([
-        ...jobNames.map((jobName) => ({ jobName, run: null })),
+        { jobName: 'steadyJob', run: run(1, 'COMPLETED', 100, '2026-04-30T09:00:00Z') },
+        { jobName: 'slowJob', run: run(2, 'COMPLETED', 200, '2026-04-30T08:00:00Z') },
+        { jobName: 'brokenJob', run: run(3, 'FAILED', 20, '2026-04-30T07:00:00Z') },
+        { jobName: 'busyJob', run: run(4, 'STARTED', 30, '2026-04-30T06:00:00Z') },
         { jobName: 'idleJob', run: null },
       ]);
     });
 
-    const checkbox = (label: string) => screen.findByRole('checkbox', { name: `Chart ${label}` });
+    const jobOrder = async () => {
+      await screen.findByText('Steady Job');
+      return screen
+        .getAllByRole('button', { name: /^(Steady|Slow|Broken|Busy|Idle) Job$/ })
+        .map((button) => button.textContent);
+    };
 
-    it('charts the five longest-running jobs by default', async () => {
+    it('lists problems first: failed, running, slower than usual, then the rest', async () => {
       renderWithProviders(<OverviewPage />, { environment: 'prod' });
 
-      expect(await screen.findByText('Showing 5 of 6 jobs')).toBeInTheDocument();
-      expect(await checkbox('Job1 Job')).not.toBeChecked();
-      expect(await checkbox('Job6 Job')).toBeChecked();
+      expect(await jobOrder()).toEqual(['Broken Job', 'Busy Job', 'Slow Job', 'Steady Job', 'Idle Job']);
     });
 
-    it('disables unchecked jobs once the limit is reached and frees a slot on uncheck', async () => {
+    it('shows how far the last run is from usual', async () => {
+      renderWithProviders(<OverviewPage />, { environment: 'prod' });
+
+      expect(await screen.findByText('▲ 100%')).toBeInTheDocument();
+      expect(screen.getByText('0%')).toBeInTheDocument();
+    });
+
+    it('filters by status chip and shows counts', async () => {
       const user = userEvent.setup();
       renderWithProviders(<OverviewPage />, { environment: 'prod' });
 
-      expect(await checkbox('Job1 Job')).toBeDisabled();
+      await user.click(await screen.findByRole('button', { name: 'Failed 1' }));
+      expect(screen.getByText('Broken Job')).toBeInTheDocument();
+      expect(screen.queryByText('Steady Job')).not.toBeInTheDocument();
 
-      await user.click(await checkbox('Job6 Job'));
-      expect(await screen.findByText('Showing 4 of 6 jobs')).toBeInTheDocument();
-      expect(await checkbox('Job1 Job')).toBeEnabled();
-
-      await user.click(await checkbox('Job1 Job'));
-      expect(await screen.findByText('Showing 5 of 6 jobs')).toBeInTheDocument();
-      expect(await checkbox('Job1 Job')).toBeChecked();
+      await user.click(screen.getByRole('button', { name: 'Slower than usual 1' }));
+      expect(screen.getByText('Slow Job')).toBeInTheDocument();
+      expect(screen.queryByText('Broken Job')).not.toBeInTheDocument();
     });
 
-    it('disables jobs with no duration data in the window', async () => {
-      renderWithProviders(<OverviewPage />, { environment: 'prod' });
-
-      expect(await checkbox('Idle Job')).toBeDisabled();
-    });
-
-    it('prompts for a selection when every job is unchecked', async () => {
+    it('filters by search text and explains when nothing matches', async () => {
       const user = userEvent.setup();
       renderWithProviders(<OverviewPage />, { environment: 'prod' });
 
-      for (const label of ['Job2 Job', 'Job3 Job', 'Job4 Job', 'Job5 Job', 'Job6 Job']) {
-        await user.click(await checkbox(label));
-      }
-
-      expect(await screen.findByText('Select jobs in Last Run by Job to chart them.')).toBeInTheDocument();
-      expect(screen.getByText('Showing 0 of 6 jobs')).toBeInTheDocument();
+      await user.type(await screen.findByRole('searchbox', { name: 'Search jobs' }), 'zzz');
+      expect(await screen.findByText('No jobs match these filters.')).toBeInTheDocument();
     });
 
-    it('falls back to the default selection after switching environments', async () => {
+    it('sorts by name', async () => {
       const user = userEvent.setup();
-      const inEnvironment = (environment: string) => (
-        <EnvironmentContext.Provider value={{ environment, setEnvironment: () => {} }}>
-          <OverviewPage />
-        </EnvironmentContext.Provider>
-      );
-      const { rerender } = renderWithProviders(inEnvironment('prod'));
+      renderWithProviders(<OverviewPage />, { environment: 'prod' });
 
-      await user.click(await checkbox('Job6 Job'));
-      expect(await screen.findByText('Showing 4 of 6 jobs')).toBeInTheDocument();
+      await screen.findByText('Steady Job');
+      await user.click(screen.getByRole('combobox', { name: 'Sort jobs' }));
+      await user.click(await screen.findByRole('option', { name: 'Name' }));
 
-      rerender(inEnvironment('qa'));
-      expect(await screen.findByText('Showing 5 of 6 jobs')).toBeInTheDocument();
-      expect(await checkbox('Job6 Job')).toBeChecked();
+      expect(await jobOrder()).toEqual(['Broken Job', 'Busy Job', 'Idle Job', 'Slow Job', 'Steady Job']);
+    });
+
+    it('expands a row to show its duration chart, and collapses it again', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<OverviewPage />, { environment: 'prod' });
+
+      const toggle = await screen.findByRole('button', { name: 'Show duration chart for Steady Job' });
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+      await user.click(toggle);
+      expect(toggle).toHaveAttribute('aria-expanded', 'true');
+
+      await user.click(toggle);
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('does not offer a chart for a job with no duration data', async () => {
+      renderWithProviders(<OverviewPage />, { environment: 'prod' });
+
+      expect(await screen.findByRole('button', { name: 'Show duration chart for Idle Job' })).toBeDisabled();
     });
   });
 
