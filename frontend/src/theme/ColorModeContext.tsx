@@ -1,15 +1,9 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import { createAppTheme, type ColorMode } from './appTheme';
+import { ColorModeContext, type ColorModeContextValue } from './colorMode';
 
 const COLOR_MODE_STORAGE_KEY = 'spring-batch-dashboard.colorMode';
-
-type ColorModeContextValue = {
-  mode: ColorMode;
-  toggleMode: () => void;
-};
-
-const ColorModeContext = createContext<ColorModeContextValue | undefined>(undefined);
 
 const readStoredMode = (): ColorMode => {
   if (typeof window === 'undefined') {
@@ -47,7 +41,3 @@ export const ColorModeProvider = ({ children }: { children: ReactNode }) => {
     </ColorModeContext.Provider>
   );
 };
-
-const noopColorMode: ColorModeContextValue = { mode: 'light', toggleMode: () => {} };
-
-export const useColorMode = (): ColorModeContextValue => useContext(ColorModeContext) ?? noopColorMode;

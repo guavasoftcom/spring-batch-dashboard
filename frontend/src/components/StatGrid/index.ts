@@ -1,2 +1,3 @@
-export { default as StatGrid, recordToStatEntries } from './StatGrid';
+export { default as StatGrid } from './StatGrid';
+export { recordToStatEntries } from './recordToStatEntries';
 export type { StatGridEntry } from './StatGrid';
