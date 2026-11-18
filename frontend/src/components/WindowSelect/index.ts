@@ -1,2 +1,3 @@
-export { default as WindowSelect, WINDOW_OPTIONS } from './WindowSelect';
-export type { WindowOption } from './WindowSelect';
+export { default as WindowSelect } from './WindowSelect';
+export { WINDOW_OPTIONS } from './windowOptions';
+export type { WindowOption } from './windowOptions';

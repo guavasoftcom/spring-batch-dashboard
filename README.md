@@ -80,7 +80,7 @@ The components don't share code — they're independent apps that meet at the da
 
 ## Quick start
 
-You'll need: JDK 25, Node 20+, Yarn 4 (Berry), Docker.
+You'll need: JDK 25, Node 24+, Yarn 4 (Berry), Docker.
 
 ```bash
 # 1. Backend — pulls up Postgres + MySQL + Oracle in docker containers, serves on :8080
