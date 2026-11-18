@@ -12,7 +12,7 @@ services:
       - postgres-data:/var/lib/postgresql/data
 
   mysql:
-    image: 'mysql:8'
+    image: 'mysql:26'
     environment:
       - 'MYSQL_DATABASE=${MYSQL_DB}'
       - 'MYSQL_USER=${MYSQL_USER}'
@@ -35,7 +35,7 @@ services:
       - oracle-data:/opt/oracle/oradata
 
   sqlserver:
-    image: 'mcr.microsoft.com/mssql/server:2022-latest'
+    image: 'mcr.microsoft.com/mssql/server:2025-latest'
     user: root
     environment:
       - 'ACCEPT_EULA=Y'
