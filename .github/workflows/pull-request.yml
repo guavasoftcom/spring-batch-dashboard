@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up JDK
         uses: ./.github/actions/setup-java
@@ -50,7 +50,7 @@ jobs:
 
       - name: Publish test report
         if: always()
-        uses: mikepenz/action-junit-report@v5
+        uses: mikepenz/action-junit-report@v6
         with:
           report_paths: backend/target/surefire-reports/TEST-*.xml
           check_name: Backend tests
@@ -67,7 +67,7 @@ jobs:
 
       - name: Upload Surefire reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-surefire-reports
           path: backend/target/surefire-reports
@@ -75,7 +75,7 @@ jobs:
 
       - name: Publish + gate coverage on PR
         if: always()
-        uses: PavanMudigonda/jacoco-reporter@v5.1
+        uses: PavanMudigonda/jacoco-reporter@v5.2
         with:
           coverage_results_path: backend/target/site/jacoco/jacoco.xml
           coverage_report_name: Backend coverage
@@ -90,7 +90,7 @@ jobs:
 
       - name: Upload JaCoCo report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-jacoco-report
           path: backend/target/site/jacoco
@@ -109,7 +109,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node
         uses: ./.github/actions/setup-node
@@ -122,7 +122,7 @@ jobs:
         continue-on-error: true
 
       - name: Annotate ESLint results
-        uses: ataylorme/eslint-annotate-action@v3
+        uses: ataylorme/eslint-annotate-action@v4
         with:
           report-json: frontend/eslint-report.json
           fail-on-warning: false
@@ -136,7 +136,7 @@ jobs:
 
       - name: Publish test report
         if: always()
-        uses: mikepenz/action-junit-report@v5
+        uses: mikepenz/action-junit-report@v6
         with:
           report_paths: frontend/test-results/junit.xml
           check_name: Frontend tests
@@ -153,7 +153,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-test-results
           path: frontend/test-results
@@ -170,7 +170,7 @@ jobs:
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-coverage
           path: frontend/coverage
