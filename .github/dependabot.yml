@@ -1,0 +1,79 @@
+version: 2
+
+# Weekly version-update PRs, grouped to keep noise low. Each PR runs the normal
+# pull-request workflow (lint, tests, coverage, checkstyle) before merge.
+# Within each ecosystem a dependency lands in the first group it matches; anything
+# left over (e.g. major bumps) gets its own PR so breaking changes stay reviewable.
+
+updates:
+  - package-ecosystem: maven
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      # Boot and springdoc must move together
+      spring-boot:
+        patterns:
+          - "org.springframework.boot*"
+          - "org.springdoc*"
+      maven-minor-patch:
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      mui:
+        patterns:
+          - "@mui/*"
+          - "@emotion/*"
+      lint:
+        patterns:
+          - "eslint*"
+          - "@eslint/*"
+          - "typescript-eslint"
+      testing:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+          - "jsdom"
+          - "@testing-library/*"
+      npm-minor-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      # Hold TypeScript 7 until typescript-eslint, vite and vitest support it
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+
+  - package-ecosystem: docker-compose
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      compose-images:
+        patterns: ["*"]
+
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
